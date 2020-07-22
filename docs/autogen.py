@@ -80,7 +80,8 @@ def class_to_source_link(cls):
     line = inspect.getsourcelines(cls)[-1]
     link = ('https://github.com/sherpaai/'
             'Sherpa.ai-Federated-Learning-Framework/blob/master/' + path + '#L' + str(line))
-    return '[[source]](' + link + ')'
+
+    return '<a href="' + link + '" target="_blank">[source]</a>'
 
 
 def code_snippet(snippet):
