@@ -1,13 +1,18 @@
 import numpy as np
 import pytest
-from shfl.model.linear_classifier_model import LogisticRegressionModel
-from shfl.model.linear_classifier_model import LinearSVCModel
+
+from sklearn.datasets import load_iris
+from sklearn import metrics
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+
+from shfl.model.linear_classifier_model import LinearClassifierModel
 
 
 def test_linear_classifier_model_initialization_binary_classes():
     n_features = 9
     classes = ['a', 'b']
-    lgr = LogisticRegressionModel(n_features=n_features, classes=classes)
+    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
     n_classes = 1 # Binary classification
     assert np.shape(lgr._model.intercept_) == (n_classes,)
     assert np.shape(lgr._model.coef_) == (n_classes, n_features)
@@ -18,7 +23,7 @@ def test_linear_classifier_model_initialization_binary_classes():
 def test_linear_classifier_model_initialization_multiple_classes():
     n_features = 9
     classes = ['a', 'b', 'c']
-    lgr = LogisticRegressionModel(n_features=n_features, classes=classes)
+    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
     n_classes = len(classes)
     assert np.shape(lgr._model.intercept_) == (n_classes,)
     assert np.shape(lgr._model.coef_) == (n_classes, n_features)
@@ -34,7 +39,7 @@ def test_linear_classifier_model_wrong_initialization():
                ['a', 'b', 'a']]
     for init_ in zip(n_features, classes):
         with pytest.raises(AssertionError):
-            lgr = LogisticRegressionModel(n_features=init_[0], classes=init_[1])
+            lgr = LinearClassifierModel(n_features=init_[0], classes=init_[1])
             
             
 def test_linear_classifier_model_train_wrong_input_data():
@@ -43,7 +48,7 @@ def test_linear_classifier_model_train_wrong_input_data():
     # Single feature wrong data input:
     n_features = 2
     classes = ['a', 'b']
-    lgr = LogisticRegressionModel(n_features=n_features, classes=classes)    
+    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
     data = np.random.rand(num_data, )
     label = np.random.choice(a=classes, size=num_data, replace=True)
     with pytest.raises(AssertionError):
@@ -52,7 +57,7 @@ def test_linear_classifier_model_train_wrong_input_data():
     # Multi-feature wrong data input:
     n_features = 2
     classes = ['a', 'b']
-    lgr = LogisticRegressionModel(n_features=n_features, classes=classes)    
+    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
     data = np.random.rand(num_data, n_features + 1)
     label = np.random.choice(a=classes, size=num_data, replace=True)
     with pytest.raises(AssertionError):
@@ -61,7 +66,7 @@ def test_linear_classifier_model_train_wrong_input_data():
     # Wrong classes input label on train and predict:
     n_features = 2
     classes = ['a', 'b']
-    lgr = LogisticRegressionModel(n_features=n_features, classes=classes)    
+    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
     label = np.random.choice(a=classes, size=num_data, replace=True)
     label[0] = 'c'
     with pytest.raises(AssertionError):
@@ -73,7 +78,7 @@ def test_linear_classifier_model_train_wrong_input_data():
 def test_linear_classifier_model_set_get_params():
     n_features = 9
     classes = ['a', 'b', 'c']
-    lgr = LogisticRegressionModel(n_features=n_features, classes=classes)
+    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
     params = np.random.rand(len(classes), n_features)
     lgr.set_model_params(params)
     
@@ -81,10 +86,6 @@ def test_linear_classifier_model_set_get_params():
            
 
 def test_logistic_regression_model_train_evaluate():
-    from sklearn.datasets import load_iris
-    from sklearn.linear_model import LogisticRegression
-    from sklearn import metrics
-    
     data, labels = load_iris(return_X_y=True)
     randomize = np.arange(len(labels))
     np.random.shuffle(randomize)
@@ -95,8 +96,9 @@ def test_logistic_regression_model_train_evaluate():
     train_labels = labels[0:dim]
     test_data = data[dim:, ]
     test_labels = labels[dim:]
-    
-    lgr = LogisticRegressionModel(n_features=np.shape(train_data)[1], classes=np.unique(train_labels), model_inputs={'max_iter':150})
+
+    model = LogisticRegression(max_iter=150)
+    lgr = LinearClassifierModel(n_features=np.shape(train_data)[1], classes=np.unique(train_labels), model=model)
     lgr.train(data=train_data, labels=train_labels)
     evaluation = np.array(lgr.evaluate(data=test_data, labels=test_labels))
     performance = lgr.performance(data=test_data, labels=test_labels)
@@ -114,10 +116,6 @@ def test_logistic_regression_model_train_evaluate():
     
     
 def test_linearSVC_model_train_evaluate():
-    from sklearn.datasets import load_iris
-    from sklearn.svm import LinearSVC
-    from sklearn import metrics
-    
     data, labels = load_iris(return_X_y=True)
     randomize = np.arange(len(labels))
     np.random.shuffle(randomize)
@@ -128,8 +126,9 @@ def test_linearSVC_model_train_evaluate():
     train_labels = labels[0:dim]
     test_data = data[dim:, ]
     test_labels = labels[dim:]
-    
-    svc = LinearSVCModel(n_features=np.shape(train_data)[1], classes=np.unique(train_labels), model_inputs={'random_state':123})
+
+    model = LinearSVC(random_state=123)
+    svc = LinearClassifierModel(n_features=np.shape(train_data)[1], classes=np.unique(train_labels), model=model)
     svc.train(data=train_data, labels=train_labels)
     evaluation = np.array(svc.evaluate(data=test_data, labels=test_labels))
     performance = svc.performance(data=test_data, labels=test_labels)

@@ -1,6 +1,5 @@
 from shfl.model.model import TrainableModel
 import numpy as np
-from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 
@@ -13,15 +12,15 @@ class LinearClassifierModel(TrainableModel):
     # Arguments:
         n_features: integer number of features (independent variables).
         classes: array of classes to predict. At least 2 classes must be provided.
-        model_inputs: optional dictionary containing the [model input parameters](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
+        model: Optional. Sklearn Linear Model instance to use. If it is not provided, a LogisticRegression instance
+            will be used. It has been tested with LogisticRegression and LinearSVC instances but it should work for
+            every linear model defined by intercept_ and coef_ attributes.
     """
-    def __init__(self, n_features, classes, model_inputs=None, model=None):
+    def __init__(self, n_features, classes, model=None):
         if model is None:
-            model = LogisticRegression
-        if model_inputs is None:
-            model_inputs = {}
+            model = LogisticRegression(solver='lbfgs', multi_class='auto')
         self._check_initialization(n_features, classes)
-        self._model = model(**model_inputs)
+        self._model = model
         self._n_features = n_features
         classes = np.sort(np.asarray(classes))
         self._model.classes_ = classes
@@ -123,8 +122,8 @@ class LinearClassifierModel(TrainableModel):
         """
         classes = np.unique(np.asarray(labels))
         if not np.array_equal(self._model.classes_, classes):
-            raise AssertionError("When training, labels need to have the same classes described by the model, " + str(self._model.classes_)
-                                 + ". Labels of this node are " + str(classes) + " .")
+            raise AssertionError("When training, labels need to have the same classes described by the model, "
+                                 + str(self._model.classes_) + ". Labels of this node are " + str(classes) + " .")
             
     def _check_labels_predict(self, labels):
         """
@@ -159,31 +158,3 @@ class LinearClassifierModel(TrainableModel):
             classes = list(classes)
             duplicated_classes = [i_class for i_class in classes if classes.count(i_class) > 1]
             raise AssertionError("No duplicated classes allowed. Class(es) duplicated: " + str(duplicated_classes) )
-
-
-class LogisticRegressionModel(LinearClassifierModel):
-    """
-    This class offers support for scikit-learn LogisticRegression classifier. 
-    It implements [TrainableModel](../Model/#trainablemodel-class)
-
-    # Arguments:
-        n_features: integer number of features (independent variables).
-        classes: array of classes to predict. At least 2 classes must be provided.
-        model_inputs: optional dictionary containing the [model input parameters](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
-    """
-    pass
-
-
-class LinearSVCModel(LinearClassifierModel):
-    """
-    This class offers support for scikit-learn SVM LinearSVC classifier. 
-    It implements [TrainableModel](../Model/#trainablemodel-class)
-
-    # Arguments:
-        n_features: integer number of features (independent variables).
-        classes: array of classes to predict. At least 2 classes must be provided.
-        model_inputs: optional dictionary containing the [model input parameters](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html)
-    """
-    def __init__(self, n_features, classes, model_inputs=None):
-        super().__init__(n_features=n_features, classes=classes, model_inputs=model_inputs, model=LinearSVC)
-        
