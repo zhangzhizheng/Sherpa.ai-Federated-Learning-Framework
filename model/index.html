@@ -440,8 +440,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#logisticregressionmodel-class" class="md-nav__link">
-    LogisticRegressionModel class
+  <a href="#linearclassifiermodel-class" class="md-nav__link">
+    LinearClassifierModel class
   </a>
   
 </li>
@@ -681,8 +681,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#logisticregressionmodel-class" class="md-nav__link">
-    LogisticRegressionModel class
+  <a href="#linearclassifiermodel-class" class="md-nav__link">
+    LinearClassifierModel class
   </a>
   
 </li>
@@ -706,13 +706,13 @@
                 
                 <h1 id="model">Model</h1>
 <p>The goal of the framework is to provide a set of common models that you might want to use. We don't want to restrict or 
-prioritize the use of neural networks over other, more classical machine learning methods. We know that a lot of the 
-Machine Learning-based services and products in the industry are built over conventional Machine Learning techniques. 
-In any case we are covering a huge range of models, including support for some popular deep learning frameworks. Of 
-course, if you want to use your own model, the framework is easily extensible.</p>
-<p><a href="./#trainablemodel-class">TrainableModel</a> is the abstract class that every model has to implement in order to interact 
+prioritize the use of neural networks over other, more classical machine learning methods. We know that a lot of the machine 
+learning-based services and products in the industry are built over conventional machine learning techniques. In any case, 
+we are covering a huge range of models, including support for some popular deep learning frameworks. Of course, if you want 
+to use your own model, the framework is easily extensible.</p>
+<p><a href="./#trainablemodel-class">TrainableModel</a> is the abstract class that every model has to implement, in order to interact 
 with all the pieces of the framework. <a href="./#deeplearningmodel-class">DeepLearningModel</a> is a predefined model that takes 
-a compiled keras or tensorflow model. If you want to define your own model only need to implement a class with methods 
+a compiled keras or tensorflow model. If you want to define your own model, you just have to implement a class with methods 
 defined by TrainableModel. </p>
 <p><span style="float:right;"><a href="https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/blob/master/shfl/model/model.py#L4" target="_blank">[source]</a></span></p>
 <h2 id="trainablemodel-class">TrainableModel class</h2>
@@ -832,17 +832,20 @@ for those labels.</p>
 <li><strong>n_init</strong>: Number of time the k-means algorithm will be run with different centroid seeds (default 10).</li>
 </ul>
 <hr />
-<p><span style="float:right;"><a href="https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/blob/master/shfl/model/logistic_regression_model.py#L7" target="_blank">[source]</a></span></p>
-<h2 id="logisticregressionmodel-class">LogisticRegressionModel class</h2>
-<pre><code class="python">shfl.model.logistic_regression_model.LogisticRegressionModel(n_features, classes, model_inputs=None)
+<p><span style="float:right;"><a href="https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/blob/master/shfl/model/linear_classifier_model.py#L7" target="_blank">[source]</a></span></p>
+<h2 id="linearclassifiermodel-class">LinearClassifierModel class</h2>
+<pre><code class="python">shfl.model.linear_classifier_model.LinearClassifierModel(n_features, classes, model=None)
 </code></pre>
 
-<p>This class offers support for scikit-learn logistic regression model. It implements <a href="../model/#trainablemodel-class">TrainableModel</a></p>
+<p>This class offers support for scikit-learn linear classification models. By default, LogisticRegression is used. 
+It implements <a href="../Model/#trainablemodel-class">TrainableModel</a></p>
 <p><strong>Arguments:</strong></p>
 <ul>
 <li><strong>n_features</strong>: integer number of features (independent variables).</li>
 <li><strong>classes</strong>: array of classes to predict. At least 2 classes must be provided.</li>
-<li><strong>model_inputs</strong>: optional dictionary containing the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html">model input parameters</a></li>
+<li><strong>model</strong>: Optional. Sklearn Linear Model instance to use. If it is not provided, a LogisticRegression instance
+    will be used. It has been tested with LogisticRegression and LinearSVC instances but it should work for
+    every linear model defined by intercept_ and coef_ attributes.</li>
 </ul>
                 
                   
