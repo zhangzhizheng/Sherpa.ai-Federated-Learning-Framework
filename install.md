@@ -1,9 +1,13 @@
 # Installation
 
-We are in the prerelease stage, so at the moment, the PyPI repository 
-doesn't contain the package. In the future, installation should be as easy as writing "pip install shfl".
 
-Currently, the best option is install the package in editable mode, linking the package to the source code. 
+The installation should be as easy as writing:
+
+```shell
+pip install shfl
+```
+
+Instead, if you want to install the package in editable mode, for developing purposes, you can link the package to the source code. 
 From the main directory of the project, you can write: 
 
 ```shell
