@@ -108,8 +108,8 @@ class NonIidDataDistribution(DataDistribution):
                 federated_data.append(np.array(data_aux[0:percent_per_client, ]))
                 federated_label.append(np.array(labels_aux[0:percent_per_client, ]))
 
-            federated_data = np.array(federated_data)
-            federated_label = np.array(federated_label)
+            #federated_data = np.array(federated_data)
+            #federated_label = np.array(federated_label)
 
         else:
             if sum(weights) > 1:
@@ -139,8 +139,8 @@ class NonIidDataDistribution(DataDistribution):
                 data = rest_data
                 labels = rest_labels
 
-            federated_data = np.array(federated_data)
-            federated_label = np.array(federated_label)
+            #federated_data = np.array(federated_data)
+            #federated_label = np.array(federated_label)
 
         if not one_hot:
             federated_label = np.array([np.argmax(node, 1) for node in federated_label])

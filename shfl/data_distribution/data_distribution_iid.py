@@ -64,7 +64,7 @@ class IidDataDistribution(DataDistribution):
                 data = data[randomize, ]
                 labels = labels[randomize]
 
-        federated_data = np.array(federated_data)
-        federated_label = np.array(federated_label)
+        #federated_data = np.array(federated_data)
+        #federated_label = np.array(federated_label)
 
         return federated_data, federated_label

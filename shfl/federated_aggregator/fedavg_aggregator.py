@@ -23,9 +23,6 @@ class FedAvgAggregator(FederatedAggregator):
             [Communication-Efficient Learning of Deep Networks from Decentralized Data](https://arxiv.org/abs/1602.05629)
         """
 
-        clients_params_array = np.array(clients_params)
-        shape = clients_params_array.shape[1]
-
-        aggregated_weights = np.array([np.mean(clients_params_array[:, layer], axis=0) for layer in range(shape)])
-
+        aggregated_weights = [np.mean(np.array(params), axis=0) for params in zip(*clients_params)]
+        
         return aggregated_weights
