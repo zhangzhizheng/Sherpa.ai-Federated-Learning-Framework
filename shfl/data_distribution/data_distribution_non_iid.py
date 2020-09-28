@@ -2,10 +2,10 @@ import numpy as np
 import random
 import tensorflow as tf
 
-from shfl.data_distribution.data_distribution import DataDistribution
+from shfl.data_distribution.data_distribution_sampling import SamplingDataDistribution
 
 
-class NonIidDataDistribution(DataDistribution):
+class NonIidDataDistribution(SamplingDataDistribution):
     """
     Implementation of a non-independent and identically distributed data distribution using \
         [Data Distribution](../data_distribution/#datadistribution-class)
@@ -48,7 +48,7 @@ class NonIidDataDistribution(DataDistribution):
 
         return random_labels
 
-    def make_data_federated(self, data, labels, num_nodes, percent, weights, sampling="with_replacement"):
+    def make_data_federated(self, data, labels, percent, num_nodes=1, weights=None, sampling="with_replacement"):
         """
         Method that makes data and labels argument federated in a non-iid scenario.
 

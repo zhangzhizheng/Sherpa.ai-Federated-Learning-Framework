@@ -1,15 +1,15 @@
 import numpy as np
 
-from shfl.data_distribution.data_distribution import DataDistribution
+from shfl.data_distribution.data_distribution_sampling import SamplingDataDistribution
 
 
-class IidDataDistribution(DataDistribution):
+class IidDataDistribution(SamplingDataDistribution):
     """
     Implementation of an independent and identically distributed data distribution using \
         [Data Distribution](../data_distribution/#datadistribution-class)
     """
 
-    def make_data_federated(self, data, labels, num_nodes, percent, weights, sampling="without_replacement"):
+    def make_data_federated(self, data, labels, percent, num_nodes=1, weights=None, sampling="without_replacement"):
         """
         Method that makes data and labels argument federated in an iid scenario.
 
