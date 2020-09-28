@@ -52,8 +52,8 @@ def test_make_data_federated():
     weights = [0.5, 0.25, 0.25]
     federated_data, federated_label = data_distribution.make_data_federated(train_data,
                                                                             train_label,
-                                                                            num_nodes,
                                                                             percent,
+                                                                            num_nodes,
                                                                             weights)
 
     all_data = np.concatenate(federated_data)
@@ -89,8 +89,8 @@ def test_make_data_federated_wrong_weights():
     weights = [0.5, 0.55, 0.1]
     federated_data, federated_label = data_distribution.make_data_federated(train_data,
                                                                             train_label,
-                                                                            num_nodes,
                                                                             percent,
+                                                                            num_nodes,
                                                                             weights,
                                                                             'without_replacement')
 
