@@ -1,12 +1,15 @@
+import abc
+
 from shfl.data_distribution.data_distribution import DataDistribution
 
 
 class SamplingDataDistribution(DataDistribution):
     """
-    Implementation of a sampled data distribution using \
+    Abstract class for a sampled data distribution using \
         [Data Distribution](../data_distribution/#datadistribution-class)
     """
 
+    @abc.abstractmethod
     def make_data_federated(self, data, labels, percent, num_nodes=1, weights=None, sampling="without_sampling"):
         """
         Method that must implement every data distribution extending this class
@@ -21,4 +24,3 @@ class SamplingDataDistribution(DataDistribution):
             federated_data: Data for each client
             federated_label: Labels for each client
         """
-        super(SamplingDataDistribution, self).make_data_federated(data, labels, percent, num_nodes, weights, sampling)
