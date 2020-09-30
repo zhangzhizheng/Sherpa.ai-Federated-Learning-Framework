@@ -10,7 +10,7 @@ class TrainableModel(abc.ABC):
     @abc.abstractmethod
     def train(self, data, labels):
         """
-        Method that train the model
+        Method that trains the model
 
         # Arguments:
             data: Data to train the model
