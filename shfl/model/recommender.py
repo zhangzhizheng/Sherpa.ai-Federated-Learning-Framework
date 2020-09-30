@@ -133,7 +133,6 @@ class Recommender(TrainableModel):
             data: array with data
         """
         number_of_clients = len(np.unique(data[:, 0]))
-        print(number_of_clients)
 
         if number_of_clients > 1:
             raise AssertionError("Data need to correspond to a single user. "
