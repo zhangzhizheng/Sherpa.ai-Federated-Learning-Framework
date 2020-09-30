@@ -58,6 +58,6 @@ class DataDistribution(abc.ABC):
             sampling: methodology between with or without sampling (default "without_sampling")
 
         # Returns:
-            federated_data: Data for each client
-            federated_label: Labels for each client
+            federated_data: A list containing the data for each client
+            federated_label: A list containing the labels for each client
         """

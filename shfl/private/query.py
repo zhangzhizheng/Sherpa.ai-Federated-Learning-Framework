@@ -35,3 +35,31 @@ class Mean(Query):
     """
     def get(self, data):
         return np.mean(data)
+
+    
+class CheckDataType(Query):
+    """
+    It assesses and returns the type of data: either int/float/ndarray or a list of them.  
+    If the data is in a different format, it throws a ValueError exception with the appropiate message
+
+    # Arguments:
+        data: input data
+
+    # Returns:
+        is_scalar: True if data is a scalar int/float
+        is_array: True if data is ndarray
+        is_list: True if data is a list (should contain int/float/ndarray)
+    """
+    def get(self, data):
+        is_scalar, is_array, is_list = False, False, False
+        
+        if isinstance(data, (int, float)):
+            is_scalar = True
+        elif isinstance(data, np.ndarray):
+            is_array = True
+        elif isinstance(data, list):
+            is_list = True
+        else:
+            raise ValueError(
+                    "Data must be either int/float/ndarray or a list of them.")
+        return is_scalar, is_array, is_list

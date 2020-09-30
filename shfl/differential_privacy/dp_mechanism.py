@@ -5,7 +5,7 @@ from math import log
 
 from shfl.private.data import DPDataAccessDefinition
 from shfl.private.query import IdentityFunction
-
+from shfl.private.query import CheckDataType
 
 class RandomizedResponseCoins(DPDataAccessDefinition):
     """
@@ -175,8 +175,6 @@ class LaplaceMechanism(DPDataAccessDefinition):
             query = IdentityFunction()
 
         self._check_epsilon_delta((epsilon, 0))
-        self._check_sensitivity_positive(sensitivity)
-
         self._sensitivity = sensitivity
         self._epsilon = epsilon
         self._query = query
@@ -190,13 +188,38 @@ class LaplaceMechanism(DPDataAccessDefinition):
         This method applies the laplace mechanism to the given data, to access the data
 
         # Arguments:
-            data: data to be accessed. It can be either a scalar or a numpy array made of scalars.
+            data: data to be accessed. It can be a scalar, a numpy ndarray, 
+            a list of scalars, or a list of numpy ndarrays.
 
         # Returns:
             Queried data with differential privacy.
         """
-        query_result = np.asarray(self._query.get(data))
-        sensitivity = np.asarray(self._sensitivity)
+        query_result = self._query.get(data)
+        is_scalar, is_array, is_list = CheckDataType().get(query_result)
+        
+        if is_scalar or is_array:
+            query_result_dp = self.apply_to_array(self._sensitivity, query_result)
+            
+        elif is_list:
+            sensitivity = self._check_sensitivity_list(self._sensitivity, query_result)
+            query_result_dp = [self.apply_to_array(i_sensitivity, i_query_result) 
+                            for i_sensitivity, i_query_result in zip(sensitivity, query_result)]
+      
+        return query_result_dp
+       
+    def apply_to_array(self, sensitivity, query_result):
+        """
+        This method applies the laplace mechanism to the given data, to access the data
+
+        # Arguments:
+            data: data to be accessed. It can be a scalar, a numpy ndarray, or a list of numpy ndarrays.
+
+        # Returns:
+            Queried data with differential privacy.
+        """
+        sensitivity = np.asarray(sensitivity)
+        query_result = np.asarray(query_result)
+        self._check_sensitivity_positive(sensitivity)
         self._check_sensitivity_shape(sensitivity, query_result)
         b = sensitivity / self._epsilon
 
@@ -303,7 +326,7 @@ class ExponentialMechanism(DPDataAccessDefinition):
 
     def apply(self, data):
         """
-        This method applies the exponetial mechanism to the given data, to access the data.
+        This method applies the exponential mechanism to the given data, to access the data.
 
         # Arguments:
             data: data to be accessed. It can be either a scalar or a numpy array made of scalars

@@ -51,7 +51,7 @@ class DataAccessDefinition(abc.ABC):
         # Returns:
             result_data: Result data, function of argument data
         """
-
+            
 
 class DPDataAccessDefinition(DataAccessDefinition):
     """
@@ -96,7 +96,7 @@ class DPDataAccessDefinition(DataAccessDefinition):
     @staticmethod
     def _check_sensitivity_positive(sensitivity):
         """
-        It checks if the given sensitivy values are strictly positive (>0)
+        It checks if the given sensitivity values are strictly positive (>0)
 
         # Arguments:
             sensitivity: sensitivity values which should be strictly positive (>0).
@@ -111,7 +111,7 @@ class DPDataAccessDefinition(DataAccessDefinition):
     @staticmethod
     def _check_sensitivity_shape(sensitivity, query_result):
         """
-        It checks if the given sensitivy values fit the shape of the query_result
+        It checks if the given sensitivity values fit the shape of the query_result
 
         # Arguments:
             sensitivity: sensitivity values which should be strictly positive (>0).
@@ -126,7 +126,35 @@ class DPDataAccessDefinition(DataAccessDefinition):
             if not all((m == n) for m, n in zip(sensitivity.shape[::-1], query_result.shape[::-1])):
                 raise ValueError("Sensitivity array dimension " + str(sensitivity.shape) +
                                  " cannot be broadcasted to query result dimension " + str(query_result.shape))
+                
 
+    @staticmethod
+    def _check_sensitivity_list(sensitivity, query_result):
+        """
+        It checks if the given sensitivity values fit the shape of the query_result.
+        Moreover, if the input sensitivity is a scalar or array, 
+        this is wrapped in a list of suitable length. If the check fails, 
+        it throws an ValueError exception with the appropiate message.
+
+        # Arguments:
+            sensitivity: sensitivity values (either scalar, array or list of arrays)
+            query_result: output of a query
+            
+        # Returns:
+            sensitivity: sensitivity values either unchanged, 
+            or wrapped in a list of suitable length
+        """
+        if isinstance(sensitivity, list):
+            if len(sensitivity) > 1 and len(sensitivity) != len(query_result):
+                raise ValueError(
+                    "Input sensitivity length " + str(len(sensitivity)) + 
+                    " does not match query_result (list) lenght" + len(query_result) + ".")
+        else:
+            sensitivity = [sensitivity] * len(query_result)
+            
+        return sensitivity
+        
+    
     @property
     @abc.abstractmethod
     def epsilon_delta(self):

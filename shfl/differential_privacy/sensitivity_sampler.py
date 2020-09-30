@@ -2,6 +2,8 @@ import numpy as np
 from scipy import special
 from math import pow
 
+from shfl.private.query import CheckDataType
+
 
 class SensitivitySampler:
     """
@@ -60,7 +62,7 @@ class SensitivitySampler:
         # Returns:
             a tuple with the sampled sensitivity and the mean of the sampled sensitivities
         """
-        gs = np.ones(m) * np.inf
+        gs = [np.inf for i in range(m)]
 
         for i in range(0, m):
             db1 = oracle.sample(n-1)
@@ -68,9 +70,20 @@ class SensitivitySampler:
             db1 = np.concatenate((db1, oracle.sample(1)))
             db2 = np.concatenate((db2, oracle.sample(1)))
             gs[i] = self._sensitivity_norm(query, sensitivity_norm, db1, db2)
-
-        gs = np.sort(gs)
-        return gs[k - 1], np.mean(gs)
+        
+        is_scalar, is_array, is_list = CheckDataType().get(gs[0])
+        
+        if is_scalar: 
+            gs = np.sort(np.array(gs))
+            gs_max = gs[k - 1]
+            gs_mean = np.mean(gs)
+        
+        elif is_array or is_list:
+            gs = [np.sort(np.array(item), axis=0) for item in zip(*gs)]
+            gs_max = [item[k-1] for item in gs]
+            gs_mean = [np.mean(item, axis=0) for item in gs]
+            
+        return gs_max, gs_mean
 
     @staticmethod
     def _sensitivity_norm(query, sensitivity_norm, x1, x2):

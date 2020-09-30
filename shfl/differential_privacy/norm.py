@@ -36,3 +36,43 @@ class L2SensitivityNorm(SensitivityNorm):
     def compute(self, x_1, x_2):
         x = x_1 - x_2
         return np.sqrt(np.sum(x**2))
+
+    
+class L1SensitivityNormList(SensitivityNorm):
+    """
+    Implements the L1 norm of the difference between x_1 and x_2 for lists of arrays
+    
+    # Arguments:
+        axis: direction. Options are axis=None that considers all elements 
+            and thus returns a scalar value for each array in the list (default). 
+            Instead, axis=0 operates along vertical axis and thus returns a vector of 
+            size equal to the number of columns of each array in the list 
+            (see [numpy.sum](https://numpy.org/doc/stable/reference/generated/numpy.sum.html))
+    """
+    def __init__(self, axis=None):
+        self._axis = axis
+        
+    def compute(self, x_1, x_2):
+        x = [np.sum(np.abs(xi_1 - xi_2), axis=self._axis) 
+             for xi_1, xi_2 in zip(x_1, x_2)]
+        return x
+    
+    
+class L2SensitivityNormList(SensitivityNorm):
+    """
+    Implements the L2 norm of the difference between x_1 and x_2 for lists of arrays
+    
+    # Arguments:
+        axis: direction. Options are axis=None that considers all elements 
+            and thus returns a scalar value for each array in the list (default). 
+            Instead, axis=0 operates along vertical axis and thus returns a vector of 
+            size equal to the number of columns of each array in the list 
+            (see [numpy.sum](https://numpy.org/doc/stable/reference/generated/numpy.sum.html))
+    """
+    def __init__(self, axis=None):
+        self._axis = axis
+        
+    def compute(self, x_1, x_2):
+        x = [np.sqrt(np.sum((xi_1 - xi_2)**2, axis=self._axis))
+             for xi_1, xi_2 in zip(x_1, x_2)]
+        return x

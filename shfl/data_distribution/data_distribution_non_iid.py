@@ -61,7 +61,8 @@ class NonIidDataDistribution(DataDistribution):
             sampling: methodology between with or without sampling (default "without_sampling")
 
         # Returns:
-              * **federated_data, federated_labels**
+            federated_data: A list containing the data for each client
+            federated_label: A list containing the labels for each client
         """
         if weights is None:
             weights = np.full(num_nodes, 1/num_nodes)
@@ -108,9 +109,6 @@ class NonIidDataDistribution(DataDistribution):
                 federated_data.append(np.array(data_aux[0:percent_per_client, ]))
                 federated_label.append(np.array(labels_aux[0:percent_per_client, ]))
 
-            #federated_data = np.array(federated_data)
-            #federated_label = np.array(federated_label)
-
         else:
             if sum(weights) > 1:
                 weights = np.array([float(i) / sum(weights) for i in weights])
@@ -139,8 +137,6 @@ class NonIidDataDistribution(DataDistribution):
                 data = rest_data
                 labels = rest_labels
 
-            #federated_data = np.array(federated_data)
-            #federated_label = np.array(federated_label)
 
         if not one_hot:
             federated_label = np.array([np.argmax(node, 1) for node in federated_label])
