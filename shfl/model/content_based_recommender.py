@@ -82,7 +82,6 @@ class ContentBasedRecommender(Recommender):
             labels: True values of data of this client
         """
         predictions = self.predict(data)
-        print(predictions)
         if predictions.size == 0:
             rmse = 0
         else:
