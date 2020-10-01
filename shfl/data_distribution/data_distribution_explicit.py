@@ -8,7 +8,7 @@ class ExplicitDataDistribution(DataDistribution):
     Implementation of an explicit data distribution using \
         [Data Distribution](../data_distribution/#datadistribution-class)
 
-    In this data distribution we assume that the first column in the data determines the node.
+    In this data distribution we assume that the first column in the data determines the node it belongs to.
     """
 
     def make_data_federated(self, data, labels, percent, *args, **kwargs):
