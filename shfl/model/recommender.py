@@ -38,6 +38,9 @@ class Recommender(TrainableModel):
     """
     Abstract class for recommender systems using \
         [TrainableModel](../model/#trainablemodel-class)
+    The data in this class should be an array where the first column specifies the client. In particular, both the
+    training and testing data that enter each client should be such that the value across the first column is constant.
+    We do not want the data of a client to go to a different one.
     """
 
     def __init__(self):
@@ -45,7 +48,7 @@ class Recommender(TrainableModel):
 
     def train(self, data, labels):
         """
-        Method that trains the model
+        Method that trains the model. This method checks that the data belongs to a single client.
 
         # Arguments:
             data: Data to train the model
@@ -68,7 +71,7 @@ class Recommender(TrainableModel):
 
     def predict(self, data):
         """
-        Predict labels for data
+        Predict labels for data. This method checks that the data belongs to a single client.
 
         # Arguments:
             data: Data for predictions. Only includes the data of this client
@@ -93,7 +96,8 @@ class Recommender(TrainableModel):
 
     def evaluate(self, data, labels):
         """
-        This method must return the performance in terms of different metrics of the prediction for those labels
+        This method returns the performance in terms of different metrics of the prediction for those labels.
+        It checks that the data belongs to a single client.
 
         # Arguments:
             data: Data to be evaluated. Only includes the data of this client
@@ -134,7 +138,7 @@ class Recommender(TrainableModel):
     def performance(self, data, labels):
         """
         This method must return the performance of the prediction in terms of the most representative metric
-        for those labels.
+        for those labels. It checks that the data belongs to a single client.
 
         # Arguments:
             data: Data to be evaluated. Only includes the data of this client
