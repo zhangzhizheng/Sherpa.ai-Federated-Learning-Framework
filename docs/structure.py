@@ -1,4 +1,5 @@
 from shfl import differential_privacy
+from shfl import differential_privacy
 from shfl import private
 from shfl import model
 from shfl import data_base
@@ -111,6 +112,8 @@ PAGES = [
         'page': 'data_distribution.md',
         'classes': [
             (data_distribution.data_distribution.DataDistribution, ["get_federated_data", "make_data_federated"]),
+            data_distribution.data_distribution_explicit.ExplicitDataDistribution,
+            data_distribution.data_distribution_sampling.SamplingDataDistribution,
             data_distribution.data_distribution_iid.IidDataDistribution,
             (data_distribution.data_distribution_non_iid.NonIidDataDistribution, ['choose_labels'])
         ]
@@ -123,7 +126,10 @@ PAGES = [
             model.deep_learning_model.DeepLearningModel,
             model.linear_regression_model.LinearRegressionModel,
             model.kmeans_model.KMeansModel,
-            model.linear_classifier_model.LinearClassifierModel
+            model.linear_classifier_model.LinearClassifierModel,
+            model.recommender.Recommender,
+            model.mean_recommender.MeanRecommender,
+            model.content_based_recommender.ContentBasedRecommender,
         ]
     },
     {

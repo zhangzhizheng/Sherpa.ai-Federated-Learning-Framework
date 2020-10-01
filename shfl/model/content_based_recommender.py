@@ -30,10 +30,12 @@ class ContentBasedRecommender(Recommender):
     """
     Implementation of a content-based recommender using \
         [Recommender](../model/#recommender-class)
-    This class needs the object df_items that must be a pandas dataframe that contain the numeric features of the items,
-    The data that is used to train the model and to make predictions is a numpy array in which the first column
-    specifies the client and the second the item. There can be no items in the data that no not appear in the catalog
-    df_item. Therefore, the index of df_items must contain every value in the second column of data.
+
+    This class needs the object df_items that must be a pandas dataframe that contains the numeric
+    features of the items. The data that is used to train the model and to make predictions is a numpy array in
+    which the first column specifies the client and the second the item. There can be no items in the data that
+    no not appear in the catalog df_item. Therefore, the index of df_items must contain every value in the second
+    column of data.
     """
 
     def __init__(self, df_items):

@@ -5,7 +5,7 @@ from shfl.data_distribution.data_distribution import DataDistribution
 
 class SamplingDataDistribution(DataDistribution):
     """
-    Abstract class for a sampled data distribution using \
+    Abstract class for a sampling data distribution using \
         [Data Distribution](../data_distribution/#datadistribution-class)
     """
 
