@@ -7,6 +7,7 @@ from shfl.private.data import DPDataAccessDefinition
 from shfl.private.query import IdentityFunction
 from shfl.private.query import CheckDataType
 
+
 class RandomizedResponseCoins(DPDataAccessDefinition):
     """
     This class uses a simple mechanism to add randomness for binary data. Both the input and output are binary
@@ -65,7 +66,7 @@ class RandomizedResponseCoins(DPDataAccessDefinition):
             p=self._prob_head_second, size=data.shape)
 
         result = data * first_coin_flip + \
-            (1 - first_coin_flip) * second_coin_flip
+                 (1 - first_coin_flip) * second_coin_flip
 
         return result
 
@@ -195,18 +196,17 @@ class LaplaceMechanism(DPDataAccessDefinition):
             Queried data with differential privacy.
         """
         query_result = self._query.get(data)
-        is_scalar, is_array, is_list = CheckDataType().get(query_result)
-        
-        if is_scalar or is_array:
-            query_result_dp = self.apply_to_array(self._sensitivity, query_result)
-            
-        elif is_list:
+        _, _, query_is_list = CheckDataType.get(query_result)
+
+        if query_is_list:
             sensitivity = self._check_sensitivity_list(self._sensitivity, query_result)
-            query_result_dp = [self.apply_to_array(i_sensitivity, i_query_result) 
-                            for i_sensitivity, i_query_result in zip(sensitivity, query_result)]
-      
+            query_result_dp = [self.apply_to_array(i_sensitivity, i_query_result)
+                               for i_sensitivity, i_query_result in zip(sensitivity, query_result)]
+        else:
+            query_result_dp = self.apply_to_array(self._sensitivity, query_result)
+
         return query_result_dp
-       
+
     def apply_to_array(self, sensitivity, query_result):
         """
         This method applies the laplace mechanism to the given data, to access the data
@@ -261,7 +261,7 @@ class GaussianMechanism(DPDataAccessDefinition):
     def __init__(self, sensitivity, epsilon_delta, query=None):
         if query is None:
             query = IdentityFunction()
-            
+
         self._check_epsilon_delta(epsilon_delta)
         if epsilon_delta[0] >= 1:
             raise ValueError(
@@ -289,7 +289,7 @@ class GaussianMechanism(DPDataAccessDefinition):
         sensitivity = np.asarray(self._sensitivity)
         self._check_sensitivity_shape(sensitivity, query_result)
         std = sqrt(2 * np.log(1.25 / self._epsilon_delta[1])) * \
-            sensitivity / self._epsilon_delta[0]
+              sensitivity / self._epsilon_delta[0]
 
         return query_result + np.random.normal(loc=0.0, scale=std, size=query_result.shape)
 

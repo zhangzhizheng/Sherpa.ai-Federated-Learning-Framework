@@ -16,6 +16,7 @@ class SensitivitySampler:
         - [Pain-Free Random Differential Privacy with Sensitivity Sampling](
            https://arxiv.org/pdf/1706.02562.pdf)
     """
+
     def sample_sensitivity(self, query, sensitivity_norm, oracle, n, m=None, gamma=None):
         """
         This method calculates the parameters to sample the oracle and estimates the sensitivity.
@@ -65,24 +66,23 @@ class SensitivitySampler:
         gs = [np.inf for i in range(m)]
 
         for i in range(0, m):
-            db1 = oracle.sample(n-1)
+            db1 = oracle.sample(n - 1)
             db2 = db1
             db1 = np.concatenate((db1, oracle.sample(1)))
             db2 = np.concatenate((db2, oracle.sample(1)))
             gs[i] = self._sensitivity_norm(query, sensitivity_norm, db1, db2)
-        
-        is_scalar, is_array, is_list = CheckDataType().get(gs[0])
-        
-        if is_scalar: 
-            gs = np.sort(np.array(gs))
-            gs_max = gs[k - 1]
-            gs_mean = np.mean(gs)
-        
-        elif is_array or is_list:
-            gs = [np.sort(np.array(item), axis=0) for item in zip(*gs)]
-            gs_max = [item[k-1] for item in gs]
-            gs_mean = [np.mean(item, axis=0) for item in gs]
-            
+
+        sensitivity_is_scalar, _, _ = CheckDataType.get(gs[0])
+        if sensitivity_is_scalar:
+            gs = [[item] for item in gs]
+
+        gs = [np.sort(np.array(item), axis=0) for item in zip(*gs)]
+        gs_max = [item[k - 1] for item in gs]
+        gs_mean = [np.mean(item, axis=0) for item in gs]
+
+        if sensitivity_is_scalar:
+            [gs_max], [gs_mean] = gs_max, gs_mean
+
         return gs_max, gs_mean
 
     @staticmethod
