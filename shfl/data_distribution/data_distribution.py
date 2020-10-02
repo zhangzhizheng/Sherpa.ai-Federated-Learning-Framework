@@ -15,15 +15,13 @@ class DataDistribution(abc.ABC):
     def __init__(self, database):
         self._database = database
 
-    def get_federated_data(self, num_nodes, percent=100, weights=None, sampling="without_replacement"):
+    def get_federated_data(self, percent=100, *args, **kwargs):
         """
-        Method that split the whole data between the established number of nodes.
+        Method that splits the whole data between the established number of nodes.
 
         # Arguments:
             num_nodes: Number of nodes to create
             percent: Percent of the data (between 0 and 100) to be distributed (default is 100)
-            weights: Array of weights for weighted distribution (default is None)
-            sampling: methodology between with or without sampling (default "without_sampling")
 
         # Returns:
               * **federated_data, test_data, test_label**
@@ -34,10 +32,11 @@ class DataDistribution(abc.ABC):
 
         federated_train_data, federated_train_label = self.make_data_federated(train_data,
                                                                                train_label,
-                                                                               num_nodes, percent,
-                                                                               weights, sampling)
+                                                                               percent,
+                                                                               *args, **kwargs)
 
         federated_data = FederatedData()
+        num_nodes = len(federated_train_label)
         for node in range(num_nodes):
             node_data = LabeledData(federated_train_data[node], federated_train_label[node])
             federated_data.add_data_node(node_data)
@@ -45,17 +44,14 @@ class DataDistribution(abc.ABC):
         return federated_data, test_data, test_label
 
     @abc.abstractmethod
-    def make_data_federated(self, data, labels, num_nodes, percent, weights, sampling):
+    def make_data_federated(self, data, labels, percent, *args, **kwargs):
         """
         Method that must implement every data distribution extending this class
 
         # Arguments:
             data: Array of data
             labels: Labels
-            num_nodes : Number of nodes
             percent: Percent of the data (between 0 and 100) to be distributed (default is 100)
-            weights: Array of weights for weighted distribution (default is None)
-            sampling: methodology between with or without sampling (default "without_sampling")
 
         # Returns:
             federated_data: A list containing the data for each client
