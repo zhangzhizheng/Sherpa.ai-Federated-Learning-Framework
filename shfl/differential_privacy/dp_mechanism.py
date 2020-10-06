@@ -196,6 +196,7 @@ class LaplaceMechanism(DPDataAccessDefinition):
             Queried data with differential privacy.
         """
         query_result = self._query.get(data)
+        print("Node", query_result, type(query_result))
         _, _, query_is_list = CheckDataType.get(query_result)
 
         if query_is_list:

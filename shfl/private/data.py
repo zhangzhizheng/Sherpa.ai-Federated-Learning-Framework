@@ -134,7 +134,7 @@ class DPDataAccessDefinition(DataAccessDefinition):
         It checks if the given sensitivity values fit the shape of the query_result.
         Moreover, if the input sensitivity is a scalar or array, 
         this is wrapped in a list of suitable length. If the check fails, 
-        it throws an ValueError exception with the appropiate message.
+        it throws an ValueError exception with the appropriate message.
 
         # Arguments:
             sensitivity: sensitivity values (either scalar, array or list of arrays)
@@ -148,7 +148,8 @@ class DPDataAccessDefinition(DataAccessDefinition):
             if len(sensitivity) > 1 and len(sensitivity) != len(query_result):
                 raise ValueError(
                     "Input sensitivity length " + str(len(sensitivity)) + 
-                    " does not match query_result (list) lenght" + len(query_result) + ".")
+                    " does not match query_result (list) length" +
+                    str(len(query_result)) + ".")
         else:
             sensitivity = [sensitivity] * len(query_result)
             

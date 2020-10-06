@@ -45,7 +45,7 @@ def test_make_data_federated():
         assert federated_data[i].shape[0] == int(weight * int(percent * train_data.shape[0] / 100))
 
     assert all_data.shape[0] == int(percent * train_data.shape[0] / 100)
-    assert num_nodes == federated_data.shape[0] == federated_label.shape[0]
+    assert num_nodes == len(federated_data) == len(federated_label)
     assert (np.sort(all_data.ravel()) == np.sort(train_data[idx,].ravel())).all()
     assert (np.sort(all_label, 0) == np.sort(train_label[idx], 0)).all()
 
@@ -67,7 +67,7 @@ def test_make_data_federated():
         assert federated_data[i].shape[0] == int(weight * int(percent * train_data.shape[0] / 100))
 
     assert all_data.shape[0] == int(percent * train_data.shape[0] / 100)
-    assert num_nodes == federated_data.shape[0] == federated_label.shape[0]
+    assert num_nodes == len(federated_data) == len(federated_label)
     assert (np.sort(all_data.ravel()) == np.sort(train_data[idx,].ravel())).all()
     assert (np.sort(all_label, 0) == np.sort(train_label[idx], 0)).all()
 
@@ -103,6 +103,6 @@ def test_make_data_federated_wrong_weights():
         assert federated_data[i].shape[0] == int(weight * int(percent * train_data.shape[0] / 100))
 
     assert all_data.shape[0] == int(percent * train_data.shape[0] / 100)
-    assert num_nodes == federated_data.shape[0] == federated_label.shape[0]
+    assert num_nodes == len(federated_data) == len(federated_label)
     assert (np.sort(all_data.ravel()) == np.sort(train_data[idx, ].ravel())).all()
     assert (np.sort(all_label, 0) == np.sort(train_label[idx], 0)).all()
