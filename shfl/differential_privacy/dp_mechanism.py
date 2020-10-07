@@ -2,6 +2,7 @@ import numpy as np
 import scipy
 from math import sqrt
 from math import log
+from multipledispatch import dispatch
 
 from shfl.private.data import DPDataAccessDefinition
 from shfl.private.query import IdentityFunction
@@ -186,34 +187,27 @@ class LaplaceMechanism(DPDataAccessDefinition):
 
     def apply(self, data):
         """
-        This method applies the laplace mechanism to the given data, to access the data
+        Implementation of abstract method of class
+        [DataAccessDefinition](../../private/#DataAccessDefinition-class)
 
         # Arguments:
-            data: data to be accessed. It can be a scalar, a numpy ndarray, 
-            a list of scalars, or a list of numpy ndarrays.
+            data: data to be accessed.
 
         # Returns:
             Queried data with differential privacy.
         """
         query_result = self._query.get(data)
-        print("Node", query_result, type(query_result))
-        _, _, query_is_list = CheckDataType.get(query_result)
 
-        if query_is_list:
-            sensitivity = self._check_sensitivity_list(self._sensitivity, query_result)
-            query_result_dp = [self.apply_to_array(i_sensitivity, i_query_result)
-                               for i_sensitivity, i_query_result in zip(sensitivity, query_result)]
-        else:
-            query_result_dp = self.apply_to_array(self._sensitivity, query_result)
+        return self._get_query_dp(self._sensitivity, query_result)
 
-        return query_result_dp
-
-    def apply_to_array(self, sensitivity, query_result):
+    @dispatch((int, float, np.ndarray, list), (int, float, np.ndarray))
+    def _get_query_dp(self, sensitivity, query_result):
         """
-        This method applies the laplace mechanism to the given data, to access the data
+        Apply the Laplace mechanism on the query result.
 
         # Arguments:
-            data: data to be accessed. It can be a scalar, a numpy ndarray, or a list of numpy ndarrays.
+            query_result: data to be accessed.
+            It can be a scalar or a numpy ndarray.
 
         # Returns:
             Queried data with differential privacy.
@@ -223,8 +217,29 @@ class LaplaceMechanism(DPDataAccessDefinition):
         self._check_sensitivity_positive(sensitivity)
         self._check_sensitivity_shape(sensitivity, query_result)
         b = sensitivity / self._epsilon
+        query_result_dp = query_result + np.random.laplace(
+            loc=0.0, scale=b, size=query_result.shape)
 
-        return query_result + np.random.laplace(loc=0.0, scale=b, size=query_result.shape)
+        return query_result_dp
+
+    @dispatch((int, float, np.ndarray, list), list)
+    def _get_query_dp(self, sensitivity, query_result):
+        """
+            Apply the Laplace mechanism on the query result.
+
+        # Arguments:
+            query_result: data to be accessed.
+            It can be a list of scalars or numpy ndarrays.
+
+        # Returns:
+            Queried data with differential privacy.
+        """
+        sensitivity = self._check_sensitivity_list(sensitivity, query_result)
+        query_result_dp = [self._get_query_dp(i_sensitivity, i_query_result)
+                           for i_sensitivity, i_query_result in
+                           zip(sensitivity, query_result)]
+
+        return query_result_dp
 
 
 class GaussianMechanism(DPDataAccessDefinition):
