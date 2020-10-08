@@ -1,6 +1,9 @@
 import numpy as np
 from scipy import special
 from math import pow
+from multipledispatch import dispatch
+from multipledispatch.variadic import Variadic
+from numbers import Number
 
 from shfl.private.query import CheckDataType
 
@@ -72,16 +75,27 @@ class SensitivitySampler:
             db2 = np.concatenate((db2, oracle.sample(1)))
             gs[i] = self._sensitivity_norm(query, sensitivity_norm, db1, db2)
 
-        sensitivity_is_scalar, _, _ = CheckDataType.get(gs[0])
-        if sensitivity_is_scalar:
-            gs = [[item] for item in gs]
+        return self._sort_sensitivity(*gs, k=k)
 
-        gs = [np.sort(np.array(item), axis=0) for item in zip(*gs)]
-        gs_max = [item[k - 1] for item in gs]
-        gs_mean = [np.mean(item, axis=0) for item in gs]
+    @dispatch(Variadic[(np.ndarray, list)])
+    def _sort_sensitivity(self, *gs, k):
+        """
+        Sort sensitivity. Items to sort are iterables:
+        either ndarrays or lists of ndarrays.
+        """
+        gs_sorted = [np.sort(np.array(item), axis=0) for item in zip(*gs)]
+        gs_max = [item[k - 1] for item in gs_sorted]
+        gs_mean = [np.mean(item, axis=0) for item in gs_sorted]
 
-        if sensitivity_is_scalar:
-            [gs_max], [gs_mean] = gs_max, gs_mean
+        return gs_max, gs_mean
+
+    @dispatch(Variadic[Number])
+    def _sort_sensitivity(self, *gs, k):
+        """
+        Sort sensitivity. Items to sort are scalars.
+        """
+        gs = [[item] for item in gs]  # Convert each scalar to iterables (list of one scalar)
+        [gs_max], [gs_mean] = self._sort_sensitivity(*gs, k=k)
 
         return gs_max, gs_mean
 

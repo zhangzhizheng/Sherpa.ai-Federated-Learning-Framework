@@ -496,5 +496,5 @@ def test_sensitivity_wrong_input():
     node = DataNode()
     node.set_private_data("data_tuple", data_tuple)
     node.configure_data_access("data_tuple", LaplaceMechanism(sensitivity=sensitivity, epsilon=1))
-    with pytest.raises(ValueError):
+    with pytest.raises(NotImplementedError):
         result = node.query("data_tuple")

@@ -6,7 +6,6 @@ from multipledispatch import dispatch
 
 from shfl.private.data import DPDataAccessDefinition
 from shfl.private.query import IdentityFunction
-from shfl.private.query import CheckDataType
 
 
 class RandomizedResponseCoins(DPDataAccessDefinition):
@@ -229,7 +228,7 @@ class LaplaceMechanism(DPDataAccessDefinition):
 
         # Arguments:
             query_result: data to be accessed.
-            It can be a list of scalars or numpy ndarrays.
+            It can be a list of either scalars or numpy ndarrays.
 
         # Returns:
             Queried data with differential privacy.

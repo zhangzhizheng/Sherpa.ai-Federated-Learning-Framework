@@ -1,7 +1,8 @@
 import numpy as np
 
 from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
-from shfl.private.query import CheckDataType
+from multipledispatch import dispatch
+from multipledispatch.variadic import Variadic
 
 
 class FedAvgAggregator(FederatedAggregator):
@@ -28,16 +29,16 @@ class FedAvgAggregator(FederatedAggregator):
             from Decentralized Data](https://arxiv.org/abs/1602.05629)
         """
 
-        _, _, params_is_list = CheckDataType.get(clients_params[0])
-        if params_is_list:
-            aggregated_weights = [self._aggregate(params)
-                                  for params in zip(*clients_params)]
-        else:
-            aggregated_weights = self._aggregate(clients_params)
+        return self._aggregate(*clients_params)
 
-        return aggregated_weights
-
-    @staticmethod
-    def _aggregate(params):
+    @dispatch(Variadic[int, float, np.ndarray])
+    def _aggregate(self, *params):
         """Aggregation of parameter arrays"""
         return np.mean(np.array(params), axis=0)
+
+    @dispatch(Variadic[list])
+    def _aggregate(self, *params):
+        """Aggregation of parameter list of arrays"""
+        aggregated_weights = [self._aggregate(*params)
+                              for params in zip(*params)]
+        return aggregated_weights
