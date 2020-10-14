@@ -51,8 +51,10 @@ def test_sensitivity_norm_list_of_arrays():
 
     distribution = NormalDistribution(0, 1.5)
     sampler = SensitivitySampler()
+
+    # L1 norm:
     s_max, s_mean = sampler.sample_sensitivity(ReshapeToList(), L1SensitivityNorm(),
-                                         distribution, n=20*30*40, m=285, gamma=0.33)
+                                               distribution, n=20 * 30 * 40, m=285, gamma=0.33)
 
     assert isinstance(s_max, list)
     assert isinstance(s_mean, list)
@@ -60,4 +62,12 @@ def test_sensitivity_norm_list_of_arrays():
         assert s_max[i].sum() < 2 * 1.5
         assert s_mean[i].sum() < 2 * 1.5
 
+    # L2 norm:
+    s_max, s_mean = sampler.sample_sensitivity(ReshapeToList(), L2SensitivityNorm(),
+                                               distribution, n=20 * 30 * 40, m=285, gamma=0.33)
 
+    assert isinstance(s_max, list)
+    assert isinstance(s_mean, list)
+    for i in range(len(s_max)):
+        assert s_max[i].sum() < 2 * 1.5
+        assert s_mean[i].sum() < 2 * 1.5
