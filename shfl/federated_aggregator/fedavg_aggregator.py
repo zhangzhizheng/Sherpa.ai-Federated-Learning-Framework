@@ -31,14 +31,14 @@ class FedAvgAggregator(FederatedAggregator):
 
         return self._aggregate(*clients_params)
 
-    @dispatch(Variadic[int, float, np.ndarray])
+    @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
-        """Aggregation of parameter arrays"""
+        """Aggregation of arrays"""
         return np.mean(np.array(params), axis=0)
 
     @dispatch(Variadic[list])
     def _aggregate(self, *params):
-        """Aggregation of parameter list of arrays"""
+        """Aggregation of (nested) lists of arrays"""
         aggregated_weights = [self._aggregate(*params)
                               for params in zip(*params)]
         return aggregated_weights

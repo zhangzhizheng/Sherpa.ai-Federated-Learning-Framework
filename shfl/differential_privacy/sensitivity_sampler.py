@@ -3,10 +3,6 @@ from scipy import special
 from math import pow
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
-from numbers import Number
-
-from shfl.private.query import CheckDataType
-
 
 class SensitivitySampler:
     """
@@ -89,12 +85,12 @@ class SensitivitySampler:
 
         return gs_max, gs_mean
 
-    @dispatch(Variadic[Number])
+    @dispatch(Variadic[np.ScalarType])
     def _sort_sensitivity(self, *gs, k):
         """
         Sort sensitivity. Items to sort are scalars.
         """
-        gs = [[item] for item in gs]  # Convert each scalar to iterables (list of one scalar)
+        gs = [[item] for item in gs]
         [gs_max], [gs_mean] = self._sort_sensitivity(*gs, k=k)
 
         return gs_max, gs_mean

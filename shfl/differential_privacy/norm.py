@@ -22,7 +22,7 @@ class SensitivityNorm(abc.ABC):
     def compute(self, x_1, x_2):
         """
         The compute method receives the result of a query over private data and
-        returns the norm of the responses
+        returns the norm of the difference between responses.
         # Arguments:
             x_1: array response from a concrete query over database 1
             x_2: array response from the same query over database 2
@@ -33,13 +33,15 @@ class L1SensitivityNorm(SensitivityNorm):
     """
     Implements the L1 norm of the difference between x_1 and x_2
     """
-    @dispatch((int, float, np.ndarray), (int, float, np.ndarray))
+    @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
     def compute(self, x_1, x_2):
+        """L1 norm of difference between arrays"""
         x = np.sum(np.abs(x_1 - x_2), axis=self._axis)
         return x
 
     @dispatch(list, list)
     def compute(self, x_1, x_2):
+        """L1 norm of difference between (nested) lists of arrays"""
         x = [self.compute(xi_1, xi_2)
              for xi_1, xi_2 in zip(x_1, x_2)]
         return x
@@ -47,16 +49,18 @@ class L1SensitivityNorm(SensitivityNorm):
 
 class L2SensitivityNorm(SensitivityNorm):
     """
-    Implements the L2 norm of the difference between x_1 and x_2
+    Implements the L2 norm of the difference between x_1 and x_2.
     """
 
-    @dispatch((int, float, np.ndarray), (int, float, np.ndarray))
+    @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
     def compute(self, x_1, x_2):
+        """L2 norm of difference between arrays"""
         x = np.sqrt(np.sum((x_1 - x_2)**2, axis=self._axis))
         return x
 
     @dispatch(list, list)
     def compute(self, x_1, x_2):
+        """L2 norm of difference between (nested) lists of arrays"""
         x = [self.compute(xi_1, xi_2)
              for xi_1, xi_2 in zip(x_1, x_2)]
         return x
