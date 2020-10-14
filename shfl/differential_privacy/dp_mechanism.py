@@ -157,9 +157,10 @@ class LaplaceMechanism(DPDataAccessDefinition):
     (see: [SensitivitySampler](../sensitivity_sampler))
 
     # Arguments:
-        sensitivity: float or array representing sensitivity of the applied query
+        sensitivity: float, array or list representing sensitivity of the query
         epsilon: float for the epsilon you want to apply
-        query: Function to apply over private data (see: [Query](../../private/query)). This parameter is optional and \
+        query: Function to apply over private data (see: [Query](../../private/query)).
+            This parameter is optional and \
             the identity function (see: [IdentityFunction](../../private/query/#identityfunction-class)) will be used \
             if it is not provided.
 
