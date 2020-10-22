@@ -25,8 +25,8 @@ class IidDataDistribution(SamplingDataDistribution):
             sampling: methodology between with or without sampling (default "without_sampling")
 
         # Returns:
-              * **federated_data, federated_labels**
-
+            federated_data: A list containing the data for each client
+            federated_label: A list containing the labels for each client
         """
         if weights is None:
             weights = np.full(num_nodes, 1/num_nodes)

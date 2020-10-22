@@ -2,6 +2,8 @@ import numpy as np
 import scipy
 from math import sqrt
 from math import log
+from multipledispatch import dispatch
+import copy
 
 from shfl.private.data import DPDataAccessDefinition
 from shfl.private.query import IdentityFunction
@@ -10,7 +12,8 @@ from shfl.private.query import IdentityFunction
 class RandomizedResponseCoins(DPDataAccessDefinition):
     """
     This class uses a simple mechanism to add randomness for binary data. Both the input and output are binary
-    arrays or scalars. This algorithm is described by Cynthia Dwork and Aaron Roth in "The algorithmic Foundations of Differential Privacy".
+    arrays or scalars. This algorithm is described by Cynthia Dwork and Aaron Roth in "The algorithmic Foundations of
+    Differential Privacy".
 
     1.- Flip a coin
 
@@ -65,7 +68,7 @@ class RandomizedResponseCoins(DPDataAccessDefinition):
             p=self._prob_head_second, size=data.shape)
 
         result = data * first_coin_flip + \
-            (1 - first_coin_flip) * second_coin_flip
+                 (1 - first_coin_flip) * second_coin_flip
 
         return result
 
@@ -155,15 +158,40 @@ class LaplaceMechanism(DPDataAccessDefinition):
     a method to estimate the sensitivity of a query that maps the private data in a normed space
     (see: [SensitivitySampler](../sensitivity_sampler))
 
+    A different sample of the Laplace distribution is taken for each element of
+    the query output. For example, if the query output is a list containing three
+    arrays of size n * m, then 3*n*m samples are taken from the Laplace distribution
+    using the provided sensitivity.
+
     # Arguments:
-        sensitivity: float or array representing sensitivity of the applied query
-        epsilon: float for the epsilon you want to apply
-        query: Function to apply over private data (see: [Query](../../private/query)). This parameter is optional and \
+        sensitivity: scalar, array, list or dictionary representing the
+            sensitivity of the query.
+            It must be consistent with the query output.
+            Example 1: if the query output is an array of size n * m, and a scalar
+            sensitivity is provided, then the same sensitivity is applied to
+            each entry in the output.
+            Instead, providing a vector of sensitivities of size m, then the
+            sensitivity is applied column-wise over the query output.
+            Finally, providing a sensitivity array of size n * m,
+            a different sensitivity value si applied to each element of the
+            query output. Note that in all the cases, n*m Laplace samples are
+            taken, i.e. each value of the query output is perturbed with a
+            different noise value.
+            Example 2: if the query output is a list or a dictionary
+            containing arrays, sensitivity should be provided as a list
+            or dictionary with the same length.
+            Then for each array in the list or dictionary, the same
+            considerations as for Example 1 hold. For instance, providing simply
+            a scalar will apply the same sensitivity to each array in the list
+            or dictionary.
+        epsilon: scalar representing the desired epsilon.
+        query: function to apply over the private data (see: [Query](../../private/query)).
+            This parameter is optional and \
             the identity function (see: [IdentityFunction](../../private/query/#identityfunction-class)) will be used \
             if it is not provided.
 
     # Properties:
-        epsilon_delta: Return epsilon_delta value
+        epsilon_delta: Returns epsilon_delta value
 
     # References
         - [The algorithmic foundations of differential privacy](
@@ -175,8 +203,6 @@ class LaplaceMechanism(DPDataAccessDefinition):
             query = IdentityFunction()
 
         self._check_epsilon_delta((epsilon, 0))
-        self._check_sensitivity_positive(sensitivity)
-
         self._sensitivity = sensitivity
         self._epsilon = epsilon
         self._query = query
@@ -185,22 +211,52 @@ class LaplaceMechanism(DPDataAccessDefinition):
     def epsilon_delta(self):
         return self._epsilon, 0
 
+    @staticmethod
+    def _seq_iter(obj):
+        return obj if isinstance(obj, dict) else range(len(obj))
+
+    @staticmethod
+    def _pick_sensitivity(sensitivity, i):
+        try:
+            return sensitivity[i] if isinstance(sensitivity, (dict, list)) else sensitivity
+        except KeyError:
+            raise KeyError("The sensitivity does not contain the key {}".format(i))
+
     def apply(self, data):
         """
-        This method applies the laplace mechanism to the given data, to access the data
+        Implementation of abstract method of class
+        [DataAccessDefinition](../../private/#DataAccessDefinition-class)
 
         # Arguments:
-            data: data to be accessed. It can be either a scalar or a numpy array made of scalars.
+            data: data to be accessed. It can be either a scalar, an array,
+            a list or a dictionary whose values are arrays.
 
         # Returns:
             Queried data with differential privacy.
         """
-        query_result = np.asarray(self._query.get(data))
-        sensitivity = np.asarray(self._sensitivity)
-        self._check_sensitivity_shape(sensitivity, query_result)
-        b = sensitivity / self._epsilon
+        query_result = self._query.get(data)
 
-        return query_result + np.random.laplace(loc=0.0, scale=b, size=query_result.shape)
+        return self._add_noise(query_result, self._sensitivity)
+
+    @dispatch((np.ndarray, np.ScalarType), (np.ndarray, np.ScalarType))
+    def _add_noise(self, obj, sensitivity):
+        """Add Laplace noise to a scalar or an array"""
+        sensitivity_array = np.asarray(sensitivity)
+        obj = np.asarray(obj)
+        self._check_sensitivity_positive(sensitivity_array)
+        self._check_sensitivity_shape(sensitivity_array, obj)
+        b = sensitivity / self._epsilon
+        output = obj + np.random.laplace(loc=0.0, scale=b, size=obj.shape)
+        return output
+
+    @dispatch((dict, list), (dict, list, np.ndarray, np.ScalarType))
+    def _add_noise(self, obj, sensitivity):
+        """Add Laplace noise to a list or a dictionary"""
+        output = copy.deepcopy(obj)
+        for i in self._seq_iter(obj):
+            sensitivity_tmp = self._pick_sensitivity(sensitivity, i)
+            output[i] = self._add_noise(obj[i], sensitivity_tmp)
+        return output
 
 
 class GaussianMechanism(DPDataAccessDefinition):
@@ -211,7 +267,7 @@ class GaussianMechanism(DPDataAccessDefinition):
     Notice that the Gaussian mechanism is a randomization algorithm that depends on the l2-sensitivity,
     which can be regarded as a numeric query. One can show that this mechanism is
     (epsilon, delta)-differentially private where noise is draw from a Gauss Distribution with zero mean
-    and standard deviation equal to sqrt(2 * ln(1,25/delta)) * l2-sensivity / epsilon where epsilon
+    and standard deviation equal to sqrt(2 * ln(1,25/delta)) * l2-sensitivity / epsilon where epsilon
     is in the interval (0, 1)
 
     In order to apply this mechanism, we need to compute
@@ -238,7 +294,7 @@ class GaussianMechanism(DPDataAccessDefinition):
     def __init__(self, sensitivity, epsilon_delta, query=None):
         if query is None:
             query = IdentityFunction()
-            
+
         self._check_epsilon_delta(epsilon_delta)
         if epsilon_delta[0] >= 1:
             raise ValueError(
@@ -266,7 +322,7 @@ class GaussianMechanism(DPDataAccessDefinition):
         sensitivity = np.asarray(self._sensitivity)
         self._check_sensitivity_shape(sensitivity, query_result)
         std = sqrt(2 * np.log(1.25 / self._epsilon_delta[1])) * \
-            sensitivity / self._epsilon_delta[0]
+              sensitivity / self._epsilon_delta[0]
 
         return query_result + np.random.normal(loc=0.0, scale=std, size=query_result.shape)
 
@@ -303,7 +359,7 @@ class ExponentialMechanism(DPDataAccessDefinition):
 
     def apply(self, data):
         """
-        This method applies the exponetial mechanism to the given data, to access the data.
+        This method applies the exponential mechanism to the given data, to access the data.
 
         # Arguments:
             data: data to be accessed. It can be either a scalar or a numpy array made of scalars

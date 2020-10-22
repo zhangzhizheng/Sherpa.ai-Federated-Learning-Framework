@@ -51,7 +51,7 @@ class DataAccessDefinition(abc.ABC):
         # Returns:
             result_data: Result data, function of argument data
         """
-
+            
 
 class DPDataAccessDefinition(DataAccessDefinition):
     """
@@ -64,7 +64,7 @@ class DPDataAccessDefinition(DataAccessDefinition):
         """
         It checks if the epsilon_delta parameter correctly represents the epsilon and delta values in
         epsilon-delta Differential Privacy. If the check fails, it throws an ValueError exception
-        with the appropiate message
+        with the appropriate message
 
         # Arguments:
             epsilon_delta: a tuple of values, which should be the epsilon and delta values in
@@ -75,18 +75,18 @@ class DPDataAccessDefinition(DataAccessDefinition):
             raise ValueError("epsilon_delta parameter should be a tuple with two elements, but {} were given"
                              .format(len(epsilon_delta)))
         if epsilon_delta[0] < 0:
-            raise ValueError("Epsilon have to be greater than zero")
+            raise ValueError("Epsilon has to be greater than zero")
         if epsilon_delta[1] < 0:
-            raise ValueError("Delta have to be greater than 0 and less than 1")
+            raise ValueError("Delta has to be greater than 0 and less than 1")
 
     @staticmethod
     def _check_binary_data(data):
         """
         It checks if the given argument is made of binary elements or not.
-        If the check fails, it throws an ValueError exception with the appropiate message
+        If the check fails, it throws an ValueError exception with the appropriate message
 
         # Arguments:
-            data: input vale which is expected to be made of binary elements.
+            data: input value which is expected to be made of binary elements.
 
         """
         if not np.array_equal(data, data.astype(bool)):
@@ -96,28 +96,29 @@ class DPDataAccessDefinition(DataAccessDefinition):
     @staticmethod
     def _check_sensitivity_positive(sensitivity):
         """
-        It checks if the given sensitivy values are strictly positive (>0)
+        It checks if the given sensitivity values are strictly positive (>0)
 
         # Arguments:
             sensitivity: sensitivity values which should be strictly positive (>0).
 
-        If the check fails, it throws an ValueError exception with the appropiate message
+        If the check fails, it throws an ValueError exception with the appropriate message
         """
-        sensitivity = np.asarray(sensitivity)
-        if (sensitivity < 0).any():
-            raise ValueError(
-                "Sensitivity of the query cannot be negative")
+        if isinstance(sensitivity, (np.ScalarType, np.ndarray)):
+            sensitivity = np.asarray(sensitivity)
+            if (sensitivity < 0).any():
+                raise ValueError(
+                    "Sensitivity of the query cannot be negative")
 
     @staticmethod
     def _check_sensitivity_shape(sensitivity, query_result):
         """
-        It checks if the given sensitivy values fit the shape of the query_result
+        It checks if the given sensitivity values fit the shape of the query_result
 
         # Arguments:
             sensitivity: sensitivity values which should be strictly positive (>0).
             query_result: output of a query
 
-        If the check fails, it throws an ValueError exception with the appropiate message
+        If the check fails, it throws an ValueError exception with the appropriate message
         """
         if sensitivity.size > 1:
             if sensitivity.size > query_result.size:
@@ -125,8 +126,10 @@ class DPDataAccessDefinition(DataAccessDefinition):
                     "Provided more sensitivity values than query outputs")
             if not all((m == n) for m, n in zip(sensitivity.shape[::-1], query_result.shape[::-1])):
                 raise ValueError("Sensitivity array dimension " + str(sensitivity.shape) +
-                                 " cannot be broadcasted to query result dimension " + str(query_result.shape))
-
+                                 " cannot broadcast to query result dimension " +
+                                 str(query_result.shape))
+        
+    
     @property
     @abc.abstractmethod
     def epsilon_delta(self):
