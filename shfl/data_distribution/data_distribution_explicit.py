@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from shfl.data_base.data_base import shuffle_rows
 from shfl.data_distribution.data_distribution import DataDistribution
 
 
@@ -26,7 +27,7 @@ class ExplicitDataDistribution(DataDistribution):
               * **federated_data, federated_labels**
         """
         # Shuffle data
-        data, labels = self._shuffle_rows(data, labels)
+        data, labels = shuffle_rows(data, labels)
 
         # Select percent
         data = data[0:int(percent * len(data) / 100)]

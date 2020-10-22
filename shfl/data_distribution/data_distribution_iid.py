@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from shfl.data_base.data_base import shuffle_rows
 from shfl.data_distribution.data_distribution_sampling import SamplingDataDistribution
 
 
@@ -31,7 +32,7 @@ class IidDataDistribution(SamplingDataDistribution):
             weights = np.full(num_nodes, 1/num_nodes)
 
         # Shuffle data
-        data, labels = self._shuffle_rows(data, labels)
+        data, labels = shuffle_rows(data, labels)
 
         # Select percent
         data = data[0:int(percent * len(data) / 100)]
@@ -58,7 +59,7 @@ class IidDataDistribution(SamplingDataDistribution):
                 federated_data.append(data[:int((weights[client]) * len(data))])
                 federated_label.append(labels[:int((weights[client]) * len(labels))])
 
-                data, labels = self._shuffle_rows(data, labels)
+                data, labels = shuffle_rows(data, labels)
 
         if isinstance(data, np.ndarray) and isinstance(labels, np.ndarray):
             federated_data = np.array(federated_data)

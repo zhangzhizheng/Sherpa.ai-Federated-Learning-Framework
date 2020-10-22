@@ -1,8 +1,5 @@
 import abc
 
-import pandas as pd
-import numpy as np
-
 from shfl.private.data import LabeledData
 from shfl.private.federated_operation import FederatedData
 
@@ -17,21 +14,6 @@ class DataDistribution(abc.ABC):
 
     def __init__(self, database):
         self._database = database
-
-    @staticmethod
-    def _shuffle_rows(data, labels):
-        randomize = np.arange(len(labels))
-        np.random.shuffle(randomize)
-
-        if isinstance(data, (pd.DataFrame, pd.Series)) and isinstance(labels, (pd.DataFrame, pd.Series)):
-            data = data.iloc[randomize]
-            labels = labels.iloc[randomize]
-
-        elif isinstance(data, np.ndarray) and isinstance(labels, np.ndarray):
-            data = data[randomize,]
-            labels = labels[randomize]
-
-        return data, labels
 
     def get_federated_data(self, percent=100, *args, **kwargs):
         """
