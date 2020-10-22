@@ -38,7 +38,7 @@ if __name__ == '__main__':
     print('===========================================\n')
     for path_tmp in glob.iglob('../**/*.ipynb', recursive=True):
         root, ext = os.path.splitext(os.path.basename(path_tmp))
-        if root.endswith('_'):
+        if root.endswith('_') or path_tmp == "../data/video_classification/sports/sports_classifier.ipynb":
             continue
         s = time.time()
         sys.stdout.write('Now running ' + path_tmp)
