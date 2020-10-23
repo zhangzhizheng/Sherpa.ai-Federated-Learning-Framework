@@ -12,6 +12,7 @@ def test_cifar100():
     assert train_data.shape[0] == len(train_labels)
     assert test_data.shape[0] == len(test_labels)
 
+
 def test_cifar10():
     data = Cifar10()
     data.load_data()

@@ -4,6 +4,7 @@ from math import pow
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
+
 class SensitivitySampler:
     """
     This class implements the algorithm described in the article

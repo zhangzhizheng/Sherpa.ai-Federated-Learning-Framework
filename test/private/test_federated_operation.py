@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from keras.utils import to_categorical
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import shfl.private.federated_operation
 from shfl.private.federated_operation import FederatedTransformation

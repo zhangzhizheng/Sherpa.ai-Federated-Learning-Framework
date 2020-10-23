@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from shfl.data_base.data_base import shuffle_rows
 from shfl.data_distribution.data_distribution_sampling import SamplingDataDistribution

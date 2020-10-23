@@ -4,6 +4,7 @@ from shfl.data_base.data_base import DataBase
 
 import tensorflow as tf
 
+
 class Cifar10(DataBase):
     """
     Implementation for load CIFAR10 data
@@ -29,6 +30,7 @@ class Cifar10(DataBase):
         self.shuffle()
         
         return self._train_data, self._train_labels, self._test_data, self._test_labels
+
 
 class Cifar100(DataBase):
     """

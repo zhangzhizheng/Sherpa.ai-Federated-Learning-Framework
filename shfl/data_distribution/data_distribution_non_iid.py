@@ -133,7 +133,6 @@ class NonIidDataDistribution(SamplingDataDistribution):
                 data = rest_data
                 labels = rest_labels
 
-
         if not one_hot:
             federated_label = np.array([np.argmax(node, 1) for node in federated_label])
 

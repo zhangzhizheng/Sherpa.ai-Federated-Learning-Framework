@@ -128,7 +128,6 @@ class DPDataAccessDefinition(DataAccessDefinition):
                 raise ValueError("Sensitivity array dimension " + str(sensitivity.shape) +
                                  " cannot broadcast to query result dimension " +
                                  str(query_result.shape))
-        
     
     @property
     @abc.abstractmethod

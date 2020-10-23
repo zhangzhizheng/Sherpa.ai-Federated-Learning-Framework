@@ -453,8 +453,8 @@ def test_exponential_mechanism_pricing():
     min_price = x_bin[np.where(y_bin == y_bin.min())]
     bin_size = x_bin[1] - x_bin[0]
     assert (1.00 - x_bin[np.where(y_bin == max_price)] > bin_size).all()       # Check the best price is close to 1.00
-    assert ((x_bin[np.where(y_bin == min_price)] > (3.01 - bin_size)).all()    # Check the no-revenue price is either greater than 3.01
-            or x_bin[np.where(y_bin == min_price)][0] < bin_size )             # or close to 0.00                 
+    assert ((x_bin[np.where(y_bin == min_price)] > (3.01 - bin_size)).all()    # Check the no-revenue price is either
+            or x_bin[np.where(y_bin == min_price)][0] < bin_size )             # greater than 3.01 or close to 0.00
      
     
 def test_exponential_mechanism_obtain_laplace():
@@ -543,7 +543,8 @@ def test_sensitivity_wrong_input():
     with pytest.raises(ValueError):
          result = node.query("data_ndarray")
             
-    # Both query result and sensitivity are ND-arrays, but non-broadcastable (they should have the same shape in this case):
+    # Both query result and sensitivity are ND-arrays, but non-broadcastable (they should have the same shape
+    # in this case):
     data_ndarray = [[10 , 10, 10, 10], [10 , 10, 10, 10], [10 , 10, 10, 10]]
     sensitivity = [[0.1, 10, 100, 1000, 10000], [0.1, 10, 100, 1000, 10000], [0.1, 10, 100, 1000, 10000]]
     node = DataNode()
