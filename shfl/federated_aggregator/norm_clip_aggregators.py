@@ -17,7 +17,7 @@ class NormClipAggregator(FederatedAggregator):
     def _serialize(self, data):
         data = [np.array(j) for j in data]
         self._data_shape_list = [j.shape for j in data]
-        serialized_data = [j.flatten() for j in data]
+        serialized_data = [j.ravel() for j in data]
         serialized_data = np.hstack(serialized_data)
         return serialized_data
         
@@ -43,7 +43,7 @@ class NormClipAggregator(FederatedAggregator):
         clients_params = np.array(params)
         for i, v in enumerate(clients_params):
             norm = LA.norm(v)
-            v = np.multiply(v, min(1, self._clip/norm))
+            clients_params[i] = np.multiply(v, min(1, self._clip/norm))
         
         return np.mean(clients_params, axis=0)
 
@@ -73,7 +73,7 @@ class WeakDPAggregator(NormClipAggregator):
         clients_params = np.array(params)
         for i, v in enumerate(clients_params):
             norm = LA.norm(v)
-            v = np.multiply(v, min(1, self._clip/norm)) + \
+            clients_params[i] = np.multiply(v, min(1, self._clip/norm)) + \
                     np.random.normal(loc=0.0, scale=0.025, size=v.shape)
         
         return np.mean(clients_params, axis=0)
