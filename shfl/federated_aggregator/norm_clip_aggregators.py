@@ -73,7 +73,8 @@ class WeakDPAggregator(NormClipAggregator):
         clients_params = np.array(params)
         for i, v in enumerate(clients_params):
             norm = LA.norm(v)
-            clients_params[i] = np.multiply(v, min(1, self._clip/norm)) + \
-                    np.random.normal(loc=0.0, scale=0.025, size=v.shape)
-        
-        return np.mean(clients_params, axis=0)
+            clients_params[i] = np.multiply(v, min(1, self._clip/norm)) 
+
+        aggregated_weights = np.mean(clients_params, axis=0)
+        noise = np.random.normal(loc=0.0, scale=0.025, size=aggregated_weights.shape)
+        return aggregated_weights + noise
