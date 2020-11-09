@@ -58,23 +58,8 @@ class NormClipAggregator(FederatedAggregator):
 
 class WeakDPAggregator(NormClipAggregator):
 
-    @dispatch(Variadic[list])
-    def _aggregate(self, *params):
-        """Aggregation of (nested) lists of arrays"""        
-        serialized_params = np.array([self._serialize(client) for client in params])
-        serialized_aggregation = self._aggregate(*serialized_params)
-        aggregated_weights = self._deserialize(serialized_aggregation)
-        
+    def aggregate_weights(self, clients_params):
+        aggregated_weights = self._aggregate(*clients_params)
+        for i, v in enumerate(aggregated_weights):
+            aggregated_weights[i] = v + np.random.normal(loc=0.0, scale=0.025, size=v.shape)
         return aggregated_weights
-    
-    @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def _aggregate(self, *params):
-        """Aggregation of arrays"""
-        clients_params = np.array(params)
-        for i, v in enumerate(clients_params):
-            norm = LA.norm(v)
-            clients_params[i] = np.multiply(v, min(1, self._clip/norm)) 
-
-        aggregated_weights = np.mean(clients_params, axis=0)
-        noise = np.random.normal(loc=0.0, scale=0.025, size=aggregated_weights.shape)
-        return aggregated_weights + noise
