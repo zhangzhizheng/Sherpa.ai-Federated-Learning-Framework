@@ -3,7 +3,6 @@ import numpy as np
 from shfl.federated_aggregator import NormClipAggregator
 from shfl.federated_aggregator import WeakDPAggregator
 
-from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 
 def test_aggregated_weights_NormClip():
     num_clients = 10
@@ -174,6 +173,7 @@ def test_aggregated_weights_list_of_arrays_NormClip():
         assert np.array_equal(own_agg[i_params], aggregated_weights[i_params])
         assert aggregated_weights[i_params].shape == own_agg[i_params].shape
 
+
 def test_aggregated_weights_list_of_arrays_WeakDP():
     num_clients = 10
     seed = 1231231
@@ -202,6 +202,7 @@ def test_aggregated_weights_list_of_arrays_WeakDP():
         assert np.array_equal(own_agg[i_params], aggregated_weights[i_params])
         assert aggregated_weights[i_params].shape == own_agg[i_params].shape
 
+
 def test_serialization_deserialization_multidimensional_3D_array():
     num_clients = 10
     num_rows_params = 3
@@ -219,6 +220,7 @@ def test_serialization_deserialization_multidimensional_3D_array():
     
     assert np.array_equal(deserialized_params, clients_params)
 
+
 def test_serialization_deserialization_multidimensional_2D_array():
     num_clients = 10
     num_rows_params = 3
@@ -235,10 +237,11 @@ def test_serialization_deserialization_multidimensional_2D_array():
     
     assert np.array_equal(deserialized_params, clients_params)
 
+
 def test_serialization_deserialization():
-    num_clients = 1#10
-    num_layers = 2#5
-    tams = [[1,2],[1,1]]#[[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
+    num_clients = 10
+    num_layers = 5
+    tams = [[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
     
     weights = []
     for i in range(num_clients):
@@ -256,13 +259,13 @@ def test_serialization_deserialization():
 
 
 def test_serialization_deserialization_list_of_arrays():
-    num_clients = 2#10
+    num_clients = 10
 
     clients_params = []
     for i_client in range(num_clients):
-        clients_params.append([np.random.rand(3, 2),
-                               np.random.rand(2, 3),
-                               np.random.rand(5, 4)])
+        clients_params.append([np.random.rand(30, 20),
+                               np.random.rand(20, 30),
+                               np.random.rand(50, 40)])
 
     avgfa = NormClipAggregator(clip=100)
 
