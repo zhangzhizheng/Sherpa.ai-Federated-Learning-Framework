@@ -25,6 +25,7 @@ def test_aggregated_weights_NormClip():
         assert np.array_equal(own_agg[i], aggregated_weights[i])
     assert len(aggregated_weights) == num_layers
 
+
 def test_aggregated_weights_WeakDP():
     num_clients = 10
     num_layers = 5
