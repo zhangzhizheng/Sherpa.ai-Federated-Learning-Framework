@@ -13,6 +13,6 @@ from shfl.data_base.cifar import Cifar10
 from shfl.data_base.cifar import Cifar100
 from shfl.data_base.lfw import Lfw
 from shfl.data_base.purchase100 import Purchase100
-
+from shfl.data_base.federated_emnist import FederatedEmnist
 
 
