@@ -1,14 +1,6 @@
 import numpy as np
 from tensorflow.python.keras.utils.data_utils import get_file
-
-from shfl.data_base import data_base as db
-
-import numpy as np
-import random
-import tensorflow as tf
-from scipy import io
 from scipy.io import loadmat
-from tensorflow.python.keras.utils.data_utils import get_file
 from enum import Enum
 import shfl.data_base as db
 
