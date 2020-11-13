@@ -76,3 +76,4 @@ class FederatedEmnist(db.DataBase):
         self.shuffle()
 
         return self.data
+    
