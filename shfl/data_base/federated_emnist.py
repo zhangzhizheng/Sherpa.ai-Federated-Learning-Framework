@@ -59,9 +59,7 @@ class FederatedEmnist(db.DataBase):
         self._train_labels = np.reshape(np.eye(10)[dataset['train'][0, 0]['labels'][0, 0]],
                                         (self._train_data.shape[0], 10))
 
-        writers = dataset['test'][0, 0]['writers'][0, 0]
-        data = np.reshape(dataset['test'][0, 0]['images'][0, 0], (-1, 28, 28, 1), order='F')
-        self._test_data = np.array([(writers[i][0], v) for i, v in enumerate(data)])
+        self._test_data = np.reshape(dataset['test'][0, 0]['images'][0, 0], (-1, 28, 28, 1), order='F')
         self._test_labels = np.reshape(np.eye(10)[dataset['test'][0, 0]['labels'][0, 0]],
                                        (self._test_data.shape[0], 10))
 
