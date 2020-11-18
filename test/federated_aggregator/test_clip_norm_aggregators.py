@@ -275,3 +275,21 @@ def test_serialization_deserialization_list_of_arrays():
         deserialized = avgfa._deserialize(client)
         for j, arr in enumerate(deserialized):
             assert np.array_equal(arr,clients_params[i][j])
+
+
+def test_serialization_deserialization_mixed_list():
+    num_clients = 10
+
+    clients_params = []
+    for i_client in range(num_clients):
+        clients_params.append([np.random.rand(),
+                               np.random.rand(20, 30),
+                               np.random.rand(50, 40)])
+
+    avgfa = NormClipAggregator(clip=100)
+
+    serialized_params = np.array([avgfa._serialize(client)  for client in clients_params])
+    for i, client in enumerate(serialized_params):
+        deserialized = avgfa._deserialize(client)
+        for j, arr in enumerate(deserialized):
+            assert np.array_equal(arr,clients_params[i][j])
