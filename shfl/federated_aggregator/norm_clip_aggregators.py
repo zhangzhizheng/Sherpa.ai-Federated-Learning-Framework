@@ -77,3 +77,4 @@ class WeakDPAggregator(NormClipAggregator):
         aggregated_weights = self._deserialize(serialized_aggregation)
         
         return aggregated_weights
+    
