@@ -44,9 +44,12 @@ def test_aggregated_weights_WeakDP():
     
     np.random.seed(0)
     clients_params = np.array(weights)
+    serialized_params = np.array([avgfa._serialize(v) for v in clients_params ])
+    for i,v in enumerate(serialized_params):
+        serialized_params[i] = v+ np.random.normal(loc=0.0, scale=0.025, size=v.shape)
+    clients_params = np.array([avgfa._deserialize(v) for v in serialized_params ])
+
     own_agg = np.array([np.mean(clients_params[:, layer], axis=0) for layer in range(num_layers)])
-    for i, _ in enumerate(own_agg):
-        own_agg[i] += np.random.normal(loc=0.0, scale=0.025, size=own_agg[i].shape)
 
     for i in range(num_layers):
         assert np.array_equal(own_agg[i], aggregated_weights[i])
@@ -91,10 +94,9 @@ def test_aggregated_weights_multidimensional_2D_array_WeakDP():
 
     np.random.seed(0)
     own_agg = np.zeros((num_rows_params, num_cols_params))
-    for i_client in range(num_clients):
-        own_agg += clients_params[i_client] 
+    for v in clients_params:
+        own_agg += v + np.random.normal(loc=0.0, scale=0.025, size=v.shape)
     own_agg = own_agg / num_clients
-    own_agg += np.random.normal(loc=0.0, scale=0.025, size=own_agg.shape)
 
     assert np.array_equal(own_agg, aggregated_weights)
     assert len(aggregated_weights) == own_agg.shape[0]
@@ -140,10 +142,9 @@ def test_aggregated_weights_multidimensional_3D_array_WeakDP():
 
     np.random.seed(0)
     own_agg = np.zeros((num_rows_params, num_cols_params, num_k_params))
-    for i_client in range(num_clients):
-        own_agg += clients_params[i_client]
+    for v in clients_params:
+        own_agg += v + np.random.normal(loc=0.0, scale=0.025, size=v.shape)
     own_agg = own_agg / num_clients
-    own_agg +=  np.random.normal(loc=0.0, scale=0.025, size=own_agg.shape)
 
     assert np.array_equal(own_agg, aggregated_weights)
     assert len(aggregated_weights) == own_agg.shape[0]
@@ -195,12 +196,12 @@ def test_aggregated_weights_list_of_arrays_WeakDP():
     for i_client in range(num_clients):
         for i_params in range(len(clients_params[0])):
             own_agg[i_params] += clients_params[i_client][i_params] 
+            own_agg[i_params] += np.random.normal(loc=0.0, scale=0.025, size=clients_params[i_client][i_params].shape)
     for i_params in range(len(clients_params[0])):
         own_agg[i_params] = own_agg[i_params] / num_clients
-        own_agg[i_params] +=  np.random.normal(loc=0.0, scale=0.025, size=own_agg[i_params].shape)
 
     for i_params in range(len(clients_params[0])):
-        assert np.array_equal(own_agg[i_params], aggregated_weights[i_params])
+        assert np.allclose(own_agg[i_params], aggregated_weights[i_params])
         assert aggregated_weights[i_params].shape == own_agg[i_params].shape
 
 
