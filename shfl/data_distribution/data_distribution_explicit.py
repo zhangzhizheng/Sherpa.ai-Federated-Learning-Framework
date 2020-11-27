@@ -1,5 +1,4 @@
 import numpy as np
-from collections import defaultdict
 import pandas as pd
 
 from shfl.data_base.data_base import shuffle_rows
@@ -31,16 +30,16 @@ class ExplicitDataDistribution(DataDistribution):
         data, labels = shuffle_rows(data, labels)
 
         nodes = np.unique(data[:, 0])
+        idx = dict()
+        for i, id in enumerate(nodes):
+            idx[id] = i
 
-        # Transform data into efficient structure
-        dict = defaultdict(list)
+        federated_data = [[] for i in range(len(nodes))]
+        federated_label = [[] for i in range(len(nodes))]
         for (k, d), l in zip(data, labels):
-            dict[k].append((d, l))
-
-        federated_data = np.array([np.array(dict[k])[:, 0] for k in nodes])
-        federated_label = np.array([np.array(dict[k])[:, 1] for k in nodes])
-
-        # federated_data = np.array([data[data[:, 0] == user, 1] for user in nodes])
-        # federated_label = np.array([labels[data[:, 0] == user] for user in nodes])
+            federated_data[idx[k]].append(d)
+            federated_label[idx[k]].append(l)
+        federated_data = np.array([np.array(elem) for elem in federated_data])
+        federated_label = np.array([np.array(elem) for elem in federated_label])
 
         return federated_data, federated_label
