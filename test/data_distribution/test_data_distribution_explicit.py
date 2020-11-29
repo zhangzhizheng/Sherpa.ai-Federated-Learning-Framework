@@ -35,7 +35,13 @@ def test_make_data_federated():
     all_data = np.concatenate(federated_data)
     all_label = np.concatenate(federated_label)
 
-    idx = list(np.unique(train_data[:, 0]))
+    idx = []
+    for data in all_data:
+        ids = np.where((data == np.stack(train_data[:, 1])).all(axis=1))[0][0]
+        idx.append(train_data[ids, 0])
 
-    assert len(federated_data) == len(idx)
+    assert all_data.shape[0] == train_data.shape[0]
+    assert len(federated_data) == len(np.unique(train_data[:, 0]))
+    assert (np.sort(all_data.ravel()) == np.sort(np.stack(train_data[idx, 1]).ravel())).all()
     assert (np.sort(all_label, 0) == np.sort(train_label[idx], 0)).all()
+    assert np.array_equal(np.sort(idx), np.sort(train_data[:, 0]))
