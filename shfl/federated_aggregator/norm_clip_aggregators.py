@@ -19,6 +19,12 @@ class NormClipAggregator(FedAvgAggregator):
         self._clip = clip
 
     def _serialize(self, data):
+        """
+        It turns a list of multidimensional arrays into a list of one-dimensional arrays
+
+        # Arguments:
+            data: list of multidimensional arrays
+        """
         data = [np.array(j) for j in data]
         self._data_shape_list = [j.shape for j in data]
         serialized_data = [j.ravel() for j in data]
@@ -26,6 +32,14 @@ class NormClipAggregator(FedAvgAggregator):
         return serialized_data
         
     def _deserialize(self, data):
+        """
+        It turns a list of one-dimensional arrays into a list of multidimensional arrays.
+        The multidimensional shape is stored when it is serialized
+
+        # Arguments:
+            data: list of one-dimensional arrays
+        """
+
         firstInd = 0
         deserialized_data = []
         for shp in self._data_shape_list:
@@ -106,7 +120,6 @@ class WeakDPAggregator(CDPAggregator):
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
-        """Aggregation of arrays with gaussian noise calibrated to noise_mult*clip/number_of_clients"""
         return super()._aggregate(*params)
 
     @dispatch(Variadic[list])
