@@ -73,11 +73,11 @@ class FederatedDataNode(DataNode):
         """
         super().set_private_test_data(self._federated_data_identifier, data)
 
-    def train_model(self):
+    def train_model(self, **kwargs):
         """
         Train the model that has been previously set in the data node
         """
-        super().train_model(self._federated_data_identifier)
+        super().train_model(self._federated_data_identifier, **kwargs)
 
     def apply_data_transformation(self, federated_transformation):
         """

@@ -149,7 +149,7 @@ class DataNode:
         """
         self._model.set_model_params(copy.deepcopy(model_params))
 
-    def train_model(self, training_data_key):
+    def train_model(self, training_data_key, **kwargs):
         """
         Train the model that has been previously set in the data node
 
@@ -160,7 +160,7 @@ class DataNode:
         labeled_data = self._private_data.get(training_data_key)
         if not hasattr(labeled_data, 'data') or not hasattr(labeled_data, 'label'):
             raise ValueError("Private data needs to have 'data' and 'label' to train a model")
-        self._model.train(labeled_data.data, labeled_data.label)
+        self._model.train(labeled_data.data, labeled_data.label, **kwargs)
 
     def predict(self, data):
         """
