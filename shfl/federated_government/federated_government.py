@@ -1,29 +1,47 @@
+from shfl.private.node import DataNode
+
+
 class FederatedGovernment:
     """
-    Class used to represent the central class FederatedGoverment.
+    Class used to represent the central class FederatedGovernment.
 
     # Arguments:
        model_builder: Function that return a trainable model (see: [Model](../model))
        federated_data: Federated data to use. (see: [FederatedData](../private/federated_operation/#federateddata-class))
        aggregator: Federated aggregator function (see: [Federated Aggregator](../federated_aggregator))
        model_param_access: Policy to access model's parameters, by default non-protected (see: [DataAccessDefinition](../private/data/#dataaccessdefinition-class))
-
+       server_node: Optional server node of class DataNode
+        (see: [DataNode](../private/node/#datanode-class))
     # Properties:
         global_model: Return the global model.
     """
 
-    def __init__(self, model_builder, federated_data, aggregator, model_params_access=None):
+    def __init__(self,
+                 model_builder,
+                 federated_data,
+                 aggregator,
+                 model_params_access=None,
+                 server_node=None):
+
         self._federated_data = federated_data
-        self._model = model_builder()
-        self._aggregator = aggregator
-        for data_node in federated_data:
-            data_node.model = self._model
+
+        for data_node in self._federated_data:
+            data_node.model = model_builder()
+            # NOTE: is the access policy supposed to be configured here?
+            # Or we should already have set this on the nodes before?
             if model_params_access is not None:
                 data_node.configure_model_params_access(model_params_access)
 
+        self._server = server_node if server_node is not None else DataNode()
+        self._server.model = model_builder()
+        self._server._aggregator = aggregator
+        if model_params_access is not None:
+            self._server.configure_model_params_access(model_params_access)
+
+    # NOTE: the global model is supposed to be private too?
     @property
     def global_model(self):
-        return self._model
+        return self._server._model
 
     def evaluate_global_model(self, data_test, label_test):
         """
@@ -33,7 +51,7 @@ class FederatedGovernment:
             test_data: test dataset
             test_label: corresponding labels to test dataset
         """
-        evaluation = self._model.evaluate(data_test, label_test)
+        evaluation = self.global_model.evaluate(data_test, label_test)
         print("Global model test performance : " + str(evaluation))
 
     def deploy_central_model(self):
@@ -41,7 +59,7 @@ class FederatedGovernment:
         Deployment of the global learning model to each client (node) in the simulation.
         """
         for data_node in self._federated_data:
-            data_node.set_model_params(self._model.get_model_params())
+            data_node.set_model_params(self.global_model.get_model_params())
 
     def evaluate_clients(self, data_test, label_test):
         """
@@ -56,7 +74,7 @@ class FederatedGovernment:
             evaluation, local_evaluation = data_node.evaluate(data_test, label_test)
             if local_evaluation is not None:
                 print("Performance client " + str(data_node) + ": Global test: " + str(evaluation)
-                     + ", Local test: " + str(local_evaluation))
+                      + ", Local test: " + str(local_evaluation))
             else:
                 print("Test performance client " + str(data_node) + ": " + str(evaluation))
 
@@ -75,12 +93,20 @@ class FederatedGovernment:
         for data_node in self._federated_data:
             weights.append(data_node.query_model_params())
 
-        aggregated_weights = self._aggregator.aggregate_weights(weights)
+        aggregated_weights = self._server._aggregator.aggregate_weights(weights)
 
         # Update server weights
-        self._model.set_model_params(aggregated_weights)
+        self.global_model.set_model_params(aggregated_weights)
 
-    def run_rounds(self, n, test_data, test_label):
+    def learning_round(self):
+        """
+        Perform a single round of federated learning.
+        """
+        self.train_all_clients()
+        self.aggregate_weights()
+        self.deploy_central_model()
+
+    def run_rounds(self, n, test_data, test_label, print_freq=1):
         """
         Run one more round beginning in the actual state testing in test data and federated_local_test.
 
@@ -91,10 +117,11 @@ class FederatedGovernment:
 
         """
         for i in range(0, n):
-            print("Accuracy round " + str(i))
-            self.deploy_central_model()
-            self.train_all_clients()
-            self.evaluate_clients(test_data, test_label)
-            self.aggregate_weights()
-            self.evaluate_global_model(test_data, test_label)
-            print("\n\n")
+
+            self.learning_round()
+
+            if i % print_freq == 0:
+                print("Round " + str(i))
+                self.evaluate_clients(test_data, test_label)
+                self.evaluate_global_model(test_data, test_label)
+                print("\n")

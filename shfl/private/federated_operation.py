@@ -2,6 +2,13 @@ import abc
 from shfl.private.node import DataNode
 from shfl.private.data import LabeledData
 
+from enum import Enum
+
+
+class NodeType(Enum):
+    CLIENT = 0
+    SERVER = 1
+
 
 class FederatedDataNode(DataNode):
     """
