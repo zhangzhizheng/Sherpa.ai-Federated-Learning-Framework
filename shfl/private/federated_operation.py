@@ -126,6 +126,47 @@ class FederatedDataNode(DataNode):
         self.set_private_test_data(LabeledData(test_data, test_label))
 
 
+class ServerDataNode(FederatedDataNode):
+    """
+        This class represents a type Server [DataNode](../data_node) in a FederatedData.
+        Extends DataNode allowing calls to methods without explicit private data identifier,
+        assuming access to the Server's data (if any).
+
+        It supports Adaptive Differential Privacy through Privacy Filters
+
+        # Arguments:
+            federated_data: the set of client nodes
+        """
+
+    def __init__(self, federated_data, model, aggregator, data=None):
+        super().__init__(federated_data_identifier=str(id(federated_data)))
+        self._federated_data = federated_data
+        self.model = model
+        self._aggregator = aggregator
+        self.set_private_data(data)
+
+    def deploy_collaborative_model(self):
+        """
+        Deployment of the collaborative learning model from server node to
+        each client node.
+        """
+        for data_node in self._federated_data:
+            data_node.set_model_params(self._model.get_model_params())
+
+    def aggregate_weights(self):
+        """
+        Aggregate weights from all data nodes in the server model
+        """
+        weights = []
+        for data_node in self._federated_data:
+            weights.append(data_node.query_model_params())
+
+        aggregated_weights = self._aggregator.aggregate_weights(weights)
+
+        # Update server weights
+        self._model.set_model_params(aggregated_weights)
+
+
 class FederatedData:
     """
     Class representing data across different data nodes.
@@ -165,10 +206,23 @@ class FederatedData:
         Creates the same policy to access data over all the data nodes
 
         # Arguments:
-            data_access_definition: (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
+            data_access_definition:
+            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
         """
         for data_node in self._data_nodes:
             data_node.configure_data_access(data_access_definition)
+
+    def configure_model_param_access(self, data_access_definition):
+        """
+        Creates the same policy to access model parameters
+        over all the data nodes
+
+        # Arguments:
+            data_access_definition:
+            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
+        """
+        for data_node in self._data_nodes:
+            data_node.configure_model_params_access(data_access_definition)
 
     def query(self):
         """
