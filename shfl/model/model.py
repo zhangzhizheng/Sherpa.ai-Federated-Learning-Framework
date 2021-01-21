@@ -8,7 +8,7 @@ class TrainableModel(abc.ABC):
     """
 
     @abc.abstractmethod
-    def train(self, data, labels):
+    def train(self, data, labels, **kwargs):
         """
         Method that trains the model
 

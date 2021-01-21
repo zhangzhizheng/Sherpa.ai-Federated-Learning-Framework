@@ -6,7 +6,7 @@ class FederatedGovernment:
     Class used to represent the central class FederatedGovernment.
 
     # Arguments:
-       model_builder: Function that return a trainable model
+       model_builder: Object representing a trainable model
         (see: [Model](../model))
        federated_data: Federated data to use
         (see: [FederatedData](../private/federated_operation/#federateddata-class))
@@ -27,39 +27,15 @@ class FederatedGovernment:
 
         self._federated_data = federated_data
         for data_node in self._federated_data:
-            data_node.model = model_builder()
+            data_node.model = model_builder
 
         if server_node is not None:
             self._server = server_node
         else:
             self._server = ServerDataNode(
                 federated_data,
-                model_builder(),
+                model_builder,
                 aggregator)
-
-    def evaluate_collaborative_model(self, data_test, label_test):
-        """
-        Evaluation of the performance of the collaborative model
-        (contained in the server node).
-
-        # Arguments:
-            test_data: test dataset
-            test_label: corresponding labels to test dataset
-        """
-        evaluation, local_evaluation = \
-            self._server.evaluate(data_test, label_test)
-
-        print("Collaborative model test performance : " + str(evaluation))
-        if local_evaluation is not None:
-            print("Collaborative model server local test performance : "
-                  + str(local_evaluation))
-
-    def deploy_collaborative_model(self):
-        """
-        Deployment of the collaborative learning model from server node to
-        each client node.
-        """
-        self._server.deploy_collaborative_model()
 
     def evaluate_clients(self, data_test, label_test):
         """
@@ -88,13 +64,6 @@ class FederatedGovernment:
         for data_node in self._federated_data:
             data_node.train_model()
 
-    def aggregate_weights(self):
-        """
-        Aggregate weights from all data nodes and update parameters of
-        server's model.
-        """
-        self._server.aggregate_weights()
-
     def run_rounds(self, n, test_data, test_label, eval_freq=1):
         """
         Run federated learning rounds beginning in the actual state,
@@ -114,12 +83,10 @@ class FederatedGovernment:
                 print("Round " + str(i))
                 self.evaluate_clients(test_data, test_label)
 
-            self.aggregate_weights()
-            self.deploy_collaborative_model()
+            self._server.aggregate_weights()
+            self._server.deploy_collaborative_model()
 
             if i % eval_freq == 0:
-                self.evaluate_collaborative_model(test_data, test_label)
+                self._server.evaluate_collaborative_model(
+                    test_data, test_label)
                 print("\n")
-
-
-

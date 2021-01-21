@@ -2,13 +2,6 @@ import abc
 from shfl.private.node import DataNode
 from shfl.private.data import LabeledData
 
-from enum import Enum
-
-
-class NodeType(Enum):
-    CLIENT = 0
-    SERVER = 1
-
 
 class FederatedDataNode(DataNode):
     """
@@ -151,19 +144,32 @@ class ServerDataNode(FederatedDataNode):
         each client node.
         """
         for data_node in self._federated_data:
-            data_node.set_model_params(self._model.get_model_params())
+            data_node.set_model_params(self.query_model_params())
+
+    def evaluate_collaborative_model(self, data_test, label_test):
+        """
+        Evaluation of the performance of the collaborative model.
+
+        # Arguments:
+            test_data: test dataset
+            test_label: corresponding labels to test dataset
+        """
+        evaluation, local_evaluation = \
+            self.evaluate(data_test, label_test)
+
+        print("Collaborative model test performance : " + str(evaluation))
+        if local_evaluation is not None:
+            print("Collaborative model server local test performance : "
+                  + str(local_evaluation))
 
     def aggregate_weights(self):
         """
-        Aggregate weights from all data nodes in the server model
+        Aggregate weights from all data nodes in the server model and
+        updates the server
         """
-        weights = []
-        for data_node in self._federated_data:
-            weights.append(data_node.query_model_params())
-
+        weights = [data_node.query_model_params()
+                   for data_node in self._federated_data]
         aggregated_weights = self._aggregator.aggregate_weights(weights)
-
-        # Update server weights
         self._model.set_model_params(aggregated_weights)
 
 
