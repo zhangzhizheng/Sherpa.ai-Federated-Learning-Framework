@@ -3,7 +3,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
 
-from .vertical_deep_learning_utils import _expit_b, _logsig, _linear_activation_forward, _linear_activation_backward
+from .vertical_deep_learning_utils import _expit_b, _logsig, \
+    _linear_activation_forward, _linear_activation_backward
 # from utils.utils import UniformDistribution
 # from shfl.differential_privacy import SensitivitySampler
 # from shfl.differential_privacy import L1SensitivityNorm
@@ -19,11 +20,13 @@ class VerticalNeuralNetClient(TrainableModel):
     def __init__(self,
                  n_features=1,
                  layer_dims=None,
-                 params={"lam": 0.01, "learning_rate": 0.001},
+                 params=None,
                  epsilon=None):
+
         self._layer_dims = layer_dims if layer_dims is not None else []
         self._deploy_model(n_features)
-
+        if params is None:
+            params = {"lam": 0.01, "learning_rate": 0.001}
         self._lam = params["lam"]
         self._learning_rate = params["learning_rate"]
         self._epsilon = epsilon
@@ -38,34 +41,52 @@ class VerticalNeuralNetClient(TrainableModel):
 
     def train(self, data, labels, **kwargs):
         """
-        Client method:
         Implementation of abstract method of class
-        [TrainableModel](../Model/#trainablemodel-class)
+        [TrainableModel](../Model/#trainablemodel-class).
+        The training on the client node is comprised of two stages:
+        1) Feedforward, where the embeddings are computed using the local model
+        2) Backpropagation when received embeddings' gradients
 
         # Arguments
             data: Data, array-like of shape (n_samples, n_features)
             labels: Target classes, array-like of shape (n_samples,)
+            kwargs: dictionary containing the embeddings gradients (used only
+                in the backpropagation stage of the training)
         """
-        self._an, self._cache = self._nn_model.n_model_forward(data)
+
+        if "embeddings_grads" not in kwargs:
+            # Feedforward:
+            self._an, self._cache = self._nn_model.n_model_forward(data)
+        else:
+            # Backpropagation:
+            embeddings_grads = kwargs.get("embeddings_grads")
+            an = self._an
+            cache = self._cache
+            grads = self._nn_model.n_model_backward_helper(
+                an, cache, embeddings_grads)
+
+            self._nn_model.update_parameters(
+                grads, self._learning_rate, self._lam)
 
     def predict(self, data):
-        """Client method: compute embeddings"""
+        """ Compute embeddings """
+
         return self._nn_model.n_model_forward(data)[0][0]
 
     def get_model_params(self):
-        """Client method: output parameters are the embeddings."""
+        """ Returns parameters defining the local model. """
+
+        return self._nn_model.parameters
+
+    def set_model_params(self, params):
+        """ Set parameters defining the local model. """
+
+        self._nn_model.parameters = params
+
+    def get_meta_params(self):
+        """ Return computed embeddings. """
 
         return self._an[0]
-
-    def set_model_params(self, embedding_grads):
-        """Client method: update local parameters given the embeddings' gradients"""
-        # Forward: precomputed in training
-        an = self._an
-        cache = self._cache
-        # Backward
-        grads = self._nn_model.n_model_backward_helper(an, cache, embedding_grads)
-        # Update
-        self._nn_model.update_parameters(grads, self._learning_rate, self._lam)
 
     def performance(self, data, labels=None):
         pass
@@ -75,7 +96,7 @@ class VerticalNeuralNetClient(TrainableModel):
 
     def get(self, data):
         """
-        Client method: Outputs model's parameters used in the communication.
+        Outputs model's parameters used in the communication.
 
         # Arguments:
             data: training data
@@ -96,30 +117,35 @@ class VerticalLogLinearServer(TrainableModel):
     """
 
     def __init__(self,
-                 params={"lam": 0.01, "learning_rate": 0.001},
+                 params=None,
                  epsilon=None):
-        self._theta0 = 0.01
+
+        if params is None:
+            params = {"lam": 0.01, "learning_rate": 0.001}
         self._lam = params["lam"]
         self._learning_rate = params["learning_rate"]
+        self._theta0 = 0.01
         self._epsilon = epsilon
         self._sensitivity = None
+        self._s = None
 
-    def train(self,  data, labels,  **kwargs):
+    def train(self, data, labels, **kwargs):
         """
-        Server method:
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
+        Implementation of abstract method of class
+        [TrainableModel](../Model/#trainablemodel-class).
 
         # Arguments
             data: clients' data
             labels: Target classes, array-like of shape (n_samples,)
             embeddings: clients' embeddings
         """
+
         embeddings = kwargs.get("embeddings")
-        embeddings_grads = self._compute_gradients(embeddings, labels)
-        self.set_model_params(embeddings_grads)
+        self._compute_gradients(embeddings, labels)
+        self._update_model_params(self._s)
 
     def predict(self, data):
-        """Server method: compute prediction using clients' embeddings"""
+        """ Compute prediction using clients' embeddings. """
 
         embedding_client = data
         exponent = self._theta0 + sum(embedding_client)
@@ -141,42 +167,52 @@ class VerticalLogLinearServer(TrainableModel):
         return auc
 
     def get_model_params(self):
-        """
-        Server method: output parameters are the embeddings' gradients.
-        """
+        """ Returns parameters defining the model. """
+
+        return self._theta0
+
+    def set_model_params(self, params):
+        """ Set parameters defining the model. """
+
+        self._theta0 = params
+
+    def get_meta_params(self):
+        """ Returns computed embeddings' gradients. """
 
         return self._s
 
-    def set_model_params(self, embedding_grads):
-        """Server method: update parameters"""
+    def _update_model_params(self, embedding_grads):
+        """ Update model's parameters. """
 
-        self._theta0 = self._theta0 - \
-                       self._learning_rate * np.mean(embedding_grads)
+        self._theta0 = self._theta0 \
+            - self._learning_rate * np.mean(embedding_grads)
+
+    def _compute_gradients(self, embedding_client, labels):
+        """ Compute gradients. """
+
+        exponent = self._theta0 + sum(embedding_client)
+        labels = np.asarray(labels)
+        self._s = _expit_b(exponent, labels)
+
+    def compute_loss(self, embedding_client, labels):
+        """ Compute loss. """
+
+        exponent = self._theta0 + sum(embedding_client)
+        labels = np.asarray(labels)
+
+        return np.mean((1 - labels) * exponent - _logsig(exponent))
 
     def performance(self, data, labels):
         return self.evaluate(data, labels)
 
-    def _compute_gradients(self, embedding_client, y_train):
-        """Server method: compute gradients"""
-
-        exponent = self._theta0 + sum(embedding_client)
-        y_train = np.asarray(y_train)
-        self._s = _expit_b(exponent, y_train)
-
-        return self._s
-
-    def _compute_loss(self, embedding_client, y_true):
-        """Server method: compute loss"""
-
-        exponent = self._theta0 + sum(embedding_client)
-        y_true = np.asarray(y_true)
-
-        return np.mean((1 - y_true) * exponent - _logsig(exponent))
-
 
 class NeuralNetHelper:
     """
-    layer_dims - - list containing the dimensions of each hidden layer in our network
+    Implementation of a deep neural network model.
+
+    # Arguments:
+        layer_dims: list containing the dimensions of each hidden layer
+            in the network
     """
 
     def __init__(self, layer_dims):

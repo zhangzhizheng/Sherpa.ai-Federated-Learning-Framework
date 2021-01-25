@@ -28,12 +28,12 @@ class FederatedGovernmentVertical:
 
         self._server = server_node
 
-    def train_all_clients(self):
+    def train_all_clients(self, **kwargs):
         """
         Train all the clients
         """
         for data_node in self._federated_data:
-            data_node.train_model()
+            data_node.train_model(**kwargs)
 
     def run_rounds(self, n, test_data, test_label, print_freq=1000):
         """
@@ -49,7 +49,7 @@ class FederatedGovernmentVertical:
 
             self.train_all_clients()
             self._server.aggregate_weights()
-            self._server.deploy_collaborative_model()
+            self.train_all_clients(embeddings_grads=self._server.query_model())
 
             if i % print_freq == 0:
                 print("Round " + str(i))

@@ -129,6 +129,9 @@ class ServerDataNode(FederatedDataNode):
 
         # Arguments:
             federated_data: the set of client nodes
+            model: python object representing the model of the server node
+            aggregator: python object representing the type of aggregator to use
+            data: optional, server's private data
         """
 
     def __init__(self, federated_data, model, aggregator, data=None):
@@ -230,6 +233,18 @@ class FederatedData:
         for data_node in self._data_nodes:
             data_node.configure_model_params_access(data_access_definition)
 
+    def configure_model_access(self, data_access_definition):
+        """
+        Creates the same policy to access model parameters
+        over all the data nodes
+
+        # Arguments:
+            data_access_definition:
+            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
+        """
+        for data_node in self._data_nodes:
+            data_node.configure_model_access(data_access_definition)
+
     def query(self):
         """
         Queries over every node and returns the answer of every node in a list
@@ -237,9 +252,7 @@ class FederatedData:
         # Returns:
             answer: List containing responses for every node
         """
-        answer = []
-        for data_node in self._data_nodes:
-            answer.append(data_node.query())
+        answer = [data_node.query() for data_node in self._data_nodes]
 
         return answer
 

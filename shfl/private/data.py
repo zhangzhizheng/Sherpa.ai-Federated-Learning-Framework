@@ -41,7 +41,7 @@ class DataAccessDefinition(abc.ABC):
     """
 
     @abc.abstractmethod
-    def apply(self, data):
+    def apply(self, data, **kwargs):
         """
         Every implementation needs to implement this method defining how data will be returned.
 
@@ -147,3 +147,4 @@ class UnprotectedAccess(DataAccessDefinition):
     """
     def apply(self, data):
         return data
+

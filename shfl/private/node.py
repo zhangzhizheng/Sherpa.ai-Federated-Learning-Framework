@@ -27,7 +27,8 @@ class DataNode:
         self._private_test_data = {}
         self._private_data_access_policies = {}
         self._model = None
-        self._model_access_policy = UnprotectedAccess()
+        self._model_params_access_policy = UnprotectedAccess()
+        self._model_access_policy = None
 
     @property
     def model(self):
@@ -109,6 +110,16 @@ class DataNode:
             data_access_definition: Policy to access parameters \
             (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
         """
+        self._model_params_access_policy = copy.deepcopy(data_access_definition)
+
+    def configure_model_access(self, data_access_definition):
+        """
+        Adds a DataAccessDefinition for the model.
+
+        # Arguments:
+            data_access_definition: Policy to access the model \
+            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
+        """
         self._model_access_policy = copy.deepcopy(data_access_definition)
 
     def apply_data_transformation(self, private_property, federated_transformation):
@@ -138,7 +149,20 @@ class DataNode:
         """
         Queries model parameters. By default the parameters access is unprotected but access definition can be changed
         """
-        return self._model_access_policy.apply(self._model.get_model_params())
+        return self._model_params_access_policy.apply(self._model.get_model_params())
+
+    def query_model(self, **kwargs):
+        """
+        Queries the model. If the access to the model has not been configured,
+        this method will throw an exception.
+
+        # Arguments:
+        """
+        if self._model_params_access_policy is None:
+            raise ValueError("By default, the model cannot be accessed. "
+                             "You need to define a model access policy first.")
+
+        return self._model_access_policy.apply(model=self._model, **kwargs)
 
     def set_model_params(self, model_params):
         """
