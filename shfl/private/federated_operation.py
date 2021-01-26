@@ -185,6 +185,11 @@ class FederatedData:
 
     def __init__(self):
         self._data_nodes = []
+        node_methods_list = [func for func in dir(FederatedDataNode)
+                             if callable(getattr(FederatedDataNode, func))
+                             and not func.startswith("__")]
+        for method in node_methods_list:
+            setattr(self, method, self._create_apply_method(method))
 
     def __getitem__(self, item):
         return self._data_nodes[item]
@@ -210,51 +215,30 @@ class FederatedData:
         """
         return len(self._data_nodes)
 
-    def configure_data_access(self, data_access_definition):
+    def _create_apply_method(self, method):
         """
-        Creates the same policy to access data over all the data nodes
+        Create a function that loops on all the FederatedData nodes and
+        calls a node's method.
 
         # Arguments:
-            data_access_definition:
-            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
-        """
-        for data_node in self._data_nodes:
-            data_node.configure_data_access(data_access_definition)
-
-    def configure_model_param_access(self, data_access_definition):
-        """
-        Creates the same policy to access model parameters
-        over all the data nodes
-
-        # Arguments:
-            data_access_definition:
-            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
-        """
-        for data_node in self._data_nodes:
-            data_node.configure_model_params_access(data_access_definition)
-
-    def configure_model_access(self, data_access_definition):
-        """
-        Creates the same policy to access model parameters
-        over all the data nodes
-
-        # Arguments:
-            data_access_definition:
-            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
-        """
-        for data_node in self._data_nodes:
-            data_node.configure_model_access(data_access_definition)
-
-    def query(self):
-        """
-        Queries over every node and returns the answer of every node in a list
+            method: string corresponding to a node's method
 
         # Returns:
-            answer: List containing responses for every node
+            node_method: function that loops the method on all the nodes
         """
-        answer = [data_node.query() for data_node in self._data_nodes]
 
-        return answer
+        def apply_method(*args, **kwargs):
+            """
+            Apply a method on the FederatedData nodes.
+
+            # Returns:
+                output: List containing responses for every node (if any)
+            """
+            output = [getattr(data_node, method)(*args, **kwargs)
+                      for data_node in self._data_nodes]
+            return output
+
+        return apply_method
 
 
 class FederatedTransformation(abc.ABC):

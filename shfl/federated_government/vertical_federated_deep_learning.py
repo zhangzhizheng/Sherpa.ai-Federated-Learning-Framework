@@ -43,13 +43,14 @@ class FederatedGovernmentVertical:
             n: Number of rounds
             test_data: Test data for evaluation between rounds
             test_label: Test label for evaluation between rounds
-
+            print_freq: frequency for evaluation and print
         """
         for i in range(0, n):
 
-            self.train_all_clients()
+            self._federated_data.train_model()
             self._server.aggregate_weights()
-            self.train_all_clients(embeddings_grads=self._server.query_model())
+            self._federated_data.train_model(
+                embeddings_grads=self._server.query_model())
 
             if i % print_freq == 0:
                 print("Round " + str(i))
