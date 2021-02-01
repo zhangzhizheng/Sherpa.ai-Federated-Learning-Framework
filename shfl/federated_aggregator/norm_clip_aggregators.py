@@ -115,8 +115,8 @@ class WeakDPAggregator(CDPAggregator):
     # Arguments:
         clip: value used to clip each client's update
     """
-    def __init__(self, clip):
-        super().__init__(clip=clip, noise_mult = 0.025)
+    def __init__(self, clip, noise_mult=0.025):
+        super().__init__(clip=clip, noise_mult = noise_mult)
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
