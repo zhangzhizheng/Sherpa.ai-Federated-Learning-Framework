@@ -28,13 +28,6 @@ class FederatedGovernmentVertical:
 
         self._server = server_node
 
-    def train_all_clients(self, **kwargs):
-        """
-        Train all the clients
-        """
-        for data_node in self._federated_data:
-            data_node.train_model(**kwargs)
-
     def run_rounds(self, n, test_data, test_label, print_freq=1000):
         """
         Run federated learning rounds beginning in the actual state.

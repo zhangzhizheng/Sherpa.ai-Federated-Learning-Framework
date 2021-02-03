@@ -146,8 +146,7 @@ class ServerDataNode(FederatedDataNode):
         Deployment of the collaborative learning model from server node to
         each client node.
         """
-        for data_node in self._federated_data:
-            data_node.set_model_params(self.query_model_params())
+        self._federated_data.set_model_params(self.query_model_params())
 
     def evaluate_collaborative_model(self, data_test, label_test):
         """
@@ -170,8 +169,8 @@ class ServerDataNode(FederatedDataNode):
         Aggregate weights from all data nodes in the server model and
         updates the server
         """
-        weights = [data_node.query_model_params()
-                   for data_node in self._federated_data]
+
+        weights = self._federated_data.query_model_params()
         aggregated_weights = self._aggregator.aggregate_weights(weights)
         self._model.set_model_params(aggregated_weights)
 
@@ -179,8 +178,8 @@ class ServerDataNode(FederatedDataNode):
 class FederatedData:
     """
     Class representing data across different data nodes.
-
-    This object is iterable over different data nodes.
+    This object overrides dynamically the callable methods of class
+    FederatedDataNode to make them iterable over different data nodes.
     """
 
     def __init__(self):
@@ -236,6 +235,7 @@ class FederatedData:
             """
             output = [getattr(data_node, method)(*args, **kwargs)
                       for data_node in self._data_nodes]
+
             return output
 
         return apply_method
@@ -275,38 +275,10 @@ def federate_array(array, num_data_nodes):
     last = 0.0
     federated_array = FederatedData()
     while last < len(array):
-        print("first and last ", int(last), int(last + split_size))
         federated_array.add_data_node(array[int(last):int(last + split_size)])
         last = last + split_size
 
     return federated_array
-
-
-def apply_federated_transformation(federated_data, federated_transformation):
-    """
-    Applies the federated transformation over this federated data.
-
-    Original federated data will be modified.
-
-    # Arguments:
-        federated_data: [FederatedData](./#federateddata-class) to use in the transformation
-        federated_transformation: [FederatedTransformation](./#federatedtransformation-class) that will be applied \
-        over this data
-    """
-    for data_node in federated_data:
-        data_node.apply_data_transformation(federated_transformation)
-
-
-def split_train_test(federated_data, test_split=0.2):
-    """
-    Splits all data nodes in train and test sets
-
-    # Arguments:
-        federated_data: [FederatedData](./#federateddata-class)
-        test_split: percentage of test split
-    """
-    for data_node in federated_data:
-        data_node.split_train_test(test_split)
 
 
 class Normalize(FederatedTransformation):

@@ -57,13 +57,6 @@ class FederatedGovernment:
                 print("Test performance client " +
                       str(data_node) + ": " + str(evaluation))
 
-    def train_all_clients(self):
-        """
-        Train all the clients
-        """
-        for data_node in self._federated_data:
-            data_node.train_model()
-
     def run_rounds(self, n, test_data, test_label, eval_freq=1):
         """
         Run federated learning rounds beginning in the actual state,
@@ -77,7 +70,7 @@ class FederatedGovernment:
         """
         for i in range(0, n):
 
-            self.train_all_clients()
+            self._federated_data.train_model()
 
             if i % eval_freq == 0:
                 print("Round " + str(i))

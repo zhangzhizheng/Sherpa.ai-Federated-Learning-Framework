@@ -19,7 +19,7 @@ class ClusteringDataBases(Enum):
 class FederatedClustering(FederatedGovernment):
     """
     Class used to represent a high-level federated clustering using k-means
-    (see: [FederatedGoverment](../federated_government/#federatedgovernment-class)).
+    (see: [FederatedGovernment](../federated_government/#federatedgovernment-class)).
 
     # Arguments:
         data_base_name_key: key of the enumeration of valid data bases (see: [ClusteringDataBases](./#clusteringdatabases-class))
@@ -44,10 +44,12 @@ class FederatedClustering(FederatedGovernment):
 
             federated_data, self._test_data, self._test_labels = distribution.get_federated_data(num_nodes=num_nodes,
                                                                                                  percent=percent)
+            if self._test_data is None:
+                print("Test data is not properly initialised: None")
 
             aggregator = ClusterFedAvgAggregator()
 
-            super().__init__(self.model_builder, federated_data, aggregator)
+            super().__init__(self.model_builder(), federated_data, aggregator)
 
         else:
             print("The data base name is not included. Try with: " + str(", ".join([e.name for e in ClusteringDataBases])))
@@ -60,19 +62,9 @@ class FederatedClustering(FederatedGovernment):
         Run one more round beginning in the actual state testing in test data and federated_local_test.
 
         # Arguments:
-            n: Number of rounds (2 by default)
+            n: Number of rounds (5 by default)
         """
-        if self._test_data is not None:
-            for i in range(0, n):
-                print("Accuracy round " + str(i))
-                self.deploy_central_model()
-                self.train_all_clients()
-                self.evaluate_clients(self._test_data, self._test_labels)
-                self.aggregate_weights()
-                self.evaluate_global_model(self._test_data, self._test_labels)
-                print("\n\n")
-        else:
-            print("Federated images classifier is not properly initialised")
+        super().run_rounds(n, self._test_data, self._test_labels)
 
     def model_builder(self):
         """

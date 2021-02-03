@@ -2,7 +2,7 @@ from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
-from shfl.private.federated_operation import apply_federated_transformation
+#from shfl.private.federated_operation import apply_federated_transformation
 from shfl.private.federated_operation import FederatedTransformation
 from shfl.model.deep_learning_model import DeepLearningModel
 from shfl.data_base.emnist import Emnist
@@ -35,7 +35,7 @@ class ImagesDataBases(Enum):
 class FederatedImagesClassifier(FederatedGovernment):
     """
     Class used to represent a high-level federated image classification
-    (see: [FederatedGoverment](../federated_government/#federatedgovernment-class)).
+    (see: [FederatedGovernment](../federated_government/#federatedgovernment-class)).
 
     # Arguments:
         data_base_name_key: key of the enumeration of valid data bases (see: [ImagesDataBases](./#imagesdatabases-class))
@@ -57,14 +57,20 @@ class FederatedImagesClassifier(FederatedGovernment):
 
             federated_data, self._test_data, self._test_labels = distribution.get_federated_data(num_nodes=num_nodes,
                                                                                                  percent=percent)
-            apply_federated_transformation(federated_data, Reshape())
+            if self._test_data is not None:
+                self._test_data = np.reshape(self._test_data, (self._test_data.shape[0],
+                                                               self._test_data.shape[1], self._test_data.shape[2], 1))
+            else:
+                print("Test data is not properly initialised: None")
+
+            federated_data.apply_data_transformation(Reshape())
             mean = np.mean(train_data.data)
             std = np.std(train_data.data)
-            apply_federated_transformation(federated_data, Normalize(mean, std))
+            federated_data.apply_data_transformation(Normalize(mean, std))
 
             aggregator = FedAvgAggregator()
 
-            super().__init__(self.model_builder, federated_data, aggregator)
+            super().__init__(self.model_builder(), federated_data, aggregator)
 
         else:
             print("The data base name is not included. Try with: " + str(", ".join([e.name for e in ImagesDataBases])))
@@ -72,26 +78,14 @@ class FederatedImagesClassifier(FederatedGovernment):
 
     def run_rounds(self, n=5):
         """
-        Overriding of the method of run_rounds of [FederatedGoverment](../federated_government/#federatedgovernment-class)).
+        Overriding of the method of run_rounds of [FederatedGovernment](../federated_government/#federatedgovernment-class)).
 
         Run one more round beginning in the actual state testing in test data and federated_local_test.
 
         # Arguments:
-            n: Number of rounds (2 by default)
+            n: Number of rounds (5 by default)
         """
-        if self._test_data is not None:
-            self._test_data = np.reshape(self._test_data, (self._test_data.shape[0],
-                                                           self._test_data.shape[1], self._test_data.shape[2], 1))
-            for i in range(0, n):
-                print("Accuracy round " + str(i))
-                self.deploy_central_model()
-                self.train_all_clients()
-                self.evaluate_clients(self._test_data, self._test_labels)
-                self.aggregate_weights()
-                self.evaluate_global_model(self._test_data, self._test_labels)
-                print("\n\n")
-        else:
-            print("Federated images classifier is not properly initialised")
+        super().run_rounds(n, self._test_data, self._test_labels)
 
     @staticmethod
     def model_builder():
