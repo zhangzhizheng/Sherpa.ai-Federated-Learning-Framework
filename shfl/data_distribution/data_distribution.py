@@ -30,15 +30,15 @@ class DataDistribution(abc.ABC):
         train_data, train_label = self._database.train
         test_data, test_label = self._database.test
 
-        federated_train_data, federated_train_label = self.make_data_federated(train_data,
-                                                                               train_label,
-                                                                               percent,
-                                                                               *args, **kwargs)
+        federated_train_data, federated_train_label = \
+            self.make_data_federated(train_data, train_label,
+                                     percent, *args, **kwargs)
 
         federated_data = FederatedData()
         num_nodes = len(federated_train_label)
         for node in range(num_nodes):
-            node_data = LabeledData(federated_train_data[node], federated_train_label[node])
+            node_data = LabeledData(federated_train_data[node],
+                                    federated_train_label[node])
             federated_data.add_data_node(node_data)
 
         return federated_data, test_data, test_label

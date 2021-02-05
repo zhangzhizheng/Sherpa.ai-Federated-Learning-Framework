@@ -8,3 +8,4 @@ from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
 from shfl.data_distribution.data_distribution_explicit import ExplicitDataDistribution
 from shfl.data_distribution.data_distribution_sampling import SamplingDataDistribution
+from shfl.data_distribution.data_distribution_plain import PlainDataDistribution

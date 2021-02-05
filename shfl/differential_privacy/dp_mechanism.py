@@ -322,7 +322,7 @@ class GaussianMechanism(DPDataAccessDefinition):
         sensitivity = np.asarray(self._sensitivity)
         self._check_sensitivity_shape(sensitivity, query_result)
         std = sqrt(2 * np.log(1.25 / self._epsilon_delta[1])) * \
-              sensitivity / self._epsilon_delta[0]
+            sensitivity / self._epsilon_delta[0]
 
         return query_result + np.random.normal(loc=0.0, scale=std, size=query_result.shape)
 
