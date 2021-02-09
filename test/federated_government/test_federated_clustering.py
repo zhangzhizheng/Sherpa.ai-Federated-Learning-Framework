@@ -18,8 +18,8 @@ def test_FederatedClustering():
     assert cfg._test_labels is not None
     assert cfg._num_clusters == len(np.unique(train_labels))
     assert cfg._num_features == train_data.shape[1]
-    assert isinstance(cfg._aggregator, ClusterFedAvgAggregator)
-    assert isinstance(cfg._model, KMeansModel)
+    assert isinstance(cfg._server._aggregator, ClusterFedAvgAggregator)
+    assert isinstance(cfg._server._model, KMeansModel)
     assert cfg._federated_data is not None
 
     cfg = FederatedClustering(database, iid=False, num_nodes=3, percent=20)
@@ -28,8 +28,8 @@ def test_FederatedClustering():
     assert cfg._test_labels is not None
     assert cfg._num_clusters == len(np.unique(train_labels))
     assert cfg._num_features == train_data.shape[1]
-    assert isinstance(cfg._aggregator, ClusterFedAvgAggregator)
-    assert isinstance(cfg._model, KMeansModel)
+    assert isinstance(cfg._server._aggregator, ClusterFedAvgAggregator)
+    assert isinstance(cfg._server._model, KMeansModel)
     assert cfg._federated_data is not None
 
 
@@ -42,37 +42,28 @@ def test_FederatedClustering_wrong_database():
 def test_run_rounds():
     cfg = FederatedClustering('IRIS', iid=True, num_nodes=3, percent=20)
 
-    cfg.deploy_central_model = Mock()
-    cfg.train_all_clients = Mock()
+    cfg._server.deploy_collaborative_model = Mock()
+    cfg._federated_data.train_model = Mock()
     cfg.evaluate_clients = Mock()
-    cfg.aggregate_weights = Mock()
-    cfg.evaluate_global_model = Mock()
+    cfg._server.aggregate_weights = Mock()
+    cfg._server.evaluate_collaborative_model = Mock()
 
     cfg.run_rounds(1)
 
-    cfg.deploy_central_model.assert_called_once()
-    cfg.train_all_clients.assert_called_once()
-    cfg.evaluate_clients.assert_called_once_with(cfg._test_data, cfg._test_labels)
-    cfg.aggregate_weights.assert_called_once()
-    cfg.evaluate_global_model.assert_called_once_with(cfg._test_data, cfg._test_labels)
+    cfg._server.deploy_collaborative_model.assert_called_once()
+    cfg._federated_data.train_model.assert_called_once()
+    cfg.evaluate_clients.assert_called_once_with(cfg._test_data,
+                                                 cfg._test_labels)
+    cfg._server.aggregate_weights.assert_called_once()
+    cfg._server.evaluate_collaborative_model.assert_called_once_with(
+        cfg._test_data, cfg._test_labels)
 
 
 def test_run_rounds_wrong_database():
     cfg = FederatedClustering('EMNIST', iid=True, num_nodes=3, percent=20)
 
-    cfg.deploy_central_model = Mock()
-    cfg.train_all_clients = Mock()
-    cfg.evaluate_clients = Mock()
-    cfg.aggregate_weights = Mock()
-    cfg.evaluate_global_model = Mock()
-
-    cfg.run_rounds(1)
-
-    cfg.deploy_central_model.assert_not_called()
-    cfg.train_all_clients.assert_not_called()
-    cfg.evaluate_clients.assert_not_called()
-    cfg.aggregate_weights.assert_not_called()
-    cfg.evaluate_global_model.assert_not_called()
+    assert not hasattr(cfg, "_server")
+    assert not hasattr(cfg, "_federated_data")
 
 
 @patch('shfl.federated_government.federated_clustering.KMeansModel')
@@ -82,4 +73,5 @@ def test_model_builder(mock_kmeans):
     model = cfg.model_builder()
 
     assert isinstance(model, Mock)
-    mock_kmeans.assert_called_with(n_clusters=cfg._num_clusters, n_features=cfg._num_features)
+    mock_kmeans.assert_called_with(n_clusters=cfg._num_clusters,
+                                   n_features=cfg._num_features)

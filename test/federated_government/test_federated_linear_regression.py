@@ -15,8 +15,8 @@ def test_FederatedLinearRegression():
     assert lrfg._test_data is not None
     assert lrfg._test_labels is not None
     assert lrfg._num_features == train_data.shape[1]
-    assert isinstance(lrfg._aggregator, FedAvgAggregator)
-    assert isinstance(lrfg._model, LinearRegressionModel)
+    assert isinstance(lrfg._server._aggregator, FedAvgAggregator)
+    assert isinstance(lrfg._server._model, LinearRegressionModel)
     assert lrfg._federated_data is not None
 
 
@@ -25,44 +25,29 @@ def test_FederatedLinearRegression_wrong_database():
     lrfg = FederatedLinearRegression(database, num_nodes=3, percent=20)
 
     assert lrfg._test_data is None
+    assert not hasattr(lrfg, "_server")
+    assert not hasattr(lrfg, "_federated_data")
 
 
 def test_run_rounds():
     database = 'CALIFORNIA'
     lrfg = FederatedLinearRegression(database, num_nodes=3, percent=20)
 
-    lrfg.deploy_central_model = Mock()
-    lrfg.train_all_clients = Mock()
+    lrfg._server.deploy_collaborative_model = Mock()
+    lrfg._federated_data.train_model = Mock()
     lrfg.evaluate_clients = Mock()
-    lrfg.aggregate_weights = Mock()
-    lrfg.evaluate_global_model = Mock()
+    lrfg._server.aggregate_weights = Mock()
+    lrfg._server.evaluate_collaborative_model = Mock()
 
     lrfg.run_rounds(1)
 
-    lrfg.deploy_central_model.assert_called_once()
-    lrfg.train_all_clients.assert_called_once()
-    lrfg.evaluate_clients.assert_called_once_with(lrfg._test_data, lrfg._test_labels)
-    lrfg.aggregate_weights.assert_called_once()
-    lrfg.evaluate_global_model.assert_called_once_with(lrfg._test_data, lrfg._test_labels)
-
-
-def test_run_rounds_wrong_database():
-    database = 'MNIST'
-    lrfg = FederatedLinearRegression(database, num_nodes=3, percent=20)
-
-    lrfg.deploy_central_model = Mock()
-    lrfg.train_all_clients = Mock()
-    lrfg.evaluate_clients = Mock()
-    lrfg.aggregate_weights = Mock()
-    lrfg.evaluate_global_model = Mock()
-
-    lrfg.run_rounds(1)
-
-    lrfg.deploy_central_model.assert_not_called()
-    lrfg.train_all_clients.assert_not_called()
-    lrfg.evaluate_clients.assert_not_called()
-    lrfg.aggregate_weights.assert_not_called()
-    lrfg.evaluate_global_model.assert_not_called()
+    lrfg._server.deploy_collaborative_model.assert_called_once()
+    lrfg._federated_data.train_model.assert_called_once()
+    lrfg.evaluate_clients.assert_called_once_with(
+        lrfg._test_data, lrfg._test_labels)
+    lrfg._server.aggregate_weights.assert_called_once()
+    lrfg._server.evaluate_collaborative_model.assert_called_once_with(
+        lrfg._test_data, lrfg._test_labels)
 
 
 @patch('shfl.federated_government.federated_linear_regression.LinearRegressionModel')

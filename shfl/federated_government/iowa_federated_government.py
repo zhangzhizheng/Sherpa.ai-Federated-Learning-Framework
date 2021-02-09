@@ -20,9 +20,9 @@ class IowaFederatedGovernment(FederatedGovernment):
         k: distance param of the dynamic version (default 3/4)
     """
 
-    def __init__(self, model_builder, federated_data, model_params_access=None, dynamic=True, a=0,
+    def __init__(self, model_builder, federated_data, dynamic=True, a=0,
                  b=0.2, c=0.8, y_b=0.4, k=3/4):
-        super().__init__(model_builder, federated_data, IowaFederatedAggregator(), model_params_access)
+        super().__init__(model_builder, federated_data, IowaFederatedAggregator())
 
         self._a = a
         self._b = b
@@ -76,12 +76,14 @@ class IowaFederatedGovernment(FederatedGovernment):
 
         for i in range(0, n):
             print("Accuracy round " + str(i))
-            self.deploy_central_model()
-            self.train_all_clients()
+            self._server.deploy_collaborative_model()
+            self._federated_data.train_model()
             self.evaluate_clients(test_data, test_label)
-            client_performance = self.performance_clients(validation_data, validation_label)
-            self._aggregator.set_ponderation(client_performance, self._dynamic, self._a, self._b, self._c, self._y_b,
-                                             self._k)
-            self.aggregate_weights()
-            self.evaluate_global_model(test_data, test_label)
+            client_performance = self.performance_clients(
+                validation_data, validation_label)
+            self._server._aggregator.set_ponderation(
+                client_performance, self._dynamic, self._a,
+                self._b, self._c, self._y_b, self._k)
+            self._server.aggregate_weights()
+            self._server.evaluate_collaborative_model(test_data, test_label)
             print("\n\n")

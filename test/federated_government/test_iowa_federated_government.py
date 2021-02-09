@@ -20,7 +20,7 @@ class TestDataBase(DataBase):
 
 
 def test_IowaFederatedGovernment():
-    model_builder = Mock
+    model_builder = Mock()
     database = TestDataBase()
     database.load_data()
     db = IidDataDistribution(database)
@@ -34,11 +34,12 @@ def test_IowaFederatedGovernment():
     y_b = 3
     k = 4
     dynamic = True
-    iowa_fg = IowaFederatedGovernment(model_builder, federated_data, model_params_access=None,
-                                      dynamic=dynamic, a=a, b=b, c=c, y_b=y_b, k=k)
+    iowa_fg = IowaFederatedGovernment(
+        model_builder, federated_data,
+        dynamic=dynamic, a=a, b=b, c=c, y_b=y_b, k=k)
 
-    assert isinstance(iowa_fg._aggregator, IowaFederatedAggregator)
-    assert isinstance(iowa_fg._model, model_builder)
+    assert isinstance(iowa_fg._server._aggregator, IowaFederatedAggregator)
+    assert isinstance(iowa_fg._server._model, type(model_builder))
     assert np.array_equal(iowa_fg._federated_data, federated_data)
     assert iowa_fg._a == a
     assert iowa_fg._b == b
@@ -49,7 +50,7 @@ def test_IowaFederatedGovernment():
 
 
 def test_performance_clients():
-    model_builder = Mock
+    model_builder = Mock()
     database = TestDataBase()
     database.load_data()
     db = IidDataDistribution(database)
@@ -86,42 +87,48 @@ def test_run_rounds():
 
     n = 1
 
-    iowa_fg.deploy_central_model = Mock()
-    iowa_fg.train_all_clients = Mock()
+    iowa_fg._server.deploy_collaborative_model = Mock()
+    iowa_fg._federated_data.train_model = Mock()
     iowa_fg.evaluate_clients = Mock()
     iowa_fg.performance_clients = Mock()
     iowa_fg.performance_clients.return_value = 0
-    iowa_fg._aggregator.set_ponderation = Mock()
-    iowa_fg.aggregate_weights = Mock()
-    iowa_fg.evaluate_global_model = Mock()
+    iowa_fg._server._aggregator.set_ponderation = Mock()
+    iowa_fg._server.aggregate_weights = Mock()
+    iowa_fg._server.evaluate_collaborative_model = Mock()
 
     iowa_fg.run_rounds(n, test_data, test_label)
     # Replicate test an validate data
     randomize = [0, 9, 3, 4, 6, 8, 2, 1, 5, 7]
-    test_data = test_data[randomize,]
+    test_data = test_data[randomize, ]
     test_label = test_label[randomize]
     validation_data = test_data[:int(0.15 * len(test_label)), ]
     validation_label = test_label[:int(0.15 * len(test_label))]
     test_data = test_data[int(0.15 * len(test_label)):, ]
     test_label = test_label[int(0.15 * len(test_label)):]
 
-    iowa_fg.deploy_central_model.assert_called_once()
-    iowa_fg.deploy_central_model.assert_called_once()
-    iowa_fg.train_all_clients.assert_called_once()
+    iowa_fg._server.deploy_collaborative_model.assert_called_once()
+    iowa_fg._federated_data.train_model.assert_called_once()
     iowa_fg.evaluate_clients.assert_called_once()
     assert len(iowa_fg.evaluate_clients.call_args[0]) == 2
-    np.testing.assert_array_equal(iowa_fg.evaluate_clients.call_args[0][0], test_data)
-    np.testing.assert_array_equal(iowa_fg.evaluate_clients.call_args[0][1], test_label)
+    np.testing.assert_array_equal(
+        iowa_fg.evaluate_clients.call_args[0][0], test_data)
+    np.testing.assert_array_equal(
+        iowa_fg.evaluate_clients.call_args[0][1], test_label)
     iowa_fg.performance_clients.assert_called_once()
     assert len(iowa_fg.performance_clients.call_args[0]) == 2
-    np.testing.assert_array_equal(iowa_fg.performance_clients.call_args[0][0], validation_data)
-    np.testing.assert_array_equal(iowa_fg.performance_clients.call_args[0][1], validation_label)
-    iowa_fg._aggregator.set_ponderation.assert_called_once_with(iowa_fg.performance_clients.return_value,
-                                                                iowa_fg._dynamic, iowa_fg._a, iowa_fg._b, iowa_fg._c,
-                                                                iowa_fg._y_b,
-                                                                iowa_fg._k)
-    iowa_fg.aggregate_weights.assert_called_once()
-    iowa_fg.evaluate_global_model.assert_called_once()
-    assert len(iowa_fg.evaluate_global_model.call_args[0]) == 2
-    np.testing.assert_array_equal(iowa_fg.evaluate_clients.call_args[0][0], test_data)
-    np.testing.assert_array_equal(iowa_fg.evaluate_global_model.call_args[0][1], test_label)
+    np.testing.assert_array_equal(
+        iowa_fg.performance_clients.call_args[0][0], validation_data)
+    np.testing.assert_array_equal(
+        iowa_fg.performance_clients.call_args[0][1], validation_label)
+    iowa_fg._server._aggregator.set_ponderation.assert_called_once_with(
+        iowa_fg.performance_clients.return_value,
+        iowa_fg._dynamic, iowa_fg._a, iowa_fg._b, iowa_fg._c,
+        iowa_fg._y_b, iowa_fg._k)
+    iowa_fg._server.aggregate_weights.assert_called_once()
+    iowa_fg._server.evaluate_collaborative_model.assert_called_once()
+    assert len(iowa_fg._server.evaluate_collaborative_model.call_args[0]) == 2
+    np.testing.assert_array_equal(
+        iowa_fg.evaluate_clients.call_args[0][0], test_data)
+    np.testing.assert_array_equal(
+        iowa_fg._server.evaluate_collaborative_model.call_args[0][1],
+        test_label)

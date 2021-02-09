@@ -32,7 +32,8 @@ class FederatedClustering(FederatedGovernment):
         if data_base_name_key in ClusteringDataBases.__members__.keys():
             module = ClusteringDataBases.__members__[data_base_name_key].value
             data_base = module()
-            train_data, train_labels, test_data, test_labels = data_base.load_data()
+            train_data, train_labels, \
+                test_data, test_labels = data_base.load_data()
 
             self._num_clusters = len(np.unique(train_labels))
             self._num_features = train_data.shape[1]
@@ -42,10 +43,9 @@ class FederatedClustering(FederatedGovernment):
             else:
                 distribution = NonIidDataDistribution(data_base)
 
-            federated_data, self._test_data, self._test_labels = distribution.get_federated_data(num_nodes=num_nodes,
-                                                                                                 percent=percent)
-            if self._test_data is None:
-                print("Test data is not properly initialised: None")
+            federated_data, self._test_data, self._test_labels = \
+                distribution.get_federated_data(num_nodes=num_nodes,
+                                                percent=percent)
 
             aggregator = ClusterFedAvgAggregator()
 

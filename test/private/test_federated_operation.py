@@ -20,7 +20,7 @@ def test_federate_transformation():
     random_array = np.random.rand(30)
     federated_array = shfl.private.federated_operation.federate_array(random_array, 30)
     federated_array.configure_data_access(UnprotectedAccess())
-    shfl.private.federated_operation.apply_federated_transformation(federated_array, TestTransformation())
+    federated_array.apply_data_transformation(TestTransformation())
     index = 0
     for data_node in federated_array:
         assert data_node.query() == random_array[index] + 1
@@ -89,7 +89,7 @@ def test_split_train_test():
     federated_data.configure_data_access(UnprotectedAccess())
     raw_federated_data = federated_data
 
-    shfl.private.federated_operation.split_train_test(federated_data)
+    federated_data.split_train_test()
 
     for raw_node, split_node in zip(raw_federated_data, federated_data):
         raw_node.split_train_test()
@@ -109,7 +109,7 @@ def test_split_train_test_pandas():
     federated_data.configure_data_access(UnprotectedAccess())
     raw_federated_data = federated_data
 
-    shfl.private.federated_operation.split_train_test(federated_data)
+    federated_data.split_train_test()
 
     for raw_node, split_node in zip(raw_federated_data, federated_data):
         raw_node.split_train_test()
