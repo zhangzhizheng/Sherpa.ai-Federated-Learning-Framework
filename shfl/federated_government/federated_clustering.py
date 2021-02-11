@@ -52,8 +52,9 @@ class FederatedClustering(FederatedGovernment):
             super().__init__(self.model_builder(), federated_data, aggregator)
 
         else:
-            print("The data base name is not included. Try with: " + str(", ".join([e.name for e in ClusteringDataBases])))
-            self._test_data = None
+            raise ValueError("The data base " + data_base_name_key +
+                             " is not included. Try with: " +
+                             str(", ".join([e.name for e in ClusteringDataBases])))
 
     def run_rounds(self, n=5):
         """

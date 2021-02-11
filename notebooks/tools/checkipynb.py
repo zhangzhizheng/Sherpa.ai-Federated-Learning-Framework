@@ -17,7 +17,7 @@ import nbformat
 ep = nbconvert.preprocessors.ExecutePreprocessor(
     extra_arguments=["--log-level=40"],
     timeout=-1,
-    kernel_name="FederatedLearning"
+    kernel_name="SherpaFL_py37"
 )
 
 

@@ -36,18 +36,17 @@ class FederatedLinearRegression(FederatedGovernment):
 
             distribution = IidDataDistribution(data_base)
 
-            federated_data, self._test_data, self._test_labels = distribution.get_federated_data(num_nodes=num_nodes,
-                                                                                                 percent=percent)
-            if self._test_data is None:
-                print("Federated linear regression is not properly initialised")
-
+            federated_data, self._test_data, self._test_labels = \
+                distribution.get_federated_data(num_nodes=num_nodes,
+                                                percent=percent)
             aggregator = FedAvgAggregator()
 
             super().__init__(self.model_builder(), federated_data, aggregator)
 
         else:
-            print("The data base name is not included. Try with: " + str(", ".join([e.name for e in LinearRegressionDataBases])))
-            self._test_data = None
+            raise ValueError("The data base " + data_base_name_key +
+                             " is not included. Try with: " +
+                             str(", ".join([e.name for e in LinearRegressionDataBases])))
 
     def run_rounds(self, n=5):
         """

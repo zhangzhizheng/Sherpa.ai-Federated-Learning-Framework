@@ -5,6 +5,7 @@ from shfl.private.federated_operation import FederatedData
 from unittest.mock import Mock
 import random
 import string
+import pytest
 
 
 def test_images_classifier_iid():
@@ -41,11 +42,8 @@ def test_images_classifier_wrong_database():
     letters = string.ascii_lowercase
     wrong_database = ''.join(random.choice(letters) for i in range(10))
 
-    fic = FederatedImagesClassifier(wrong_database)
-
-    assert fic._test_data is None
-    assert not hasattr(fic, "_server")
-    assert not hasattr(fic, "_federated_data")
+    with pytest.raises(ValueError):
+        fic = FederatedImagesClassifier(wrong_database)
 
 
 def test_run_rounds():

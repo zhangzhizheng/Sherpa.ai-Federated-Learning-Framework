@@ -32,10 +32,12 @@ class TestDataBasePandas(DataBase):
 def test_split_train_test():
     data = np.random.rand(50).reshape([10, -1])
     labels = np.random.rand(10)
-    dim = 4
+    train_percentage = 0.8
+    dim = round(len(data) * (1 - train_percentage))
 
     rest_data, rest_labels, \
-        validation_data, validation_labels = shfl.data_base.data_base.split_train_test(data, labels, dim)
+        validation_data, validation_labels = \
+        shfl.data_base.data_base.split_train_test(data, labels, train_percentage)
 
     ndata = np.concatenate([rest_data, validation_data])
     nlabels = np.concatenate([rest_labels, validation_labels])
@@ -54,10 +56,12 @@ def test_split_train_test():
 def test_split_train_test_pandas():
     data = pd.DataFrame(np.random.rand(50).reshape([10, -1]))
     labels = pd.Series(np.random.rand(10))
-    dim = 4
+    train_percentage = 0.8
+    dim = round(len(data) * (1 - train_percentage))
 
     rest_data, rest_labels, \
-        validation_data, validation_labels = shfl.data_base.data_base.split_train_test(data, labels, dim)
+        validation_data, validation_labels = \
+        shfl.data_base.data_base.split_train_test(data, labels, train_percentage)
 
     ndata = pd.concat([rest_data, validation_data])
     nlabels = pd.concat([rest_labels, validation_labels])
@@ -169,7 +173,7 @@ def test_labeled_database():
 def test_split_wrong_type():
     data = np.random.rand(50).reshape([10, -1])
     labels = pd.Series(np.random.rand(10))
-    dim = 4
+    train_percentage = 0.8
 
     with pytest.raises(TypeError):
-        shfl.data_base.data_base.split_train_test(data, labels, dim)
+        shfl.data_base.data_base.split_train_test(data, labels, train_percentage)

@@ -28,7 +28,7 @@ def shuffle_rows(data, labels):
     return data, labels
 
 
-def split_train_test(data, labels, dim):
+def split_train_test(data, labels, train_percentage=0.8, shuffle=True):
     """
     Method that randomly chooses the train and test sets
     from data and labels.
@@ -36,25 +36,32 @@ def split_train_test(data, labels, dim):
     # Arguments:
         data: Data for extracting the validation data
         labels: Array with labels
-        dim: Size for validation data
+        train_percentage: float between 0 and 1 to indicate how much data
+            is dedicated to train
+        shuffle: Boolean for shuffling rows before the train/test split
+            (default True)
 
     # Returns:
-        new_data: Data, labels, validation data and validation labels
+        train_data, train_labels, test_data, test_labels: the data after
+            the split
     """
 
-    data, labels = shuffle_rows(data, labels)
+    if shuffle:
+        data, labels = shuffle_rows(data, labels)
 
-    test_data = data[0:dim]
-    test_labels = labels[0:dim]
+    test_size = round(len(data) * (1 - train_percentage))
 
-    rest_data = data[dim:]
-    rest_labels = labels[dim:]
+    train_data = data[:-test_size]
+    train_labels = labels[:-test_size]
 
-    return rest_data, rest_labels, test_data, test_labels
+    test_data = data[-test_size:]
+    test_labels = labels[-test_size:]
+
+    return train_data, train_labels, test_data, test_labels
 
 
 def vertical_split(data, labels, n_chunks,
-                   train_percentage=0.8, shuffle_data=True):
+                   train_percentage=0.8, shuffle=True):
     """
     Splits a 2-D dataset vertically (i.e. along columns).
 
@@ -64,15 +71,15 @@ def vertical_split(data, labels, n_chunks,
         n_chunks: integer denoting the desired number of vertical splits
         train_percentage: float between 0 and 1 to indicate how much data
             is dedicated to train (if 1 is provided, data is unchanged and
-            assigned entirely to train, while test data is set to None)
-        shuffle_data: Boolean for shuffling rows in the train and test
-            data after the split (default True)
+            assigned entirely to train)
+        shuffle: Boolean for shuffling rows before the train/test split
+            (default True)
         seed: integer, set for reproducible results (optional)
     # Returns:
-        train_data: dictionary whose items contain the train data
+        train_data: list whose items contain the train data
             of each chunk
         train_labels: train labels (it is the same for all train chunks)
-        test_data: dictionary whose items contain the test data
+        test_data: list whose items contain the test data
             of one single chunk
         test_labels: test labels (it is the same for all test chunks)
     """
@@ -95,17 +102,11 @@ def vertical_split(data, labels, n_chunks,
 
     # Split train/test samples (horizontally on rows):
     if train_percentage < 1.:
-        test_size = round(len(data) * (1 - train_percentage))
         train_data, train_labels, test_data, test_labels = \
-            split_train_test(data, labels, test_size)
+            split_train_test(data, labels, train_percentage, shuffle)
     else:
         train_data, train_labels, test_data, test_labels = \
             data, labels, None, None
-
-    if shuffle_data:
-        train_data, train_labels = shuffle_rows(train_data, train_labels)
-        if test_data is not None:
-            test_data, test_labels = shuffle_rows(test_data, test_labels)
 
     # Split features (vertically on columns):
     features = np.arange(n_features)
@@ -114,11 +115,11 @@ def vertical_split(data, labels, n_chunks,
         np.arange(1, n_features), n_chunks - 1, replace=False))
     chunk_features = np.split(features, split_feature_index)
 
-    train_data = {i: get_slice(train_data, chunk_features[i])
-                  for i in range(n_chunks)}
+    train_data = [get_slice(train_data, chunk_features[i])
+                  for i in range(n_chunks)]
     if test_data is not None:
-        test_data = {i: get_slice(test_data, chunk_features[i])
-                     for i in range(n_chunks)}
+        test_data = [get_slice(test_data, chunk_features[i])
+                     for i in range(n_chunks)]
 
     return train_data, train_labels, test_data, test_labels
 
@@ -182,43 +183,47 @@ class LabeledDatabase(DataBase):
     """
     Class to create generic labeled database from data and labels vectors.
     By default, the data is shuffled and split into train and test.
-    After, additional shuffling is performed by default separately on train
-    and test data.
 
     # Arguments
         data: Data features to load
         labels: Labels for this features
         train_percentage: float between 0 and 1 to indicate how much data
             is dedicated to train (if 1 is provided, data is unchanged and
-            assigned entirely to train, while test data is set to None)
-        shuffle_data: Boolean for shuffling rows in the train and test data
-            after the split (default True)
+            assigned entirely to train)
+        shuffle: Boolean for shuffling rows before the train/test split
+            (default True)
     """
 
-    def __init__(self, data, labels, train_percentage=0.8, shuffle_data=True):
-        super().__init__()
+    def __init__(self, data, labels, train_percentage=0.8, shuffle=True):
+        super(LabeledDatabase, self).__init__()
         self._data = data
         self._labels = labels
-
-        if train_percentage < 1.:
-            test_size = round(len(self._data) * (1 - train_percentage))
-            self._train_data, self._train_labels, \
-                self._test_data, self._test_labels = \
-                split_train_test(self._data, self._labels, test_size)
-        else:
-            self._train_data, self._train_labels, \
-                self._test_data, self._test_labels = \
-                self._data, self._labels, None, None
-
-        if shuffle_data:
-            self.shuffle()
+        self._train_percentage = train_percentage
+        self._shuffle = shuffle
 
     def load_data(self):
         """
-        Load data
+        Returns all data. If not loaded, loads the data.
 
         # Returns
             all_data : train data, train labels, test data and test labels
         """
 
+        if not self._train_data:
+            self._load_data()
+
         return self.data
+
+    def _load_data(self):
+        """
+        Populates private attributes train data and labels,
+        and test data and labels.
+        """
+
+        if self._train_percentage < 1.:
+            self._train_data, self._train_labels, \
+                self._test_data, self._test_labels = \
+                split_train_test(self._data, self._labels,
+                                 self._train_percentage, self._shuffle)
+        else:
+            self._train_data, self._train_labels = self._data, self._labels

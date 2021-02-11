@@ -19,10 +19,8 @@ class Iris(db.DataBase):
         data = all_data["data"]
         labels = all_data["target"]
 
-        test_size = int(len(data) * 0.1)
         self._train_data, self._train_labels,\
-            self._test_data, self._test_labels = db.split_train_test(data, labels, test_size)
-
-        self.shuffle()
+            self._test_data, self._test_labels = \
+            db.split_train_test(data, labels, train_percentage=0.9)
 
         return self.data

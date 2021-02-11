@@ -2,6 +2,7 @@ from shfl.federated_government.federated_linear_regression import FederatedLinea
 from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 from shfl.model.linear_regression_model import LinearRegressionModel
 from unittest.mock import Mock, patch
+import pytest
 
 
 def test_FederatedLinearRegression():
@@ -22,11 +23,9 @@ def test_FederatedLinearRegression():
 
 def test_FederatedLinearRegression_wrong_database():
     database = 'MNIST'
-    lrfg = FederatedLinearRegression(database, num_nodes=3, percent=20)
+    with pytest.raises(ValueError):
+        lrfg = FederatedLinearRegression(database, num_nodes=3, percent=20)
 
-    assert lrfg._test_data is None
-    assert not hasattr(lrfg, "_server")
-    assert not hasattr(lrfg, "_federated_data")
 
 
 def test_run_rounds():

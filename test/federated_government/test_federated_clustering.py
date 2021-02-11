@@ -2,6 +2,7 @@ from shfl.federated_government.federated_clustering import FederatedClustering, 
 from shfl.federated_aggregator.cluster_fedavg_aggregator import ClusterFedAvgAggregator
 from shfl.model.kmeans_model import KMeansModel
 from unittest.mock import Mock, patch
+import pytest
 
 import numpy as np
 
@@ -34,9 +35,8 @@ def test_FederatedClustering():
 
 
 def test_FederatedClustering_wrong_database():
-    cfg = FederatedClustering('MNIST', iid=True, num_nodes=3, percent=20)
-
-    assert cfg._test_data is None
+    with pytest.raises(ValueError):
+        cfg = FederatedClustering('MNIST', iid=True, num_nodes=3, percent=20)
 
 
 def test_run_rounds():
@@ -60,10 +60,8 @@ def test_run_rounds():
 
 
 def test_run_rounds_wrong_database():
-    cfg = FederatedClustering('EMNIST', iid=True, num_nodes=3, percent=20)
-
-    assert not hasattr(cfg, "_server")
-    assert not hasattr(cfg, "_federated_data")
+    with pytest.raises(ValueError):
+        cfg = FederatedClustering('EMNIST', iid=True, num_nodes=3, percent=20)
 
 
 @patch('shfl.federated_government.federated_clustering.KMeansModel')

@@ -38,7 +38,7 @@ class ExplicitDataDistribution(DataDistribution):
         for (k, d), l in zip(data, labels):
             federated_data[idx[k]].append(d)
             federated_label[idx[k]].append(l)
-        federated_data = np.array([np.array(elem) for elem in federated_data])
-        federated_label = np.array([np.array(elem) for elem in federated_label])
+       # federated_data = np.array([np.array(elem) for elem in federated_data])
+       # federated_label = np.array([np.array(elem) for elem in federated_label])
 
         return federated_data, federated_label

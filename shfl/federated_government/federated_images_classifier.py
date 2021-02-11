@@ -62,14 +62,12 @@ class FederatedImagesClassifier(FederatedGovernment):
             federated_data, self._test_data, self._test_labels = \
                 distribution.get_federated_data(num_nodes=num_nodes,
                                                 percent=percent)
-            if self._test_data is not None:
-                self._test_data = np.reshape(
-                    self._test_data,
-                    (self._test_data.shape[0],
-                     self._test_data.shape[1],
-                     self._test_data.shape[2], 1))
-            else:
-                print("Test data is not properly initialised: None")
+
+            self._test_data = np.reshape(
+                self._test_data,
+                (self._test_data.shape[0],
+                 self._test_data.shape[1],
+                 self._test_data.shape[2], 1))
 
             federated_data.apply_data_transformation(Reshape())
             mean = np.mean(train_data.data)
@@ -81,9 +79,9 @@ class FederatedImagesClassifier(FederatedGovernment):
             super().__init__(self.model_builder(), federated_data, aggregator)
 
         else:
-            print("The data base name is not included. Try with: " +
-                  str(", ".join([e.name for e in ImagesDataBases])))
-            self._test_data = None
+            raise ValueError("The data base " + data_base_name_key +
+                             " is not included. Try with: " +
+                             str(", ".join([e.name for e in ImagesDataBases])))
 
     def run_rounds(self, n=5):
         """
@@ -130,5 +128,5 @@ class FederatedImagesClassifier(FederatedGovernment):
         optimizer = tf.keras.optimizers.RMSprop()
         metrics = [tf.keras.metrics.CategoricalAccuracy()]
 
-        return DeepLearningModel(model=model, criterion=criterion,
+        return DeepLearningModel(model=model, loss=criterion,
                                  optimizer=optimizer, metrics=metrics)

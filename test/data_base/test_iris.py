@@ -3,8 +3,7 @@ from shfl.data_base.iris import Iris
 
 def test_emnist():
     data = Iris()
-    data.load_data()
-    train_data, train_labels, test_data, test_labels = data.data
+    train_data, train_labels, test_data, test_labels = data.load_data()
 
     assert train_data.size > 0
     assert test_data.size > 0

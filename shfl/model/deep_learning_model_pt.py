@@ -18,11 +18,11 @@ class DeepLearningModelPyTorch(TrainableModel):
         metrics: Metrics for apply. Dictionary {name: function to apply, ...}. Default shows loss and accuracy
         device: Device where it will run. Default cpu
     """
-    def __init__(self, model, criterion, optimizer, batch_size=32, epochs=1, metrics=None, device="cpu"):
+    def __init__(self, model, loss, optimizer, batch_size=32, epochs=1, metrics=None, device="cpu"):
         self._model = model
         self._data_shape = self.get_model_params()[0].shape[1]
         self._labels_shape = self.get_model_params()[-1].shape
-        self._criterion = criterion
+        self._loss = loss
         self._optimizer = optimizer
 
         self._batch_size = batch_size
@@ -55,7 +55,7 @@ class DeepLearningModelPyTorch(TrainableModel):
 
                 if y_true.shape[1] > 1:
                    y_true = torch.argmax(y_true, -1)
-                loss = self._criterion(y_pred, y_true)
+                loss = self._loss(y_pred, y_true)
 
                 self._model.zero_grad()
 
@@ -110,7 +110,7 @@ class DeepLearningModelPyTorch(TrainableModel):
             labels_t = torch.from_numpy(labels).float()
             if labels_t.shape[1] > 1:
                 labels_t = torch.argmax(labels_t, -1)
-            val_loss = self._criterion(all_y_pred, labels_t)
+            val_loss = self._loss(all_y_pred, labels_t)
 
             metrics = [val_loss.item()]
             if self._metrics is not None:

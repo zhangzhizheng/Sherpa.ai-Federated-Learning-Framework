@@ -33,7 +33,7 @@ def test_deep_learning_model_private_data():
     assert dpl._model.id == model.id
     assert dpl._data_shape == 1
     assert dpl._labels_shape == (10,)
-    assert dpl._criterion.id == criterion.id
+    assert dpl._loss.id == criterion.id
     assert dpl._optimizer.id == optimizer.id
     assert dpl._batch_size == batch
     assert dpl._epochs == epoch
@@ -91,7 +91,7 @@ def test_pytorch_model_train(mock_dl, mock_tdt, mock_torch, mock_get_params):
 
     kdpm._optimizer.assert_has_calls(optimizer_calls)
     kdpm._model.assert_has_calls(model_calls)
-    kdpm._criterion.assert_has_calls(criterion_calls)
+    kdpm._loss.assert_has_calls(criterion_calls)
 
 
 @patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
@@ -185,7 +185,7 @@ def test_evaluate(mock_torch, mock_get_params, mock_predict):
     res_metrics = kdpm.evaluate(data, labels)
 
     mock_predict.assert_called_once_with(data)
-    kdpm._criterion.assert_called_once_with(mock_predict.return_value, labels)
+    kdpm._loss.assert_called_once_with(mock_predict.return_value, labels)
     assert np.array_equal([0, -1], res_metrics)
 
 

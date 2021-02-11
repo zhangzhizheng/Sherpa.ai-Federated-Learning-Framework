@@ -39,14 +39,14 @@ def test_deep_learning_model_private_data():
     epoch = 2
     dpl = TestDeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
 
-    dpl._model.compile.assert_called_once_with(optimizer=dpl._optimizer, loss=dpl._criterion, metrics=dpl._metrics)
+    dpl._model.compile.assert_called_once_with(optimizer=dpl._optimizer, loss=dpl._loss, metrics=dpl._metrics)
 
     assert dpl._model.id == model.id
     assert dpl._batch_size == batch
     assert dpl._epochs == epoch
     assert np.array_equal(dpl._data_shape, sizes[0][1:])
     assert np.array_equal(dpl._labels_shape, sizes[1][1:])
-    assert dpl._criterion.id == criterion.id
+    assert dpl._loss.id == criterion.id
     assert dpl._optimizer.id == optimizer.id
 
 
