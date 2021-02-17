@@ -20,9 +20,9 @@ class IowaFederatedGovernment(FederatedGovernment):
         k: distance param of the dynamic version (default 3/4)
     """
 
-    def __init__(self, model_builder, federated_data, dynamic=True, a=0,
+    def __init__(self, model, federated_data, dynamic=True, a=0,
                  b=0.2, c=0.8, y_b=0.4, k=3/4):
-        super().__init__(model_builder, federated_data, IowaFederatedAggregator())
+        super().__init__(model, federated_data, IowaFederatedAggregator())
 
         self._a = a
         self._b = b

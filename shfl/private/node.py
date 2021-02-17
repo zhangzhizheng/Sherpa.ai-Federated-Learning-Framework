@@ -158,11 +158,11 @@ class DataNode:
 
         # Arguments:
         """
-        if self._model_params_access_policy is None:
+        if self._model_access_policy is None:
             raise ValueError("By default, the model cannot be accessed. "
                              "You need to define a model access policy first.")
 
-        return self._model_access_policy.apply(model=self._model, **kwargs)
+        return self._model_access_policy.apply(self._model, **kwargs)
 
     def set_model_params(self, model_params):
         """

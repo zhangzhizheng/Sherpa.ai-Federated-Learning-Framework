@@ -6,7 +6,7 @@ class FederatedGovernment:
     Class used to represent the central class FederatedGovernment.
 
     # Arguments:
-       model_builder: Object representing a trainable model
+       model: Object representing a trainable model
         (see: [Model](../model))
        federated_data: Federated data to use
         (see: [FederatedData](../private/federated_operation/#federateddata-class))
@@ -19,25 +19,22 @@ class FederatedGovernment:
         (see: [FederatedDataNode](../private/federated_operation/#federateddatanode-class))
     """
 
-    def __init__(self,
-                 model_builder,
-                 federated_data,
-                 aggregator,
-                 server_node=None):
+    def __init__(self, model, federated_data,
+                 aggregator, server_node=None):
 
         self._federated_data = federated_data
         for data_node in self._federated_data:
-            data_node.model = model_builder
+            data_node.model = model
 
         if server_node is not None:
             self._server = server_node
         else:
             self._server = ServerDataNode(
                 federated_data,
-                model_builder,
+                model,
                 aggregator)
 
-    def evaluate_clients(self, data_test, label_test):
+    def evaluate_clients(self, test_data, test_label):
         """
         Evaluation of local learning models over global test dataset.
 
@@ -47,8 +44,8 @@ class FederatedGovernment:
         """
         for data_node in self._federated_data:
             # Predict local model in test
-            evaluation, local_evaluation = data_node.evaluate(data_test,
-                                                              label_test)
+            evaluation, local_evaluation = data_node.evaluate(test_data,
+                                                              test_label)
             if local_evaluation is not None:
                 print("Performance client " + str(data_node) +
                       ": Global test: " + str(evaluation)

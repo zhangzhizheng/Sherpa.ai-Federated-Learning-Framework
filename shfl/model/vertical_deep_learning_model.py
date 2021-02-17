@@ -26,7 +26,7 @@ class VerticalNeuralNetClient(TrainableModel):
         self._layer_dims = layer_dims if layer_dims is not None else []
         self._deploy_model(n_features)
         if params is None:
-            params = {"lam": 0.01, "learning_rate": 0.001}
+            params = {"lam": 0.0, "learning_rate": 0.001}
         self._lam = params["lam"]
         self._learning_rate = params["learning_rate"]
         self._epsilon = epsilon
@@ -121,10 +121,9 @@ class VerticalLogLinearServer(TrainableModel):
                  epsilon=None):
 
         if params is None:
-            params = {"lam": 0.01, "learning_rate": 0.001}
-        self._lam = params["lam"]
+            params = {"learning_rate": 0.001}
         self._learning_rate = params["learning_rate"]
-        self._theta0 = 0.01
+        self._theta0 = np.random.normal(loc=0., scale=0.01)
         self._epsilon = epsilon
         self._sensitivity = None
         self._s = None
@@ -232,6 +231,7 @@ class NeuralNetHelper:
             parameters['W' + str(layer)] = np.random.normal(size=(self.layer_dims[layer], self.layer_dims[layer - 1]),
                                                             scale=0.1)
             parameters['b' + str(layer)] = np.zeros((self.layer_dims[layer], 1))
+            #parameters['b' + str(layer)] = np.random.normal(size=(self.layer_dims[layer], 1), scale=0.1)
 
             assert (parameters['W' + str(layer)].shape == (self.layer_dims[layer], self.layer_dims[layer - 1]))
             assert (parameters['b' + str(layer)].shape == (self.layer_dims[layer], 1))
@@ -325,6 +325,8 @@ class NeuralNetHelper:
                                                                       lam * self.parameters["b" + str(layer + 1)])
         self.parameters["W" + str(n)] -= learning_rate * (grads["dW" + str(n)] +
                                                           lam * self.parameters["W" + str(n)])
+        self.parameters["b" + str(n)] -= learning_rate * (grads["db" + str(n)] +
+                                                          lam * self.parameters["b" + str(n)])
 
     def feature_importance_client(self):
         number_of_features = len(self.parameters["W1"][0])

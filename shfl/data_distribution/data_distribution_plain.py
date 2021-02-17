@@ -14,14 +14,17 @@ class PlainDataDistribution(DataDistribution):
         If a dictionary is provided, this is converted to a list.
 
         # Arguments:
-            data: Data already divided for each client
-            labels: Labels already divided for each client
-            percent: 100, use all the data
+            data: List or Dictionary, each element contain data for one client
+            labels: List or Dictionary, each element contain labels for
+                one client
+            percent: unused, all data is employed.
 
         # Returns:
-            data: unchanged
-            labels: unchanged
+            federated_data: List, each element contain data for one client
+            federated_label: List, each element contain labels for one client
         """
+
+        del percent
 
         federated_data = list(data.values()) if \
             isinstance(data, dict) else data

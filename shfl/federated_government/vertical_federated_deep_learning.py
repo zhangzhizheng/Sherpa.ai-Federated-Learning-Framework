@@ -3,7 +3,7 @@ class FederatedGovernmentVertical:
     Class used to represent the central class FederatedGovernment.
 
     # Arguments:
-       model_builder: Function that returns a trainable model
+       models: List containing nodes' trainable models
         (see: [Model](../model))
        federated_data: Federated data to use.
         (see: [FederatedData](../private/federated_operation/#federateddata-class))
@@ -17,13 +17,10 @@ class FederatedGovernmentVertical:
         global_model: Return the global model.
     """
 
-    def __init__(self,
-                 model_builder,
-                 federated_data,
-                 server_node):
+    def __init__(self, models, federated_data, server_node):
 
         self._federated_data = federated_data
-        for data_node, model_node in zip(self._federated_data, model_builder):
+        for data_node, model_node in zip(self._federated_data, models):
             data_node.model = model_node
 
         self._server = server_node
@@ -50,3 +47,4 @@ class FederatedGovernmentVertical:
                 self._server.compute_loss()
                 self._server.evaluate_collaborative_model(test_data, test_label)
                 print("\n")
+

@@ -175,6 +175,78 @@ class ServerDataNode(FederatedDataNode):
         self._model.set_model_params(aggregated_weights)
 
 
+class VerticalServerDataNode(FederatedDataNode):
+    """
+        This class represents a type Server [DataNode](../data_node)
+        in a FederatedData. It extends DataNode allowing calls to methods
+        without explicit private data identifier, assuming access to
+        the Server's data (in the case that the Server actually possesses
+        some private data).
+        It also Aggregates weights from all data nodes in the server model and
+        updates the server. In this vertical architecture, the server
+        possesses part of the model, thus the aggregation is actually
+        a server's training.
+
+        # Arguments:
+            federated_data: object of class [FederatedData](./federated_data)
+                representing the set of client nodes
+            model: object representing the model of the server node
+            aggregator: object representing the type of aggregator to use
+            data: optional, server's private data
+        """
+
+    def __init__(self, federated_data, model, aggregator, data=None):
+        super().__init__(federated_data_identifier=str(id(federated_data)))
+        self._federated_data = federated_data
+        self.model = model
+        self._aggregator = aggregator
+        self.set_private_data(data)
+
+    def aggregate_weights(self):
+        embeddings = [data_node.query_model()
+                      for data_node in self._federated_data]
+
+        self.train_model(embeddings=embeddings)
+
+    def compute_loss(self):
+        """
+        Evaluate loss on the train set.
+        """
+        embeddings = [data_node.query_model()
+                      for data_node in self._federated_data]
+
+        loss = self.query(server_model=self._model, embeddings=embeddings)
+
+        return loss
+
+    def evaluate_collaborative_model(self, test_data, test_label):
+        """
+        Evaluation of the performance of the collaborative model.
+
+        # Arguments:
+            test_data: List, each item representing the global test
+                dataset for a single client (note: the client's order
+                must be as in federated_data)
+            test_label: Array representing the global labels (the
+                same for all clients)
+        # Returns:
+            prediction: prediction of the collaborative model on the global
+                test dataset
+        """
+
+        # Compute embeddings (CLIENTS)
+        embeddings = [data_node.predict(node_data)
+                      for data_node, node_data in
+                      zip(self._federated_data, test_data)]
+
+        # Compute prediction (SERVER)
+        prediction = self.predict(embeddings)
+        print("Distributed model test AUC: "
+              + str(self.performance(prediction, test_label)))
+
+        return prediction
+    
+
 class FederatedData:
     """
     Class representing data across different data nodes.

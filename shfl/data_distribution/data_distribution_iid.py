@@ -60,8 +60,4 @@ class IidDataDistribution(SamplingDataDistribution):
 
                 data, labels = shuffle_rows(data, labels)
 
-      #  if isinstance(data, np.ndarray) and isinstance(labels, np.ndarray):
-      #      federated_data = np.array(federated_data)
-      #      federated_label = np.array(federated_label)
-
         return federated_data, federated_label

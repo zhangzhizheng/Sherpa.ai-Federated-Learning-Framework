@@ -60,21 +60,29 @@ def split_train_test(data, labels, train_percentage=0.8, shuffle=True):
     return train_data, train_labels, test_data, test_labels
 
 
-def vertical_split(data, labels, n_chunks,
-                   train_percentage=0.8, shuffle=True):
+def vertical_split(data, labels, indices_or_sections=2,
+                   equal_size=False, train_percentage=0.8,
+                   v_shuffle=True, h_shuffle=True):
     """
     Splits a 2-D dataset vertically (i.e. along columns).
 
     # Arguments:
         data: dataframe or numpy array (2-D)
-        labels: array containing the target labels
+        labels: series or array containing the target labels
         n_chunks: integer denoting the desired number of vertical splits
+        indices_or_sections: int or 1-D array containing
+            column indices (integers) at which to split
+            (see [numpy split](https://numpy.org/doc/stable/reference/generated/numpy.split.html)).
+            If requested split is not possible, an error is raised.
+        equal_size: Boolean for splitting in equal number of columns.
+            Only used if "indices_or_sections" is int.
         train_percentage: float between 0 and 1 to indicate how much data
-            is dedicated to train (if 1 is provided, data is unchanged and
+            is dedicated to train (if 1 is provided, data is
             assigned entirely to train)
-        shuffle: Boolean for shuffling rows before the train/test split
+        v_shuffle: Boolean for shuffling columns before the vertical split
             (default True)
-        seed: integer, set for reproducible results (optional)
+        h_shuffle: Boolean for shuffling rows before the train/test split
+            (default True)
     # Returns:
         train_data: list whose items contain the train data
             of each chunk
@@ -94,32 +102,32 @@ def vertical_split(data, labels, n_chunks,
         raise TypeError("Data must be either a pd.DataFrame or "
                         "a numpy array.")
 
+    # Get column indices for split:
     n_features = data.shape[1]
-    if n_chunks > n_features:
-        raise AssertionError("Too many vertical divisions: " +
-                             str(n_chunks) + " requested, but data has " +
-                             str(n_features) + " columns.")
+    features = np.arange(n_features)
+    if v_shuffle:
+        np.random.shuffle(features)
+    if not hasattr(indices_or_sections, "__len__"):
+        if not equal_size:
+            indices_or_sections = np.sort(np.random.choice(
+                np.arange(1, n_features), indices_or_sections - 1,
+                replace=False))
 
     # Split train/test samples (horizontally on rows):
     if train_percentage < 1.:
         train_data, train_labels, test_data, test_labels = \
-            split_train_test(data, labels, train_percentage, shuffle)
+            split_train_test(data, labels, train_percentage, h_shuffle)
     else:
         train_data, train_labels, test_data, test_labels = \
             data, labels, None, None
 
     # Split features (vertically on columns):
-    features = np.arange(n_features)
-    np.random.shuffle(features)
-    split_feature_index = np.sort(np.random.choice(
-        np.arange(1, n_features), n_chunks - 1, replace=False))
-    chunk_features = np.split(features, split_feature_index)
-
-    train_data = [get_slice(train_data, chunk_features[i])
-                  for i in range(n_chunks)]
+    chunks_indices = np.split(features, indices_or_sections)
+    train_data = [get_slice(train_data, indices)
+                  for indices in chunks_indices]
     if test_data is not None:
-        test_data = [get_slice(test_data, chunk_features[i])
-                     for i in range(n_chunks)]
+        test_data = [get_slice(test_data, indices)
+                     for indices in chunks_indices]
 
     return train_data, train_labels, test_data, test_labels
 
@@ -188,7 +196,7 @@ class LabeledDatabase(DataBase):
         data: Data features to load
         labels: Labels for this features
         train_percentage: float between 0 and 1 to indicate how much data
-            is dedicated to train (if 1 is provided, data is unchanged and
+            is dedicated to train (if 1 is provided, data is
             assigned entirely to train)
         shuffle: Boolean for shuffling rows before the train/test split
             (default True)

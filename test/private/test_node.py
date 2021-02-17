@@ -44,6 +44,23 @@ def test_query_model_params():
         assert model_params[i] == random_array[i]
 
 
+def test_query_model():
+    data_node = DataNode()
+    model_mock = Mock()
+    data_node.model = model_mock
+    data_node.configure_model_access(UnprotectedAccess())
+    model = data_node.query_model()
+    assert isinstance(model, type(model_mock))
+
+
+def test_query_model_access_not_configured():
+    data_node = DataNode()
+    model_mock = Mock()
+    data_node.model = model_mock
+    with pytest.raises(ValueError):
+        data_node.query_model()
+
+
 def test_train_model_wrong_data():
     random_array = np.random.rand(30)
     data_node = DataNode()

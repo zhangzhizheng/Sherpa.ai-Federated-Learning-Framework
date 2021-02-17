@@ -5,19 +5,15 @@ from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.data_base.data_base import DataBase
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 from shfl.private.data import UnprotectedAccess
+from shfl.private.federated_operation import ServerDataNode
 
 
 class TestFederatedGovernment(FederatedGovernment):
-    def __init__(self, model_builder, federated_data, aggregator):
-        super(TestFederatedGovernment, self).__init__(model_builder,
+    def __init__(self, model, federated_data, aggregator, server_node=None):
+        super(TestFederatedGovernment, self).__init__(model,
                                                       federated_data,
-                                                      aggregator)
-
-    def train_all_clients(self):
-        pass
-
-    def aggregate_weights(self):
-        pass
+                                                      aggregator,
+                                                      server_node)
 
     def run_rounds(self, n, test_data, test_label, eval_freq=1):
         pass
@@ -34,7 +30,7 @@ class TestDataBase(DataBase):
         self._test_labels = np.random.randint(0, 10, 40)
 
 
-def test_evaluate_global_model():
+def test_evaluate_collaborative_model():
     model_builder = Mock()
     aggregator = Mock()
     database = TestDataBase()
@@ -49,6 +45,25 @@ def test_evaluate_global_model():
 
     fdg._server.evaluate_collaborative_model(test_data, test_labels)
     fdg._server._model.evaluate.assert_called_once_with(test_data, test_labels)
+
+
+def test_evaluate_collaborative_model_local_test():
+    model_builder = Mock()
+    aggregator = Mock()
+    database = TestDataBase()
+    database.load_data()
+    db = IidDataDistribution(database)
+
+    num_nodes = 3
+    federated_data, test_data, test_labels = db.get_federated_data(num_nodes)
+
+    fdg = FederatedGovernment(model_builder, federated_data, aggregator)
+    fdg._server.evaluate = Mock()
+    fdg._server.evaluate.return_value = [np.random.randint(0, 10, 40),
+                                         np.random.randint(0, 10, 30)]
+
+    fdg._server.evaluate_collaborative_model(test_data, test_labels)
+    fdg._server.evaluate.assert_called_once_with(test_data, test_labels)
 
 
 copy_mock = Mock()
@@ -176,6 +191,24 @@ def test_federated_government_private_data():
 
     assert isinstance(la._server._model, type(model_builder))
     assert aggregator.id == la._server._aggregator.id
+
+
+def test_federated_government_server():
+    model_builder = Mock()
+    aggregator = Mock()
+    database = TestDataBase()
+    database.load_data()
+    db = IidDataDistribution(database)
+    federated_data, test_data, test_labels = db.get_federated_data(3)
+    server = ServerDataNode(federated_data, model_builder, aggregator)
+
+    la = TestFederatedGovernment(model_builder, federated_data,
+                                 aggregator=None, server_node=server)
+
+    assert isinstance(la._server._model, type(model_builder))
+    assert isinstance(la._server._federated_data, type(federated_data))
+    assert aggregator.id == la._server._aggregator.id
+    assert id(federated_data) == id(la._server._federated_data)
 
 
 def test_run_rounds():
