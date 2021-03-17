@@ -40,7 +40,7 @@ class FederatedGovernmentVertical:
             self._federated_data.train_model()
             self._server.aggregate_weights()
             self._federated_data.train_model(
-                embeddings_grads=self._server.query_model())
+                meta_params=self._server.query_model())
 
             if i % print_freq == 0:
                 print("Round " + str(i))

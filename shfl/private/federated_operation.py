@@ -1,4 +1,5 @@
 import abc
+import numpy as np
 from shfl.private.node import DataNode
 from shfl.private.data import LabeledData
 
@@ -177,23 +178,23 @@ class ServerDataNode(FederatedDataNode):
 
 class VerticalServerDataNode(FederatedDataNode):
     """
-        This class represents a type Server [DataNode](../data_node)
-        in a FederatedData. It extends DataNode allowing calls to methods
-        without explicit private data identifier, assuming access to
-        the Server's data (in the case that the Server actually possesses
-        some private data).
-        It also Aggregates weights from all data nodes in the server model and
-        updates the server. In this vertical architecture, the server
-        possesses part of the model, thus the aggregation is actually
-        a server's training.
+    This class represents a type Server [DataNode](../data_node)
+    in a FederatedData. It extends DataNode allowing calls to methods
+    without explicit private data identifier, assuming access to
+    the Server's data (in the case that the Server actually possesses
+    some private data).
+    It also Aggregates weights from all data nodes in the server model and
+    updates the server. In this vertical architecture, the server
+    possesses part of the model, thus the aggregation is actually
+    a server's training.
 
-        # Arguments:
-            federated_data: object of class [FederatedData](./federated_data)
-                representing the set of client nodes
-            model: object representing the model of the server node
-            aggregator: object representing the type of aggregator to use
-            data: optional, server's private data
-        """
+    # Arguments:
+        federated_data: object of class [FederatedData](./federated_data)
+            representing the set of client nodes
+        model: object representing the model of the server node
+        aggregator: object representing the type of aggregator to use
+        data: optional, server's private data
+    """
 
     def __init__(self, federated_data, model, aggregator, data=None):
         super().__init__(federated_data_identifier=str(id(federated_data)))
@@ -203,21 +204,47 @@ class VerticalServerDataNode(FederatedDataNode):
         self.set_private_data(data)
 
     def aggregate_weights(self):
-        embeddings = [data_node.query_model()
-                      for data_node in self._federated_data]
+        """
+        Aggregation of clients' batch information into the vertical server.
+        Since the server might possess data, this is actually a training step
+        from the server's side.
+        """
 
-        self.train_model(embeddings=embeddings)
+        embeddings, embeddings_indices = self._query_clients_meta_params()
+        self.train_model(embeddings=embeddings,
+                         embeddings_indices=embeddings_indices)
 
     def compute_loss(self):
         """
-        Evaluate loss on the train set.
+        Evaluate loss on the train data.
         """
-        embeddings = [data_node.query_model()
-                      for data_node in self._federated_data]
 
-        loss = self.query(server_model=self._model, embeddings=embeddings)
+        embeddings, embeddings_indices = self._query_clients_meta_params()
+        loss = self.query(server_model=self._model,
+                          embeddings=embeddings,
+                          embeddings_indices=embeddings_indices)
 
         return loss
+
+    def _query_clients_meta_params(self):
+        """
+        Method to query meta parameters from clients.
+
+        Returns:
+            embeddings: list of clients' embeddings, where each item
+                represents a single client's embeddings.
+            embedding_indices: array of int containing samples' indices
+                (in vertical learning, it is the same for each client)
+        """
+
+        meta_params = [data_node.query_model()
+                       for data_node in self._federated_data]
+
+        embeddings = [item[0] for item in meta_params]
+        embeddings_indices = [item[1] for item in meta_params]
+        self._check_embeddings_indices(embeddings_indices)
+
+        return embeddings, embeddings_indices[0]
 
     def evaluate_collaborative_model(self, test_data, test_label):
         """
@@ -245,6 +272,15 @@ class VerticalServerDataNode(FederatedDataNode):
               + str(self.performance(prediction, test_label)))
 
         return prediction
+
+    @staticmethod
+    def _check_embeddings_indices(embeddings_indices):
+        """Method that checks that all the nodes' indices that the
+        vertical server received are the same."""
+
+        if not all(np.array_equal(embeddings_indices[0], item)
+                   for item in embeddings_indices):
+            raise AssertionError("Clients samples' indices do not match.")
     
 
 class FederatedData:

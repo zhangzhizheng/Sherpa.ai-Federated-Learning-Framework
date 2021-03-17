@@ -86,7 +86,7 @@ class VerticalNeuralNetClient(TrainableModel):
     def get_meta_params(self):
         """ Return computed embeddings. """
 
-        return self._an[0]
+        return self._an[0], np.arange(0, len(self._an[0]))
 
     def performance(self, data, labels=None):
         pass
@@ -127,6 +127,7 @@ class VerticalLogLinearServer(TrainableModel):
         self._epsilon = epsilon
         self._sensitivity = None
         self._s = None
+        self._embeddings_indices = None
 
     def train(self, data, labels, **kwargs):
         """
@@ -140,6 +141,8 @@ class VerticalLogLinearServer(TrainableModel):
         """
 
         embeddings = kwargs.get("embeddings")
+        self._embeddings_indices = kwargs.get("embeddings_indices")
+
         self._compute_gradients(embeddings, labels)
         self._update_model_params(self._s)
 
@@ -178,7 +181,7 @@ class VerticalLogLinearServer(TrainableModel):
     def get_meta_params(self):
         """ Returns computed embeddings' gradients. """
 
-        return self._s
+        return self._s, self._embeddings_indices
 
     def _update_model_params(self, embedding_grads):
         """ Update model's parameters. """
@@ -189,15 +192,21 @@ class VerticalLogLinearServer(TrainableModel):
     def _compute_gradients(self, embedding_client, labels):
         """ Compute gradients. """
 
-        exponent = self._theta0 + sum(embedding_client)
-        labels = np.asarray(labels)
+        exponent = self._theta0 + np.asarray(sum(embedding_client))
+        labels = np.asarray(labels)[self._embeddings_indices].\
+            reshape(exponent.shape)
+        # print("Server exponent", exponent)
+        # print("Server selected labels", labels)
         self._s = _expit_b(exponent, labels)
+        # print("exponent shape", exponent.shape)
+        # print("labels shape", labels.shape)
+        # print("self._s shape", self._s.shape)
 
-    def compute_loss(self, embedding_client, labels):
+    def compute_loss(self, embeddings, embeddings_indices, labels):
         """ Compute loss. """
 
-        exponent = self._theta0 + sum(embedding_client)
-        labels = np.asarray(labels)
+        exponent = self._theta0 + sum(embeddings)
+        labels = np.asarray(labels)[embeddings_indices]
 
         return np.mean((1 - labels) * exponent - _logsig(exponent))
 
@@ -294,6 +303,9 @@ class NeuralNetHelper:
         # Initializing the backpropagation
         dan = np.array(embedding_grads * an.shape[0]).reshape(
             an.shape)  # - (np.divide(y, an) - np.divide(1 - y, 1 - an))
+        print("dan shape:", dan.shape)
+        print("an shape:", an.shape)
+        print("embeddings_grads shape", embedding_grads.shape)
 
         current_cache = caches[-1]
         grads["dA" + str(n)], grads["dW" + str(n)], grads["db" + str(n)] = _linear_activation_backward(dan,
