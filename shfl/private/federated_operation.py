@@ -237,8 +237,7 @@ class VerticalServerDataNode(FederatedDataNode):
                 (in vertical learning, it is the same for each client)
         """
 
-        meta_params = [data_node.query_model()
-                       for data_node in self._federated_data]
+        meta_params = self._federated_data.query_model()
 
         embeddings = [item[0] for item in meta_params]
         embeddings_indices = [item[1] for item in meta_params]
@@ -262,12 +261,12 @@ class VerticalServerDataNode(FederatedDataNode):
         """
 
         # Compute embeddings (CLIENTS)
-        embeddings = [data_node.predict(node_data)
-                      for data_node, node_data in
+        embeddings = [node.predict(data)
+                      for node, data in
                       zip(self._federated_data, test_data)]
 
         # Compute prediction (SERVER)
-        prediction = self.predict(embeddings)
+        prediction = self.predict(np.sum(embeddings, axis=0))
         print("Distributed model test AUC: "
               + str(self.performance(prediction, test_label)))
 

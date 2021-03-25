@@ -54,12 +54,12 @@ class VerticalNeuralNetClient(TrainableModel):
                 in the backpropagation stage of the training)
         """
 
-        if "embeddings_grads" not in kwargs:
+        if "meta_params" not in kwargs:
             # Feedforward:
             self._an, self._cache = self._nn_model.n_model_forward(data)
         else:
             # Backpropagation:
-            embeddings_grads = kwargs.get("embeddings_grads")
+            embeddings_grads, _ = kwargs.get("meta_params")
             an = self._an
             cache = self._cache
             grads = self._nn_model.n_model_backward_helper(
@@ -150,7 +150,7 @@ class VerticalLogLinearServer(TrainableModel):
         """ Compute prediction using clients' embeddings. """
 
         embedding_client = data
-        exponent = self._theta0 + sum(embedding_client)
+        exponent = self._theta0 + embedding_client
         prediction = np.exp(_logsig(exponent))
 
         return prediction
@@ -192,9 +192,10 @@ class VerticalLogLinearServer(TrainableModel):
     def _compute_gradients(self, embedding_client, labels):
         """ Compute gradients. """
 
-        exponent = self._theta0 + np.asarray(sum(embedding_client))
+        exponent = self._theta0 + np.asarray(sum(embedding_client)).reshape(-1)
         labels = np.asarray(labels)[self._embeddings_indices].\
-            reshape(exponent.shape)
+            reshape(-1)
+        # print("embeddings_server", np.asarray(sum(embedding_client)))
         # print("Server exponent", exponent)
         # print("Server selected labels", labels)
         self._s = _expit_b(exponent, labels)
@@ -205,8 +206,11 @@ class VerticalLogLinearServer(TrainableModel):
     def compute_loss(self, embeddings, embeddings_indices, labels):
         """ Compute loss. """
 
-        exponent = self._theta0 + sum(embeddings)
-        labels = np.asarray(labels)[embeddings_indices]
+        exponent = self._theta0 + sum(embeddings).reshape(-1)
+        labels = np.asarray(labels)[embeddings_indices].reshape(-1)
+
+        # print("exponent shape", exponent.shape)
+        # print("labels shape", labels.shape)
 
         return np.mean((1 - labels) * exponent - _logsig(exponent))
 
@@ -303,9 +307,6 @@ class NeuralNetHelper:
         # Initializing the backpropagation
         dan = np.array(embedding_grads * an.shape[0]).reshape(
             an.shape)  # - (np.divide(y, an) - np.divide(1 - y, 1 - an))
-        print("dan shape:", dan.shape)
-        print("an shape:", an.shape)
-        print("embeddings_grads shape", embedding_grads.shape)
 
         current_cache = caches[-1]
         grads["dA" + str(n)], grads["dW" + str(n)], grads["db" + str(n)] = _linear_activation_backward(dan,
