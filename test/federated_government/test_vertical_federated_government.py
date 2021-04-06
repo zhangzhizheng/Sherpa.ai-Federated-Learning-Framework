@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from unittest.mock import call
 import pytest
 
-from shfl.federated_government.vertical_federated_deep_learning import FederatedGovernmentVertical
+from shfl.federated_government.vertical_federated_government import VerticalFederatedGovernment
 from shfl.data_base.data_base import LabeledDatabase
 from shfl.private.data import LabeledData
 from shfl.data_distribution.data_distribution_plain import PlainDataDistribution
@@ -13,21 +13,27 @@ from shfl.private.federated_operation import VerticalServerDataNode
 from shfl.data_base.data_base import vertical_split
 
 
-class QueryMetaParameters(DataAccessDefinition):
-    """Returns embeddings (or their gradients) as computed
-                by the local model."""
-    def apply(self, model, **kwargs):
+class TrainEvaluation(DataAccessDefinition):
+    """Evaluate collaborative model on batch train data."""
 
-        return model.get_meta_params(**kwargs)
-
-
-class ComputeLoss(DataAccessDefinition):
-    """Computes training loss."""
     def apply(self, data, **kwargs):
-        embeddings = kwargs.get("embeddings")
         server_model = kwargs.get("server_model")
+        embeddings, embeddings_indices = kwargs.get("meta_params")
+        embeddings = np.sum(embeddings, axis=0)
+        labels = data.label[embeddings_indices]
 
-        return server_model.compute_loss(embeddings, data.label)
+        evaluation = server_model.evaluate(embeddings, labels)
+
+        return evaluation
+
+
+class QueryMetaParameters(DataAccessDefinition):
+    """
+    Returns embeddings (or their gradients) as computed
+    by the local model.
+    """
+    def apply(self, model, **kwargs):
+        return model.get_meta_params(**kwargs)
 
 
 @pytest.fixture
@@ -59,26 +65,32 @@ def test_node_models(test_vertically_split_database):
 
 
 @pytest.fixture
-def test_server_node(test_vertically_split_database, test_node_models):
+def test_federated_data(test_vertically_split_database):
     federated_data, _, _ = test_vertically_split_database
+    federated_data.configure_model_access(QueryMetaParameters())
+
+    return federated_data
+
+
+@pytest.fixture
+def test_server_node(test_federated_data, test_node_models):
     server_node = VerticalServerDataNode(
-        federated_data=federated_data,
+        federated_data=test_federated_data,
         model=Mock(),
-        aggregator=None,
         data=LabeledData(data=np.random.rand(100).reshape([5, 20]),
                          label=np.random.randint(0, 10, 50)))
+    server_node.configure_data_access(TrainEvaluation())
+    server_node.configure_model_access(QueryMetaParameters())
 
     return server_node
 
 
 @pytest.fixture
-def test_vertical_federated_government(test_vertically_split_database,
+def test_vertical_federated_government(test_federated_data,
                                        test_node_models,
                                        test_server_node):
-
-    federated_data, test_data, test_labels = test_vertically_split_database
-    vert_fed_gov = FederatedGovernmentVertical(
-        models=test_node_models, federated_data=federated_data,
+    vert_fed_gov = VerticalFederatedGovernment(
+        models=test_node_models, federated_data=test_federated_data,
         server_node=test_server_node)
 
     return vert_fed_gov
@@ -100,10 +112,12 @@ def test_train_all_clients(test_vertical_federated_government):
 def test_aggregate_weights(test_vertical_federated_government):
 
     vert_fed_gov = test_vertical_federated_government
-    vert_fed_gov._federated_data.configure_model_access(QueryMetaParameters())
 
+    embeddings_indices = np.random.randint(0, 10, 50)
     for node in vert_fed_gov._federated_data:
-        node._model.get_meta_params.return_value = np.random.randint(0, 10, 100)
+        embeddings = np.random.rand(50)
+        node._model.get_meta_params.return_value = (embeddings,
+                                                    embeddings_indices)
 
     vert_fed_gov._server.aggregate_weights()
 
@@ -120,59 +134,116 @@ def test_aggregate_weights(test_vertical_federated_government):
         vert_fed_gov._server._model.train.call_args[0][1],
         server_labeled_data.label)
 
-    embeddings = [node._model.get_meta_params.return_value
-                  for node in vert_fed_gov._federated_data]
+    meta_params = [node._model.get_meta_params.return_value
+                   for node in vert_fed_gov._federated_data]
+    embeddings = [item[0] for item in meta_params]
+    embeddings_indices = [item[1] for item in meta_params]
     for i_node in range(vert_fed_gov._federated_data.num_nodes()):
         np.testing.assert_array_equal(
-            vert_fed_gov._server._model.train.call_args[1]["embeddings"][i_node],
+            vert_fed_gov._server._model.train.call_args[1]["meta_params"][0][i_node],
             embeddings[i_node])
+    np.testing.assert_array_equal(
+        vert_fed_gov._server._model.train.call_args[1]["meta_params"][1],
+        embeddings_indices[0])
+
+
+def test_aggregate_weights_non_matching_clients_indices(test_vertical_federated_government):
+
+    vert_fed_gov = test_vertical_federated_government
+
+    for node in vert_fed_gov._federated_data:
+        embeddings_indices = np.random.randint(0, 10, 50)
+        embeddings = np.random.rand(50)
+        node._model.get_meta_params.return_value = (embeddings,
+                                                    embeddings_indices)
+
+    with pytest.raises(AssertionError):
+        vert_fed_gov._server.aggregate_weights()
 
 
 def test_train_all_clients_update_stage(test_vertical_federated_government):
 
     vert_fed_gov = test_vertical_federated_government
+    embeddings_indices = np.random.randint(0, 10, 50)
     embeddings_grads = np.random.rand(50)
-    vert_fed_gov._federated_data.train_model(embeddings_grads=embeddings_grads)
+    meta_params = (embeddings_grads, embeddings_indices)
+
+    vert_fed_gov._federated_data.train_model(meta_params=meta_params)
 
     vert_fed_gov._federated_data.configure_data_access(UnprotectedAccess())
     for node in vert_fed_gov._federated_data:
         labeled_data = node.query()
         node._model.train.assert_called_once_with(
             labeled_data.data, labeled_data.label,
-            embeddings_grads=embeddings_grads)
+            meta_params=meta_params)
 
 
-def test_compute_loss(test_vertical_federated_government):
+# def test_compute_loss(test_vertical_federated_government):
+#
+#     vert_fed_gov = test_vertical_federated_government
+#
+#     embeddings_indices = np.random.randint(0, 10, 50)
+#     for node in vert_fed_gov._federated_data:
+#         embeddings = np.random.rand(50)
+#         meta_params = (embeddings, embeddings_indices)
+#         node._model.get_meta_params.return_value = meta_params
+#     vert_fed_gov._server._model.compute_loss.return_value = np.random.random()
+#
+#     vert_fed_gov._server.compute_loss()
+#
+#     for node in vert_fed_gov._federated_data:
+#         node._model.get_meta_params.assert_called_once()
+#     vert_fed_gov._server._model.compute_loss.assert_called_once()
+#
+#     meta_params = [node._model.get_meta_params.return_value
+#                    for node in vert_fed_gov._federated_data]
+#     embeddings = [item[0] for item in meta_params]
+#     embeddings_indices = [item[1] for item in meta_params]
+#     for i_node in range(vert_fed_gov._federated_data.num_nodes()):
+#         np.testing.assert_array_equal(
+#             vert_fed_gov._server._model.compute_loss.call_args[0][0][i_node],
+#             embeddings[i_node])
+#     np.testing.assert_array_equal(
+#         vert_fed_gov._server._model.compute_loss.call_args[0][1],
+#         embeddings_indices[0])
+#     vert_fed_gov._server.configure_data_access(UnprotectedAccess())
+#     server_labeled_data = vert_fed_gov._server.query()
+#     np.testing.assert_array_equal(
+#         vert_fed_gov._server._model.compute_loss.call_args[0][2],
+#         server_labeled_data.label)
 
+def test_evaluate_collaborative_model_train_data(
+        test_vertical_federated_government,
+        test_vertically_split_database):
+
+    federated_data, test_data, test_labels = test_vertically_split_database
     vert_fed_gov = test_vertical_federated_government
-    vert_fed_gov._server.configure_data_access(ComputeLoss())
-    vert_fed_gov._federated_data.configure_model_access(QueryMetaParameters())
 
-    vert_fed_gov._server._model.compute_loss.return_value = np.random.random()
-    for node in vert_fed_gov._federated_data:
-        node._model.get_meta_params.return_value = np.random.randint(0, 10, 100)
+    embeddings_indices = np.random.randint(0, 10, 100)
+    for node in federated_data:
+        embeddings = np.random.rand(100)
+        meta_params = (embeddings, embeddings_indices)
+        node._model.get_meta_params.return_value = meta_params
+    vert_fed_gov._server._model.predict.return_value = \
+        np.random.randint(0, 10, 100)
 
-    vert_fed_gov._server.compute_loss()
+    vert_fed_gov._server.evaluate_collaborative_model()
 
-    embeddings = [node._model.get_meta_params.return_value
-                  for node in vert_fed_gov._federated_data]
-    for node in vert_fed_gov._federated_data:
-        node._model.get_meta_params.assert_called_once()
-    vert_fed_gov._server._model.compute_loss.assert_called_once()
-
-    for i_node in range(vert_fed_gov._federated_data.num_nodes()):
+    for node, client_data in zip(federated_data, test_data):
+        node._model.predict.assert_called_once()
         np.testing.assert_array_equal(
-            vert_fed_gov._server._model.compute_loss.call_args[0][0][i_node],
-            embeddings[i_node])
-    vert_fed_gov._server.configure_data_access(UnprotectedAccess())
-    server_labeled_data = vert_fed_gov._server.query()
+            node._model.predict.call_args[0][0], client_data)
+
+    vert_fed_gov._server._model.evaluate.assert_called_once()
+    embeddings = [node._model.predict.return_value for node in federated_data]
     np.testing.assert_array_equal(
-        vert_fed_gov._server._model.compute_loss.call_args[0][1],
-        server_labeled_data.label)
+        vert_fed_gov._server._model.evaluate.call_args[0][0],
+        np.sum(embeddings, axis=0))
 
 
-def test_evaluate_collaborative_model(test_vertical_federated_government,
-                                      test_vertically_split_database):
+def test_evaluate_collaborative_model_test_data(
+        test_vertical_federated_government,
+        test_vertically_split_database):
 
     federated_data, test_data, test_labels = test_vertically_split_database
     vert_fed_gov = test_vertical_federated_government
@@ -189,12 +260,11 @@ def test_evaluate_collaborative_model(test_vertical_federated_government,
         np.testing.assert_array_equal(
             node._model.predict.call_args[0][0], client_data)
 
-    vert_fed_gov._server._model.predict.assert_called_once()
+    vert_fed_gov._server._model.evaluate.assert_called_once()
     embeddings = [node._model.predict.return_value for node in federated_data]
-    for i_node in range(federated_data.num_nodes()):
-        np.testing.assert_array_equal(
-            vert_fed_gov._server._model.predict.call_args[0][0][i_node],
-            embeddings[i_node])
+    np.testing.assert_array_equal(
+        vert_fed_gov._server._model.evaluate.call_args[0][0],
+        np.sum(embeddings, axis=0))
 
 
 def test_run_rounds(test_vertical_federated_government,
@@ -214,10 +284,12 @@ def test_run_rounds(test_vertical_federated_government,
 
     train_model_calls = \
         [call(),
-         call(embeddings_grads=vert_fed_gov._server.query_model.return_value)]
+         call(meta_params=vert_fed_gov._server.query_model.return_value)]
+    test_evaluate_collaborative_model_calls = \
+        [call(), call(test_data, test_labels)]
     vert_fed_gov._federated_data.train_model.assert_has_calls(train_model_calls)
     vert_fed_gov._server.aggregate_weights.assert_called_once()
     vert_fed_gov._server.query_model.assert_called_once()
-    vert_fed_gov._server.compute_loss.assert_called_once()
-    vert_fed_gov._server.evaluate_collaborative_model.assert_called_once()
+    vert_fed_gov._server.evaluate_collaborative_model.assert_has_calls(
+        test_evaluate_collaborative_model_calls)
 

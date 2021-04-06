@@ -122,8 +122,9 @@ class FederatedDataNode(DataNode):
 
 class ServerDataNode(FederatedDataNode):
     """
-        This class represents a type Server [DataNode](../data_node) in a FederatedData.
-        Extends DataNode allowing calls to methods without explicit private data identifier,
+        This class represents a type Server [DataNode](../data_node)
+        in a FederatedData. It extends DataNode allowing calls to methods
+        without explicit private data identifier,
         assuming access to the Server's data (if any).
 
         It supports Adaptive Differential Privacy through Privacy Filters
@@ -178,53 +179,82 @@ class ServerDataNode(FederatedDataNode):
 
 class VerticalServerDataNode(FederatedDataNode):
     """
-    This class represents a type Server [DataNode](../data_node)
-    in a FederatedData. It extends DataNode allowing calls to methods
-    without explicit private data identifier, assuming access to
-    the Server's data (in the case that the Server actually possesses
-    some private data).
+    This class represents a Server data node [DataNode](../data_node) in
+    the Vertical Federated Learning setting.
+    It extends DataNode allowing calls to methods without explicit private
+    data identifier, assuming access to the Server's data (if any).
     It also Aggregates weights from all data nodes in the server model and
-    updates the server. In this vertical architecture, the server
-    possesses part of the model, thus the aggregation is actually
-    a server's training.
+    trains the server's model.
 
     # Arguments:
-        federated_data: object of class [FederatedData](./federated_data)
+        federated_data: Object of class [FederatedData](./federated_data)
             representing the set of client nodes
-        model: object representing the model of the server node
-        aggregator: object representing the type of aggregator to use
-        data: optional, server's private data
+        model: Object representing the model of the server node
+        data: Optional server's private data
     """
 
-    def __init__(self, federated_data, model, aggregator, data=None):
+    def __init__(self, federated_data, model, data=None):
         super().__init__(federated_data_identifier=str(id(federated_data)))
         self._federated_data = federated_data
         self.model = model
-        self._aggregator = aggregator
         self.set_private_data(data)
+
+    def predict_collaborative_model(self, data):
+        """
+        Make a prediction using the collaborative model.
+
+        # Arguments:
+            data: List, each item representing the global test
+                dataset for a single client.
+        """
+
+        embeddings = [node.predict(data)
+                      for node, data in
+                      zip(self._federated_data, data)]
+        embeddings = np.sum(embeddings, axis=0)
+        prediction = self.predict(embeddings)
+
+        return prediction
+
+    def evaluate_collaborative_model(self, test_data=None, test_label=None):
+        """
+        Evaluation of the collaborative model.
+        If the global test_data or test_label are not provided,
+        the evaluation is made on the batch of train data and labels
+        available at the present iteration.
+
+        # Arguments:
+            test_data: List, each item representing the global test
+                dataset for a single client.
+            test_label: Array representing the global labels (the
+                same for all clients)
+        """
+
+        if test_data is not None and test_label is not None:
+
+            test_embeddings = [node.predict(data)
+                               for node, data in
+                               zip(self._federated_data, test_data)]
+            test_embeddings = np.sum(test_embeddings, axis=0)
+            evaluation = self.evaluate(test_embeddings, test_label)
+            print("Collaborative model test evaluation: " + str(evaluation))
+
+        else:
+
+            evaluation = self.query(
+                server_model=self._model,
+                meta_params=self._query_clients_meta_params())
+            print("Collaborative model train batch evaluation: " +
+                  str(evaluation))
 
     def aggregate_weights(self):
         """
         Aggregation of clients' batch information into the vertical server.
         Since the server might possess data, this is actually a training step
-        from the server's side.
+        of the server's local model.
         """
 
-        embeddings, embeddings_indices = self._query_clients_meta_params()
-        self.train_model(embeddings=embeddings,
-                         embeddings_indices=embeddings_indices)
-
-    def compute_loss(self):
-        """
-        Evaluate loss on the train data.
-        """
-
-        embeddings, embeddings_indices = self._query_clients_meta_params()
-        loss = self.query(server_model=self._model,
-                          embeddings=embeddings,
-                          embeddings_indices=embeddings_indices)
-
-        return loss
+        self.train_model(meta_params=self._query_clients_meta_params())
 
     def _query_clients_meta_params(self):
         """
@@ -244,33 +274,6 @@ class VerticalServerDataNode(FederatedDataNode):
         self._check_embeddings_indices(embeddings_indices)
 
         return embeddings, embeddings_indices[0]
-
-    def evaluate_collaborative_model(self, test_data, test_label):
-        """
-        Evaluation of the performance of the collaborative model.
-
-        # Arguments:
-            test_data: List, each item representing the global test
-                dataset for a single client (note: the client's order
-                must be as in federated_data)
-            test_label: Array representing the global labels (the
-                same for all clients)
-        # Returns:
-            prediction: prediction of the collaborative model on the global
-                test dataset
-        """
-
-        # Compute embeddings (CLIENTS)
-        embeddings = [node.predict(data)
-                      for node, data in
-                      zip(self._federated_data, test_data)]
-
-        # Compute prediction (SERVER)
-        prediction = self.predict(np.sum(embeddings, axis=0))
-        print("Distributed model test AUC: "
-              + str(self.performance(prediction, test_label)))
-
-        return prediction
 
     @staticmethod
     def _check_embeddings_indices(embeddings_indices):

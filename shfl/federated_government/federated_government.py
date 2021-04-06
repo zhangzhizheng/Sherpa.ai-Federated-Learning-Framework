@@ -12,9 +12,6 @@ class FederatedGovernment:
         (see: [FederatedData](../private/federated_operation/#federateddata-class))
        aggregator: Federated aggregator function
         (see: [Federated Aggregator](../federated_aggregator))
-       model_param_access: Policy to access model's parameters,
-        by default non-protected
-        (see: [DataAccessDefinition](../private/data/#dataaccessdefinition-class))
        server_node: Optional server node of class FederatedDataNode
         (see: [FederatedDataNode](../private/federated_operation/#federateddatanode-class))
     """
@@ -62,8 +59,8 @@ class FederatedGovernment:
         # Arguments:
             n: Number of federated learning rounds
             test_data: Global test data for evaluation between rounds
-            test_label: Global test label for evaluation between rounds
-            eval_freq: Round frequency for evaluation
+            test_label: Global test labels for evaluation between rounds
+            eval_freq: Frequency for evaluation and print on global test data
         """
         for i in range(0, n):
 

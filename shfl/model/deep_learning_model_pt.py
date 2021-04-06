@@ -100,6 +100,7 @@ class DeepLearningModelPyTorch(TrainableModel):
         # Returns:
             metrics: Returns metrics for data argument
         """
+
         self._check_data(data)
         self._check_labels(labels)
 
@@ -162,7 +163,7 @@ class DeepLearningModelPyTorch(TrainableModel):
         """
         if data.shape[1] != self._data_shape:
             raise AssertionError("Data need to have the same dimension described by the model " + str(self._data_shape) +
-                                 " .Current data has dimension " + str(data.shape[1]))
+                                 ". Current data have dimension " + str(data.shape[1]))
 
     def _check_labels(self, labels):
         """
@@ -170,4 +171,4 @@ class DeepLearningModelPyTorch(TrainableModel):
         """
         if labels.shape[1:] != self._labels_shape:
             raise AssertionError("Labels need to have the same shape described by the model " + str(self._labels_shape)
-                                 + " .Current labels has shape " + str(labels.shape[1:]))
+                                 + ". Current labels have shape " + str(labels.shape[1:]))
