@@ -193,10 +193,11 @@ class VerticalServerDataNode(FederatedDataNode):
         data: Optional server's private data
     """
 
-    def __init__(self, federated_data, model, data=None):
+    def __init__(self, federated_data, model, aggregator, data=None):
         super().__init__(federated_data_identifier=str(id(federated_data)))
         self._federated_data = federated_data
         self.model = model
+        self._aggregator = aggregator
         self.set_private_data(data)
 
     def predict_collaborative_model(self, data):
@@ -208,11 +209,12 @@ class VerticalServerDataNode(FederatedDataNode):
                 dataset for a single client.
         """
 
-        embeddings = [node.predict(data)
-                      for node, data in
-                      zip(self._federated_data, data)]
-        embeddings = np.sum(embeddings, axis=0)
-        prediction = self.predict(embeddings)
+        clients_embeddings = [node.predict(data)
+                              for node, data in
+                              zip(self._federated_data, data)]
+        clients_embeddings_aggregated = \
+            self._aggregator.aggregate_weights(clients_embeddings)
+        prediction = self.predict(clients_embeddings_aggregated)
 
         return prediction
 
@@ -232,56 +234,59 @@ class VerticalServerDataNode(FederatedDataNode):
 
         if test_data is not None and test_label is not None:
 
-            test_embeddings = [node.predict(data)
-                               for node, data in
-                               zip(self._federated_data, test_data)]
-            test_embeddings = np.sum(test_embeddings, axis=0)
-            evaluation = self.evaluate(test_embeddings, test_label)
-            print("Collaborative model test evaluation: " + str(evaluation))
+            clients_embeddings = [node.predict(data)
+                                  for node, data in
+                                  zip(self._federated_data, test_data)]
+            clients_embeddings_aggregated = \
+                self._aggregator.aggregate_weights(clients_embeddings)
+            evaluation = self.evaluate(clients_embeddings_aggregated,
+                                       test_label)
+            print("Collaborative model test evaluation (global, local): " +
+                  str(evaluation))
 
         else:
 
-            evaluation = self.query(
-                server_model=self._model,
-                meta_params=self._query_clients_meta_params())
+            evaluation = self.query(server_model=self._model,
+                                    meta_params=self.aggregate_weights())
             print("Collaborative model train batch evaluation: " +
                   str(evaluation))
 
     def aggregate_weights(self):
         """
-        Aggregation of clients' batch information into the vertical server.
-        Since the server might possess data, this is actually a training step
-        of the server's local model.
+        Aggregate the parameters from all clients.
+        It is assumed that the last item of each client's
+        parameters is constituted by samples' indices (id).
+        The latter are not aggregated and must match among all clients.
         """
 
-        self.train_model(meta_params=self._query_clients_meta_params())
+        clients_meta_params = self._federated_data.query_model()
+        params = [client[param] for client in clients_meta_params
+                  for param in range(len(client) - 1)]
+        samples_indices = [item[-1] for item in clients_meta_params]
+        matching_indices = self._check_indices_matching(samples_indices)
+        aggregated_meta_params = self._aggregator.aggregate_weights(params)
 
-    def _query_clients_meta_params(self):
-        """
-        Method to query meta parameters from clients.
-
-        Returns:
-            embeddings: list of clients' embeddings, where each item
-                represents a single client's embeddings.
-            embedding_indices: array of int containing samples' indices
-                (in vertical learning, it is the same for each client)
-        """
-
-        meta_params = self._federated_data.query_model()
-
-        embeddings = [item[0] for item in meta_params]
-        embeddings_indices = [item[1] for item in meta_params]
-        self._check_embeddings_indices(embeddings_indices)
-
-        return embeddings, embeddings_indices[0]
+        return aggregated_meta_params, matching_indices
 
     @staticmethod
-    def _check_embeddings_indices(embeddings_indices):
-        """Method that checks that all the nodes' indices that the
-        vertical server received are the same."""
+    def _check_indices_matching(sample_indices):
+        """
+        Method that checks that all the nodes' indices that the
+        vertical server received are the same and returns a single
+        copy of the indices. If not, an error is raised.
 
-        if not all(np.array_equal(embeddings_indices[0], item)
-                   for item in embeddings_indices):
+        # Arguments:
+            indices_samples: List of multi-dimensional integer arrays.
+                Each entry in the list contains the one client's sample indices.
+
+        # Returns
+            matching_indices: Array containing samples' indices.
+        """
+
+        if all(np.array_equal(sample_indices[0], item)
+               for item in sample_indices):
+            return sample_indices[0]
+        else:
             raise AssertionError("Clients samples' indices do not match.")
     
 

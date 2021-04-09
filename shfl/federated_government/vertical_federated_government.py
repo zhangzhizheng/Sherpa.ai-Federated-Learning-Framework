@@ -39,9 +39,10 @@ class VerticalFederatedGovernment:
         for i in range(0, n):
 
             self._federated_data.train_model()
-            self._server.aggregate_weights()
-            self._federated_data.train_model(
-                meta_params=self._server.query_model())
+            clients_meta_params = self._server.aggregate_weights()
+            self._server.train_model(meta_params=clients_meta_params)
+            server_meta_params = self._server.query_model()
+            self._federated_data.train_model(meta_params=server_meta_params)
 
             if i % eval_freq == 0:
                 print("Round " + str(i))

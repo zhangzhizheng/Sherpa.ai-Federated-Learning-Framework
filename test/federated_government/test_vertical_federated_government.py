@@ -178,40 +178,6 @@ def test_train_all_clients_update_stage(test_vertical_federated_government):
             meta_params=meta_params)
 
 
-# def test_compute_loss(test_vertical_federated_government):
-#
-#     vert_fed_gov = test_vertical_federated_government
-#
-#     embeddings_indices = np.random.randint(0, 10, 50)
-#     for node in vert_fed_gov._federated_data:
-#         embeddings = np.random.rand(50)
-#         meta_params = (embeddings, embeddings_indices)
-#         node._model.get_meta_params.return_value = meta_params
-#     vert_fed_gov._server._model.compute_loss.return_value = np.random.random()
-#
-#     vert_fed_gov._server.compute_loss()
-#
-#     for node in vert_fed_gov._federated_data:
-#         node._model.get_meta_params.assert_called_once()
-#     vert_fed_gov._server._model.compute_loss.assert_called_once()
-#
-#     meta_params = [node._model.get_meta_params.return_value
-#                    for node in vert_fed_gov._federated_data]
-#     embeddings = [item[0] for item in meta_params]
-#     embeddings_indices = [item[1] for item in meta_params]
-#     for i_node in range(vert_fed_gov._federated_data.num_nodes()):
-#         np.testing.assert_array_equal(
-#             vert_fed_gov._server._model.compute_loss.call_args[0][0][i_node],
-#             embeddings[i_node])
-#     np.testing.assert_array_equal(
-#         vert_fed_gov._server._model.compute_loss.call_args[0][1],
-#         embeddings_indices[0])
-#     vert_fed_gov._server.configure_data_access(UnprotectedAccess())
-#     server_labeled_data = vert_fed_gov._server.query()
-#     np.testing.assert_array_equal(
-#         vert_fed_gov._server._model.compute_loss.call_args[0][2],
-#         server_labeled_data.label)
-
 def test_evaluate_collaborative_model_train_data(
         test_vertical_federated_government,
         test_vertically_split_database):

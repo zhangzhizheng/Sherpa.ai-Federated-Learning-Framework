@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
-from sklearn.metrics import roc_auc_score
 import numpy as np
 
 from shfl.model import DeepLearningModelPyTorch
@@ -50,7 +49,6 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
         self._embeddings_indices = None
         self._batch_counter = 0
         self._epoch_counter = 0
-        self._data_loader = None
 
     def train(self, data, labels, **kwargs):
         """
@@ -61,7 +59,7 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
         2) Backpropagation of the received gradients of the loss with respect
            the embeddings.
 
-        # Arguments
+        # Arguments:
             data: Data, array-like of shape (n_samples, n_features)
             labels: Target classes, array-like of shape (n_samples,)
             kwargs: dictionary containing the gradients w.r.t. the embeddings
@@ -72,16 +70,15 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
         if "meta_params" not in kwargs:
             # Forward step:
 
-            if self._data_loader is None:
-                self._check_data(data)
-                data = TensorDatasetIndex(data)
-                data_loader = DataLoader(data, self._batch_size)
-                self._data_loader = [item for item in data_loader]
+            start_index = self._batch_counter * self._batch_size
+            end_index = start_index + self._batch_size
+            if end_index >= len(data) - 1:
+                end_index = len(data)
+            self._embeddings_indices = np.arange(start_index, end_index)
 
-            data_batch, self._embeddings_indices = \
-                self._data_loader[self._batch_counter]
-
-            self._embeddings = self._model(data_batch[0])
+            data_batch = torch.from_numpy(data[self._embeddings_indices]).\
+                float().to(self._device)
+            self._embeddings = self._model(data_batch)
 
         else:
             # Backpropagation of received gradient:
@@ -94,7 +91,7 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
             self._optimizer.step()
 
             self._batch_counter += 1
-            if self._batch_counter == len(self._data_loader):
+            if self._embeddings_indices[-1] == (len(data) - 1):
                 self._batch_counter = 0
                 self._epoch_counter += 1
 
@@ -102,7 +99,29 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
         """ Return computed embeddings. """
 
         return self._embeddings.detach().cpu().numpy(), \
-            self._embeddings_indices.detach().cpu().numpy()
+            self._embeddings_indices
+        # self._embeddings_indices.detach().cpu().numpy()
+
+    def make_data_loader(self, data):
+        """
+        Creates a Pytorch data loader from input data.
+        For each batch, also the associated indices (id of samples)
+        are needed for the Vertical learning.
+
+        # Arguments:
+            data: Data, array-like of shape (n_samples, n_features)
+
+        # Returns:
+            data_loader: A list whose items contain the pairs
+                [batch_data, batch_indices]
+        """
+
+        self._check_data(data)
+        data = TensorDatasetIndex(data)
+        data_loader = DataLoader(data, self._batch_size)
+        data_loader = [item for item in data_loader]
+
+        return data_loader
 
 
 class VerticalNeuralNetServer(DeepLearningModelPyTorch):
@@ -153,9 +172,7 @@ class VerticalNeuralNetServer(DeepLearningModelPyTorch):
         """
 
         embeddings, self._embeddings_indices = kwargs.get("meta_params")
-        embeddings = [torch.from_numpy(i_embeddings)
-                      for i_embeddings in embeddings]
-        embeddings = torch.stack(embeddings, dim=0).sum(dim=0)
+        embeddings = torch.as_tensor(embeddings, device=self._device)
         embeddings = torch.autograd.Variable(embeddings, requires_grad=True)
 
         labels = torch.from_numpy(labels).float()[self._embeddings_indices]
@@ -169,7 +186,7 @@ class VerticalNeuralNetServer(DeepLearningModelPyTorch):
         self._grad_embeddings = embeddings.grad
 
     def get_meta_params(self):
-        """ Returns computed embeddings' gradients. """
+        """ Returns gradient with respect the embeddings. """
 
         return self._grad_embeddings.detach().cpu().numpy(), \
             self._embeddings_indices
