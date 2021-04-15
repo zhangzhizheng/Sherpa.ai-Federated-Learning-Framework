@@ -22,8 +22,7 @@ class Lfw(db.DataBase):
         labels = to_categorical(all_data["target"])
 
         self._train_data, self._train_labels,\
-
-        self._test_data, self._test_labels = \
-        db.split_train_test(data, labels, train_percentage=0.9)
+            self._test_data, self._test_labels = \
+            db.split_train_test(data, labels, train_percentage=0.9)
 
         return self.data
