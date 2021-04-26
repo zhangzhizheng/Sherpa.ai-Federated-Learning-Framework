@@ -37,7 +37,7 @@ def _check_data_labels(data, labels):
 class Recommender(TrainableModel):
     """
     Abstract class for recommender systems using \
-        [TrainableModel](../model/#trainablemodel-class)
+        [TrainableModel](../#trainablemodel-class)
 
     The data in this class should be an array where the first column specifies the client. In particular, both the
     training and testing data that enter each client should be such that the value across the first column is constant.

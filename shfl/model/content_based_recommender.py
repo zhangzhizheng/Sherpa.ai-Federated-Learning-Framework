@@ -27,8 +27,7 @@ def _check_no_new_items(data, df_items):
 
 
 class ContentBasedRecommender(Recommender):
-    """
-    Implementation of a content-based recommender using \
+    """A content-based recommender using \
         [Recommender](../model/#recommender-class).
 
     # Arguments:

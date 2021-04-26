@@ -6,17 +6,19 @@ from shfl.model.model import TrainableModel
 
 
 class DeepLearningModelPyTorch(TrainableModel):
-    """
-    This class offers support for PyTorch models. It implements [TrainableModel](../model/#trainablemodel-class)
+    """Supports PyTorch models.
+
+    It implements [TrainableModel](../#trainablemodel-class).
 
     # Arguments:
-        model: Compiled model, ready to train
-        criterion: Loss function to apply
-        optimizer: Optimizer to apply
-        batch_size: batch_size to apply
-        epochs: Number of epochs
-        metrics: Metrics for apply. Dictionary {name: function to apply, ...}. Default shows loss and accuracy
-        device: Device where it will run. Default cpu
+        model: Compiled model, ready to train.
+        criterion: Loss function.
+        optimizer: Optimizer.
+        batch_size: Optional; batch size.
+        epochs: Optional; Number of epochs.
+        metrics: Optional dictionary {name: function to apply, ...};
+            Metrics for performance evaluation (default shows loss).
+        device: Optional; Device where to run (default is cpu).
     """
     def __init__(self, model, loss, optimizer, batch_size=32, epochs=1, metrics=None, device="cpu"):
         self._model = model

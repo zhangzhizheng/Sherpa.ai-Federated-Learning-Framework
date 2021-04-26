@@ -5,30 +5,30 @@ from shfl.model import DeepLearningModelPyTorch
 
 
 class VerticalNeuralNetClient(DeepLearningModelPyTorch):
-    """
-    This class that represents a model of a Client node in a
-    Vertical Federated Learning (FL) setting.
-    Essentially, the collaborative training might take place using different
+    """Client's Neural Network model in a Vertical Federated Learning (FL) setting.
+
+    In Vertical FL, the collaborative training might take place using different
     features in each node, but the same training samples are used (i.e. each
     node possesses a vertical chunk of the features matrix).
     The key difference with respect Horizontal FL is that clients'
     models might differ from client to client (e.g. different model type
     and/or architecture), and might not even possess the target labels.
-    In the present implementation a Pytorch model is employed.
+    In the present implementation a
+    [Pytorch Neural Network model](./#DeepLearningModelPyTorch-class) is employed.
 
     # Arguments:
-        model: Compiled model, ready to train
-        criterion: Loss function to apply
-        optimizer: Optimizer to apply
-        batch_size: batch_size to apply
-        epochs: Number of epochs
-        metrics: Metrics for apply. Dictionary {name: function to apply, ...}.
-            Default shows loss.
-        device: Device where it will run. Default is cpu.
+        model: Compiled model, ready to train.
+        criterion: Loss function.
+        optimizer: Optimizer.
+        batch_size: Optional; batch size.
+        epochs: Optional; Number of epochs.
+        metrics: Optional dictionary {name: function to apply, ...};
+            Metrics for performance evaluation (default shows loss).
+        device: Optional; Device where to run (default is cpu).
 
     # References:
-        [VAFL: a Method of Vertical Asynchronous Federated Learning]
-        (https://arxiv.org/abs/2007.06081)
+        [VAFL, a Method of Vertical Asynchronous
+            Federated Learning](https://arxiv.org/abs/2007.06081)
     """
 
     def __init__(self, model, loss, optimizer, batch_size=32,
@@ -43,22 +43,23 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
         self._epoch_counter = 0
 
     def train(self, data, labels, **kwargs):
-        """
-        Implementation of abstract method of class
+        """Implementation of abstract method of class
         [TrainableModel](../Model/#trainablemodel-class).
+
         The training on the Vertical client node is comprised of two stages:
         1) Feedforward, where the embeddings are computed using the local model;
         2) Backpropagation of the received gradients of the loss with respect
            the embeddings.
 
         # Arguments:
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target classes, array-like of shape (n_samples,)
-            kwargs: dictionary containing the gradients w.r.t. the embeddings
-                and samples' indices, assumed to be Numpy arrays of shape
-                (n_samples, n_embeddings) and (n_samples), respectively.
-                This is used only in the backpropagation stage
-                of the training.
+            data: Data, array-like object of shape (n_samples, n_features).
+            labels: Target classes, array-like object of shape
+                (n_samples, n_classes).
+            kwargs: Optional; Dictionary containing the gradients w.r.t.
+                the embeddings and samples' indices, assumed to be
+                Numpy arrays of shape (n_samples, n_embeddings) and
+                (n_samples, ), respectively. It is used only in the
+                backpropagation stage of the training.
         """
 
         if not kwargs:
@@ -90,37 +91,37 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
                 self._epoch_counter += 1
 
     def get_meta_params(self):
-        """ Return computed embeddings and associated indices. """
+        """Returns computed embeddings and associated indices. """
 
         return self._embeddings.detach().cpu().numpy(), \
             self._embeddings_indices
 
 
 class VerticalNeuralNetServer(DeepLearningModelPyTorch):
-    """
-    This class that represents a model of a Server node in a
-    Vertical Federated Learning (FL) setting.
-    Essentially, the collaborative training might take place using different
+    """Server's Neural Network model in a Vertical Federated Learning (FL) setting.
+
+    In Vertical FL, the collaborative training might take place using different
     features in each node, but the same training samples are used (i.e. each
     node possesses a vertical chunk of the features matrix).
     The key difference with respect Horizontal FL is that clients'
     models might differ from client to client (e.g. different model type
     and/or architecture), and might not even possess the target labels.
-    In the present implementation a Pytorch model is wrapped.
+    In the present implementation a
+    [Pytorch Neural Network model](./#DeepLearningModelPyTorch-class) is employed.
 
     # Arguments:
-        model: Compiled model, ready to train
-        criterion: Loss function to apply
-        optimizer: Optimizer to apply
-        batch_size: batch_size to apply
-        epochs: Number of epochs
-        metrics: Metrics for apply. Dictionary {name: function to apply, ...}.
-            Default is loss.
-        device: Device where it will run. Default is cpu.
+        model: Compiled model, ready to train.
+        criterion: Loss function.
+        optimizer: Optimizer.
+        batch_size: Optional; batch size.
+        epochs: Optional; Number of epochs.
+        metrics: Optional dictionary {name: function to apply, ...};
+            Metrics for performance evaluation (default shows loss).
+        device: Optional; Device where to run (default is cpu).
 
     # References:
-        [VAFL: a Method of Vertical Asynchronous Federated Learning]
-        (https://arxiv.org/abs/2007.06081)
+        [VAFL, a Method of Vertical Asynchronous
+            Federated Learning](https://arxiv.org/abs/2007.06081)
     """
 
     def __init__(self, model, loss, optimizer, batch_size=32,
@@ -132,19 +133,19 @@ class VerticalNeuralNetServer(DeepLearningModelPyTorch):
         self._grad_embeddings = None
 
     def train(self, data, labels, **kwargs):
-        """
-        Implementation of abstract method of class
+        """Implementation of abstract method of class
         [TrainableModel](../Model/#trainablemodel-class).
+
         The local server's model is trained using as input the
-        received embeddings. The gradients of the loss w.r.t.
+        received embeddings from the clients. The gradients of the loss w.r.t.
         the received embeddings is computed.
 
         # Arguments
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target classes, array-like of shape (n_samples,)
-            kwargs: dictionary containing the clients' embeddings
+            data: Data, array-like of shape (n_samples, n_features).
+            labels: Target classes, array-like of shape (n_samples, n_classes).
+            kwargs: Dictionary containing the clients' embeddings
                 and samples' indices, assumed to be Numpy arrays of shape
-                (n_samples, n_embeddings) and (n_samples), respectively.
+                (n_samples, n_embeddings) and (n_samples, ), respectively.
         """
 
         embeddings, self._embeddings_indices = kwargs.get("meta_params")
@@ -163,9 +164,8 @@ class VerticalNeuralNetServer(DeepLearningModelPyTorch):
         self._grad_embeddings = embeddings.grad
 
     def get_meta_params(self):
-        """
-        Returns gradient of loss with respect the embeddings and
-        samples' indices.
+        """Returns gradient of loss with respect clients' embeddings and
+            associated indices.
         """
 
         return self._grad_embeddings.detach().cpu().numpy(), \

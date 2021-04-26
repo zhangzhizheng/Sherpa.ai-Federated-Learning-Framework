@@ -5,8 +5,9 @@ import copy
 
 
 class DeepLearningModel(TrainableModel):
-    """
-    This class offers support for Keras and tensorflow models. It implements [TrainableModel](../model/#trainablemodel-class)
+    """Supports Keras and tensorflow models.
+
+    It implements [TrainableModel](../#trainablemodel-class).
 
     # Arguments:
         model: Compiled model, ready to train
@@ -29,7 +30,7 @@ class DeepLearningModel(TrainableModel):
 
         self._model.compile(optimizer=self._optimizer, loss=self._loss, metrics=self._metrics)
 
-    def train(self, data, labels):
+    def train(self, data, labels, **kwargs):
         """
         Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
 

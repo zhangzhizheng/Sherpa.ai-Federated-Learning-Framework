@@ -5,7 +5,26 @@ import pytest
 import shfl.data_base.data_base
 from shfl.data_base.data_base import DataBase
 from shfl.data_base.data_base import LabeledDatabase
+from shfl.data_base.data_base import shuffle_rows
+from shfl.data_base.data_base import split_train_test
 from shfl.data_base.data_base import vertical_split
+
+
+@pytest.fixture
+def data_and_labels_arrays():
+    data = np.random.rand(60, 12)
+    labels = np.random.randint(0, 2, size=(60,))
+
+    return data, labels
+
+
+@pytest.fixture
+def data_and_labels_dataframes(data_and_labels_arrays):
+    data, labels = data_and_labels_arrays
+    data = pd.DataFrame(data)
+    labels = pd.Series(labels)
+
+    return data, labels
 
 
 class TestDataBase(DataBase):
@@ -15,8 +34,8 @@ class TestDataBase(DataBase):
     def load_data(self):
         self._train_data = np.random.rand(50).reshape([10, 5])
         self._test_data = np.random.rand(50).reshape([10, 5])
-        self._train_labels = np.random.rand(10)
-        self._test_labels = np.random.rand(10)
+        self._train_labels = np.random.randint(10)
+        self._test_labels = np.random.randint(10)
 
 
 class TestDataBasePandas(DataBase):
@@ -26,174 +45,118 @@ class TestDataBasePandas(DataBase):
     def load_data(self):
         self._train_data = pd.DataFrame(np.random.rand(50).reshape([10, 5]))
         self._test_data = pd.DataFrame(np.random.rand(50).reshape([10, 5]))
-        self._train_labels = pd.Series(np.random.rand(10))
-        self._test_labels = pd.Series(np.random.rand(10))
+        self._train_labels = pd.Series(np.random.randint(10))
+        self._test_labels = pd.Series(np.random.randint(10))
 
 
-@pytest.mark.parametrize("data, labels",
-                         [(np.random.rand(50).reshape([10, -1]),
-                           np.random.rand(10)),
-                          (pd.DataFrame(np.random.rand(50).reshape([10, -1])),
-                           pd.Series(np.random.rand(10)))])
-def test_split_train_test(data, labels):
-    data = np.random.rand(50).reshape([10, -1])
-    labels = np.random.rand(10)
-    train_percentage = 0.8
-    dim = round(len(data) * (1 - train_percentage))
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_split_train_test(data_labels, request):
+    data, labels = request.getfixturevalue(data_labels)
+    train_proportion = 0.8
+    train_size = round(len(data) * train_proportion)
 
-    rest_data, rest_labels, \
-        validation_data, validation_labels = \
-        shfl.data_base.data_base.split_train_test(data, labels, train_percentage)
+    train_data, train_labels, \
+        test_data, test_labels = \
+        shfl.data_base.data_base.split_train_test(data, labels, train_proportion)
 
     if isinstance(data, np.ndarray):
-        ndata = np.concatenate([rest_data, validation_data])
-        nlabels = np.concatenate([rest_labels, validation_labels])
-    else:  # Dataframe
-        ndata = pd.concat([rest_data, validation_data])
-        nlabels = pd.concat([rest_labels, validation_labels])
+        assert np.array_equal(train_data, data[:train_size])
+        assert np.array_equal(train_labels, labels[:train_size])
+        assert np.array_equal(test_data, data[train_size:])
+        assert np.array_equal(test_labels, labels[train_size:])
+        assert np.array_equal(np.concatenate((train_data, test_data)), data)
+        assert np.array_equal(np.concatenate((train_labels, test_labels)), labels)
 
-    data_ravel = np.sort(data.ravel())
-    ndata_ravel = np.sort(ndata.ravel())
+    if isinstance(data, (pd.DataFrame, pd.Series)):
+        assert train_data.equals(data.iloc[:train_size])
+        assert train_labels.equals(labels.iloc[:train_size])
+        assert test_data.equals(data.iloc[train_size:])
+        assert test_labels.equals(labels.iloc[train_size:])
+        assert data.equals(pd.concat((train_data, test_data)))
+        assert labels.equals(pd.concat((train_labels, test_labels)))
 
-    assert np.array_equal(data_ravel, ndata_ravel)
-    assert np.array_equal(np.sort(labels), np.sort(nlabels))
-    assert rest_data.shape[0] == data.shape[0]-dim
-    assert rest_labels.shape[0] == labels.shape[0]-dim
-    assert validation_data.shape[0] == dim
-    assert validation_labels.shape[0] == dim
+    # Test boundaries: All data assigned to train
+    train_proportion = 1
+    train_data, train_labels, test_data, test_labels = \
+        split_train_test(data, labels, train_proportion=train_proportion)
+    np.testing.assert_array_equal(train_data, data)
+    np.testing.assert_array_equal(train_labels, labels)
+    assert len(test_data) == 0
+    assert len(test_labels) == 0
 
-    # No shuffle:
-    rest_data, rest_labels, validation_data, validation_labels = \
-        shfl.data_base.data_base.split_train_test(
-            data, labels, train_percentage, shuffle=False)
-    if isinstance(data, np.ndarray):
-        assert np.array_equal(rest_data, data[:-dim, :])
-        assert np.array_equal(rest_labels, labels[:-dim])
-        assert np.array_equal(validation_data, data[-dim:, :])
-        assert np.array_equal(validation_labels, labels[-dim:])
-    else:  # Dataframe
-        assert rest_data.equals(data.iloc[:-dim, :])
-        assert rest_labels.equals(labels.iloc[:-dim])
-        assert validation_data.equals(data.iloc[-dim:, :])
-        assert validation_labels.equals(labels.iloc[-dim:])
-
-
-def test_data_base_shuffle_elements():
-    data = TestDataBase()
-    data.load_data()
-
-    train_data_b, train_labels_b, test_data_b, test_labels_b = data.data
-
-    data.shuffle()
-
-    train_data_a, train_labels_a, test_data_a, test_labels_a = data.data
-
-    train_data_b = np.sort(train_data_b.ravel())
-    train_data_a = np.sort(train_data_a.ravel())
-    assert np.array_equal(train_data_b, train_data_a)
-
-    test_data_b = np.sort(test_data_b.ravel())
-    test_data_a = np.sort(test_data_a.ravel())
-    assert np.array_equal(test_data_b, test_data_a)
-
-    assert np.array_equal(np.sort(train_labels_b), np.sort(train_labels_a))
-    assert np.array_equal(np.sort(test_labels_b), np.sort(test_labels_a))
+    # Test boundaries: All data assigned to test
+    train_proportion = 0
+    train_data, train_labels, test_data, test_labels = \
+        split_train_test(data, labels, train_proportion=train_proportion)
+    np.testing.assert_array_equal(test_data, data)
+    np.testing.assert_array_equal(test_labels, labels)
+    assert len(train_data) == 0
+    assert len(train_labels) == 0
 
 
-def test_data_base_shuffle_elements_pandas():
-    data = TestDataBasePandas()
-    data.load_data()
+def test_shuffle_rows_numpy_array(data_and_labels_arrays):
+    data, labels = data_and_labels_arrays
+    shuffled_data, shuffled_labels = shuffle_rows(data, labels)
 
-    train_data_b, train_labels_b, test_data_b, test_labels_b = data.data
+    np.testing.assert_array_equal(np.sort(data.ravel()),
+                                  np.sort(shuffled_data.ravel()))
+    np.testing.assert_array_equal(np.sort(labels.ravel()),
+                                  np.sort(shuffled_labels.ravel()))
 
-    data.shuffle()
-
-    train_data_a, train_labels_a, test_data_a, test_labels_a = data.data
-
-    train_data_b = train_data_b.sort_index()
-    train_data_a = train_data_a.sort_index()
-    assert np.array_equal(train_data_b, train_data_a)
-
-    test_data_b = test_data_b.sort_index()
-    test_data_a = test_data_a.sort_index()
-    assert np.array_equal(test_data_b, test_data_a)
-
-    assert np.array_equal(train_labels_b.sort_index(), train_labels_a.sort_index())
-    assert np.array_equal(test_labels_b.sort_index(), test_labels_a.sort_index())
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal,
+                             data, shuffled_data)
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal,
+                             labels, shuffled_labels)
 
 
-def test_data_base_shuffle_correct():
-    data = TestDataBase()
-    data.load_data()
+def test_shuffle_rows_pandas_dataframe(data_and_labels_dataframes):
+    data, labels = data_and_labels_dataframes
+    shuffled_data, shuffled_labels = shuffle_rows(data, labels)
 
-    train_data_b, train_labels_b = data.train
-    test_data_b, test_labels_b = data.test
+    np.testing.assert_array_equal(data.sort_index(),
+                                  shuffled_data.sort_index())
+    np.testing.assert_array_equal(labels.sort_index(),
+                                  shuffled_labels.sort_index())
 
-    data.shuffle()
-
-    train_data_a, train_labels_a = data.train
-    test_data_a, test_labels_a = data.test
-
-    assert (train_data_b == train_data_a).all() == False
-    assert (test_data_b == test_data_a).all() == False
-
-
-def test_data_base_shuffle_correct_pandas():
-    data = TestDataBasePandas()
-    data.load_data()
-
-    train_data_b, train_labels_b = data.train
-    test_data_b, test_labels_b = data.test
-
-    data.shuffle()
-
-    train_data_a, train_labels_a = data.train
-    test_data_a, test_labels_a = data.test
-
-    assert (train_data_b.to_numpy() == train_data_a.to_numpy()).all() == False
-    assert (test_data_b.to_numpy() == test_data_a.to_numpy()).all() == False
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal,
+                             data, shuffled_data)
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal,
+                             labels, shuffled_labels)
 
 
-def test_shuffle_wrong_call():
-    data = TestDataBase()
+def test_shuffle_rows_wrong_inputs(data_and_labels_arrays):
+    data, labels = data_and_labels_arrays
+    labels = pd.Series(labels)
 
     with pytest.raises(TypeError):
-        data.shuffle()
+        shuffle_rows(data, labels)
 
 
-def test_labeled_database():
-    data = np.random.randint(low=0, high=100, size=100, dtype='l')
-    labels = 10 + 2 * data + np.random.normal(loc=0.0, scale=10, size=len(data))
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_labeled_database(data_labels, request):
+    data, labels = request.getfixturevalue(data_labels)
     database = LabeledDatabase(data, labels)
-    loaded_data = database.load_data()
-
-    assert loaded_data is not None
-    assert len(loaded_data[1]) + len(loaded_data[3]) == len(data)
-
-    # No train/test split:
-    database = LabeledDatabase(data, labels, train_percentage=1)
     train_data, train_labels, test_data, test_labels = database.load_data()
-    assert np.array_equal(train_data, data)
-    assert np.array_equal(train_labels, labels)
-    assert not test_data
-    assert not test_labels
+
+    assert train_data is not None
+    assert train_labels is not None
+    assert test_data is not None
+    assert test_labels is not None
+
+    assert len(train_data) + len(test_data) == \
+           len(train_labels) + len(test_labels) == len(data)
+    assert train_data.shape[1] == test_data.shape[1] == data.shape[1]
 
 
-def test_split_wrong_type():
-    data = np.random.rand(50).reshape([10, -1])
-    labels = pd.Series(np.random.rand(10))
-    train_percentage = 0.8
-
-    with pytest.raises(TypeError):
-        shfl.data_base.data_base.split_train_test(data, labels, train_percentage)
-
-
-@pytest.mark.parametrize("data, labels",
-                         [(np.random.rand(60).reshape([10, -1]),
-                           np.random.rand(10)),
-                          (pd.DataFrame(np.random.rand(60).reshape([10, -1])),
-                           pd.Series(np.random.rand(10)))])
-def test_vertical_split(data, labels):
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_vertical_split(data_labels, request):
+    data, labels = request.getfixturevalue(data_labels)
     n_samples, n_features = data.shape
     train_percentage = 0.8
     dim = round(len(data) * (1 - train_percentage))
@@ -238,14 +201,9 @@ def test_vertical_split(data, labels):
     assert np.array(shapes_equal_train).all()
     assert np.array(shapes_equal_test).all()
 
-    # No train/test split:
-    train_data, train_labels, test_data, test_labels = \
-        vertical_split(data, labels, train_percentage=1)
-    assert np.concatenate(train_data, axis=1).shape == data.shape
-    for i in range(len(train_data)):
-        assert train_data[i].shape[0] == len(train_labels) == len(data)
-        assert test_data is None
-        assert test_labels is None
+    # Rise Value error if unable to split in same number of columns in chunks
+    with pytest.raises(ValueError):
+        vertical_split(data, labels, indices_or_sections=5, equal_size=True)
 
     # No vertical/horizontal shuffle:
     train_data, train_labels, test_data, test_labels = \

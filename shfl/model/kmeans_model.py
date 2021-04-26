@@ -5,15 +5,20 @@ from sklearn import metrics
 
 
 class KMeansModel(TrainableModel):
-    """
-    This class offers support for scikit-learn K-Means model. It implements [TrainableModel](../model/#trainablemodel-class)
+    """Supports scikit-learn K-Means model.
+
+    It implements [TrainableModel](../#trainablemodel-class).
 
     # Arguments:
-        n_clusters: number of clusters.
-        init: Method of initialization. {‘k-means++’, ‘random’, ndarray}, default=’k-means++’.
-            If an ndarray is passed, it should be of shape (n_clusters, n_features) and gives the initial centers.
-            When ‘random’: choose n_clusters observations  (rows) at random from data for the initial centroids.
-        n_init: Number of time the k-means algorithm will be run with different centroid seeds (default 10).
+        n_clusters: Number of clusters.
+        init: Method of initialization. Options are
+            {‘k-means++’, ‘random’, ndarray}, default=’k-means++’.
+            If an array-like object can be passed containing the initial centers,
+            and it should be of shape (n_clusters, n_features).
+            If set to ‘random’, n_clusters observations (rows) are randomly
+            chosen from data for the initial centroids.
+        n_init: Number of time the k-means algorithm will be run
+            with different centroid seeds (default is 10).
     """
 
     def __init__(self, n_clusters, n_features, init='k-means++', n_init=10):
@@ -29,18 +34,17 @@ class KMeansModel(TrainableModel):
             self._model.cluster_centers_ = np.zeros((n_clusters, n_features))
 
     def train(self, data, labels=None):
-        """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        """Implementation of abstract method of class
+            [TrainableModel](../#trainablemodel-class)
 
         # Arguments
-            data: Data, array-like of shape (n_samples, n_features)
+            data: Data, array-like object of shape (n_samples, n_features).
             labels: None.
         """
         self._model.fit(data)
 
     def predict(self, data):
-        """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        """Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
 
         # Arguments:
             data: Data, array-like of shape (n_samples, n_features)
@@ -53,7 +57,7 @@ class KMeansModel(TrainableModel):
 
     def evaluate(self, data, labels):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
         Metrics for evaluating model's performance.
 
         # Arguments:
@@ -80,7 +84,7 @@ class KMeansModel(TrainableModel):
 
     def performance(self, data, labels):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
 
         # Arguments:
             data: Data, array-like of shape (n_samples, n_features)
@@ -97,22 +101,28 @@ class KMeansModel(TrainableModel):
 
     def get_model_params(self):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
 
         # Returns:
-            centers: array with cluster centers kmeans model.
+            centers: Array-like object containing cluster centers.
         """
         return self._model.cluster_centers_
 
     def set_model_params(self, params):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
 
         # Arguments:
-            params: representation of model params to assign
+            params: Array-like object containing cluster centers.
         """
-        if np.array_equal(params, np.zeros((params.shape[0], params.shape[1]))):
-            self.__init__(n_clusters=params.shape[0], n_features=self._n_features, init=self._init,
+        if np.array_equal(params,
+                          np.zeros((params.shape[0], params.shape[1]))):
+            self.__init__(n_clusters=params.shape[0],
+                          n_features=self._n_features,
+                          init=self._init,
                           n_init=self._n_init)
         else:
-            self.__init__(n_clusters=params.shape[0], n_features=self._n_features, init=params, n_init=1)
+            self.__init__(n_clusters=params.shape[0],
+                          n_features=self._n_features,
+                          init=params,
+                          n_init=1)

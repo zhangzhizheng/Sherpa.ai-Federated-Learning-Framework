@@ -4,6 +4,74 @@ from shfl.private.node import DataNode
 from shfl.private.data import LabeledData
 
 
+class FederatedData:
+    """
+    Class representing data across different data nodes.
+    This object overrides dynamically the callable methods of class
+    FederatedDataNode to make them iterable over different data nodes.
+    """
+
+    def __init__(self):
+        self._data_nodes = []
+        node_methods_list = [func for func in dir(FederatedDataNode)
+                             if callable(getattr(FederatedDataNode, func))
+                             and not func.startswith("__")]
+        for method in node_methods_list:
+            setattr(self, method, self._create_apply_method(method))
+
+    def __getitem__(self, item):
+        return self._data_nodes[item]
+
+    def __iter__(self):
+        return iter(self._data_nodes)
+
+    def add_data_node(self, data):
+        """
+        This method adds a new node containing data to the federated data
+
+        # Arguments:
+            data: Data to add to this node
+        """
+        node = FederatedDataNode(str(id(self)))
+        node.set_private_data(data)
+        self._data_nodes.append(node)
+
+    def num_nodes(self):
+        """
+        # Returns:
+            num_nodes: The number of nodes in this federated data.
+        """
+        return len(self._data_nodes)
+
+    def _create_apply_method(self, method):
+        """Creates generic apply methods.
+
+        Creates a function that loops on all the federated data nodes and
+        calls a node's method.
+
+        # Arguments:
+            method: String corresponding to a node's method
+
+        # Returns:
+            node_method: Function that loops the desired method on all the nodes
+        """
+
+        def apply_method(*args, **kwargs):
+            """Applies a method on the FederatedData nodes.
+
+            # Returns:
+                output: List containing method's output for every node.
+                    If the method does not have an explicit return value,
+                    this is a list of None.
+            """
+            output = [getattr(data_node, method)(*args, **kwargs)
+                      for data_node in self._data_nodes]
+
+            return output
+
+        return apply_method
+
+
 class FederatedDataNode(DataNode):
     """
     This class represents a [DataNode](../data_node) in a FederatedData. Extends DataNode allowing
@@ -219,8 +287,8 @@ class VerticalServerDataNode(FederatedDataNode):
         return prediction
 
     def evaluate_collaborative_model(self, test_data=None, test_label=None):
-        """
-        Evaluation of the collaborative model.
+        """Evaluates the collaborative model.
+
         If the global test_data or test_label are not provided,
         the evaluation is made on the batch of train data and labels
         available at the present iteration.
@@ -252,8 +320,8 @@ class VerticalServerDataNode(FederatedDataNode):
                   str(evaluation))
 
     def aggregate_weights(self):
-        """
-        Aggregate the parameters from all clients.
+        """Aggregates the parameters from all clients.
+
         It is assumed that the last item of each client's
         parameters is constituted by samples' indices (id).
         The latter are not aggregated and must match among all clients.
@@ -270,10 +338,10 @@ class VerticalServerDataNode(FederatedDataNode):
 
     @staticmethod
     def _check_indices_matching(sample_indices):
-        """
-        Method that checks that all the nodes' indices that the
-        vertical server received are the same and returns a single
-        copy of the indices. If not, an error is raised.
+        """Checks all indices are matching.
+
+        Checks that all the nodes' indices received by the
+        vertical server are the same. If not, an error is raised.
 
         # Arguments:
             indices_samples: List of multi-dimensional integer arrays.
@@ -290,83 +358,15 @@ class VerticalServerDataNode(FederatedDataNode):
             raise AssertionError("Clients samples' indices do not match.")
     
 
-class FederatedData:
-    """
-    Class representing data across different data nodes.
-    This object overrides dynamically the callable methods of class
-    FederatedDataNode to make them iterable over different data nodes.
-    """
-
-    def __init__(self):
-        self._data_nodes = []
-        node_methods_list = [func for func in dir(FederatedDataNode)
-                             if callable(getattr(FederatedDataNode, func))
-                             and not func.startswith("__")]
-        for method in node_methods_list:
-            setattr(self, method, self._create_apply_method(method))
-
-    def __getitem__(self, item):
-        return self._data_nodes[item]
-
-    def __iter__(self):
-        return iter(self._data_nodes)
-
-    def add_data_node(self, data):
-        """
-        This method adds a new node containing data to the federated data
-
-        # Arguments:
-            data: Data to add to this node
-        """
-        node = FederatedDataNode(str(id(self)))
-        node.set_private_data(data)
-        self._data_nodes.append(node)
-
-    def num_nodes(self):
-        """
-        # Returns:
-            num_nodes: The number of nodes in this federated data.
-        """
-        return len(self._data_nodes)
-
-    def _create_apply_method(self, method):
-        """
-        Create a function that loops on all the FederatedData nodes and
-        calls a node's method.
-
-        # Arguments:
-            method: string corresponding to a node's method
-
-        # Returns:
-            node_method: function that loops the method on all the nodes
-        """
-
-        def apply_method(*args, **kwargs):
-            """
-            Apply a method on the FederatedData nodes.
-
-            # Returns:
-                output: List containing responses for every node (if any)
-            """
-            output = [getattr(data_node, method)(*args, **kwargs)
-                      for data_node in self._data_nodes]
-
-            return output
-
-        return apply_method
-
-
 class FederatedTransformation(abc.ABC):
-    """
-    Interface defining the method for applying an operation over [FederatedData](./#federateddata-class)
+    """Applies a federated transformation over the federated data.
     """
     @abc.abstractmethod
     def apply(self, data):
-        """
-        This method receives data to be modified and performs the required modifications over it.
+        """Performs an arbitrary transformation on a node's data.
 
         # Arguments:
-            data: The object that has to be modified
+            data: The node's data that has to be transformed
         """
 
 

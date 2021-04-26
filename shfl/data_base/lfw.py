@@ -1,28 +1,27 @@
 from sklearn.datasets import fetch_lfw_people
-from shfl.data_base import data_base as db
 from tensorflow.keras.utils import to_categorical
+
+from shfl.data_base import data_base as db
 
 
 class Lfw(db.DataBase):
-    """
-    This database loads the \
-    [Labeled faces in the wild dataset](https://scikit-learn.org/stable/datasets/index.html#labeled-faces-in-the-wild-dataset)
-    from sklearn, mainly for face recognition task.
+    """Loads the LFW dataset.
+
+    # References:
+        [Labeled Faces in the Wild dataset](https://scikit-learn.org/stable/
+            datasets/index.html#labeled-faces-in-the-wild-dataset)
     """
 
     def load_data(self):
-        """
-        Load data from lfw package
-
-        # Returns
-            all_data : train data, train labels, test data and test labels
-        """
         all_data = fetch_lfw_people(color=True)
         data = all_data["images"]
         labels = to_categorical(all_data["target"])
 
+        if self._shuffle:
+            data, labels = db.shuffle_rows(data, labels)
+
         self._train_data, self._train_labels,\
             self._test_data, self._test_labels = \
-            db.split_train_test(data, labels, train_percentage=0.9)
+            db.split_train_test(data, labels)
 
         return self.data

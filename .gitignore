@@ -11,3 +11,5 @@ venv/*
 notebooks/data/*
 .vscode/*
 htmlcov/*
+.pylintrc
+pylint*

@@ -4,9 +4,8 @@ from unittest.mock import call
 import pytest
 
 from shfl.federated_government.vertical_federated_government import VerticalFederatedGovernment
-from shfl.data_base.data_base import LabeledDatabase
 from shfl.private.data import LabeledData
-from shfl.data_distribution.data_distribution_plain import PlainDataDistribution
+from shfl.data_distribution.convert_to_federated_data import convert_to_federated_data
 from shfl.private.data import DataAccessDefinition
 from shfl.private.data import UnprotectedAccess
 from shfl.private.federated_operation import VerticalServerDataNode
@@ -58,13 +57,7 @@ def vertically_split_database(global_vars):
         vertical_split(data, labels, indices_or_sections=global_vars["n_nodes"])
 
     labels_nodes = [train_labels for _ in range(global_vars["n_nodes"])]
-    data_base = LabeledDatabase(data=train_data,
-                                labels=labels_nodes,
-                                train_percentage=1.,
-                                shuffle=False)
-    data_base.load_data()
-    federated_data, _, _ = \
-        PlainDataDistribution(database=data_base).get_federated_data()
+    federated_data = convert_to_federated_data(train_data, labels_nodes)
 
     return federated_data, test_data, test_labels
 

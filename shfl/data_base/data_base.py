@@ -3,10 +3,106 @@ import numpy as np
 import pandas as pd
 
 
-def shuffle_rows(data, labels):
+class DataBase(abc.ABC):
+    """Abstract class for data base.
+
+    This interface allows for a dataset to interact with the Frameworks methods.
+    In particular, with data distribution methods
+    (see: [Data Distribution](../data_distribution)).
+    The loaded data should be saved in the protected attributes.
+
+    # Arguments:
+        train_percentage: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
+        shuffle: Optional; Boolean for shuffling rows before the
+            train/test split (default is True).
+
+    # Attributes:
+        train_data: Array-like object.
+        train_labels: Array-like object.
+        test_data: Array-like object.
+        test_labels: Array-like object.
+
+    # Properties:
+        train: 2-Tuple as (train data, train labels).
+        test: 2-Tuple as (test data, test labels).
+        data: 4-Tuple as (train data, train labels, test data, test labels).
     """
-    Shuffles rows in two data structures simultaneously.
+
+    def __init__(self, train_proportion=0.8, shuffle=True):
+        self._train_proportion = train_proportion
+        self._shuffle = shuffle
+        self._train_data = []
+        self._test_data = []
+        self._train_labels = []
+        self._test_labels = []
+
+    @property
+    def train(self):
+        return self._train_data, self._train_labels
+
+    @property
+    def test(self):
+        return self._test_data, self._test_labels
+
+    @property
+    def data(self):
+        return self._train_data, self._train_labels, \
+               self._test_data, self._test_labels
+
+    @abc.abstractmethod
+    def load_data(self):
+        """Loads the data."""
+
+
+class LabeledDatabase(DataBase):
+    """Creates a generic labeled database from data and labels vectors.
+
+    # Arguments:
+        data: Array-like object containing the features to load.
+        labels: Array-like object containing the target labels.
+    """
+
+    def __init__(self, data, labels, train_proportion=0.8, shuffle=True):
+        super(LabeledDatabase, self).__init__(train_proportion, shuffle)
+        self._data = data
+        self._labels = labels
+
+    def load_data(self):
+        """Returns all data. If not loaded, loads the data.
+
+        # Returns
+            data: 4-Tuple as (train data, train labels, test data, test labels).
+        """
+
+        if not self._train_data:
+            self._load_data()
+
+        return self.data
+
+    def _load_data(self):
+        """Populates private attributes train data and labels,
+            and test data and labels.
+        """
+        if self._shuffle:
+            self._data, self._labels = \
+                shuffle_rows(self._data, self._labels)
+
+        self._train_data, self._train_labels, \
+            self._test_data, self._test_labels = \
+            split_train_test(self._data, self._labels,
+                             self._train_proportion)
+
+
+def shuffle_rows(data, labels):
+    """Shuffles rows simultaneously.
+
     It supports either pd.DataFrame/pd.Series or numpy arrays.
+
+    # Arguments:
+        data: Array-like object containing data.
+        labels: Array-like object containing target labels.
     """
     randomize = np.arange(len(labels))
     np.random.shuffle(randomize)
@@ -28,46 +124,42 @@ def shuffle_rows(data, labels):
     return data, labels
 
 
-def split_train_test(data, labels, train_percentage=0.8, shuffle=True):
-    """
-    Method that randomly chooses the train and test sets
-    from data and labels.
+def split_train_test(data, labels, train_proportion=0.8):
+    """Splits data and labels into train and test sets.
 
     # Arguments:
-        data: Data for extracting the validation data
-        labels: Array with labels
-        train_percentage: float between 0 and 1 to indicate how much data
-            is dedicated to train
-        shuffle: Boolean for shuffling rows before the train/test split
-            (default True)
+        data: Array-like object containing the data to split.
+        labels: Array-like object containing target labels.
+        train_percentage: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
 
     # Returns:
-        train_data, train_labels, test_data, test_labels: the data after
-            the split
+        train_data: Array-like object.
+        train_labels: Array-like object.
+        test_data: Array-like object.
+        test_labels: Array-like object.
     """
+    train_size = round(len(data) * train_proportion)
 
-    if shuffle:
-        data, labels = shuffle_rows(data, labels)
+    train_data = data[:train_size]
+    train_labels = labels[:train_size]
 
-    test_size = round(len(data) * (1 - train_percentage))
-
-    train_data = data[:-test_size]
-    train_labels = labels[:-test_size]
-
-    test_data = data[-test_size:]
-    test_labels = labels[-test_size:]
+    test_data = data[train_size:]
+    test_labels = labels[train_size:]
 
     return train_data, train_labels, test_data, test_labels
 
 
 def vertical_split(data, labels, indices_or_sections=2,
-                   equal_size=False, train_percentage=0.8,
+                   equal_size=False, train_proportion=0.8,
                    v_shuffle=True, h_shuffle=True):
-    """
-    Splits a 2-D dataset vertically (i.e. along columns).
+    """Splits a dataset vertically.
+
+    Splits a an array-like object along columns.
 
     # Arguments:
-        data: dataframe or numpy array (2-D)
+        data: dataframe or numpy array
         labels: series or array containing the target labels
         n_chunks: integer denoting the desired number of vertical splits
         indices_or_sections: int or 1-D array containing
@@ -83,6 +175,7 @@ def vertical_split(data, labels, indices_or_sections=2,
             (default True)
         h_shuffle: Boolean for shuffling rows before the train/test split
             (default True)
+
     # Returns:
         train_data: list whose items contain the train data
             of each chunk
@@ -113,125 +206,19 @@ def vertical_split(data, labels, indices_or_sections=2,
                 np.arange(1, n_features), indices_or_sections - 1,
                 replace=False))
 
+    if h_shuffle:
+        data, labels = shuffle_rows(data, labels)
+
     # Split train/test samples (horizontally on rows):
-    if train_percentage < 1.:
-        train_data, train_labels, test_data, test_labels = \
-            split_train_test(data, labels, train_percentage, h_shuffle)
-    else:
-        train_data, train_labels, test_data, test_labels = \
-            data, labels, None, None
+    train_data, train_labels, test_data, test_labels = \
+        split_train_test(data, labels, train_proportion)
 
     # Split features (vertically on columns):
     chunks_indices = np.split(features, indices_or_sections)
     train_data = [get_slice(train_data, indices)
                   for indices in chunks_indices]
-    if test_data is not None:
+    if len(test_data) > 0:
         test_data = [get_slice(test_data, indices)
                      for indices in chunks_indices]
 
     return train_data, train_labels, test_data, test_labels
-
-
-class DataBase(abc.ABC):
-    """
-    Abstract class for data base.
-
-    Load method must be implemented in order to create a database able to \
-    interact with the system, in concrete with data distribution methods \
-    (see: [Data Distribution](../data_distribution)).
-
-    Load method should save data in the protected Attributes:
-
-    # Attributes:
-        * **train_data, train_labels, test_data, test_labels**
-
-    # Properties:
-        train: Returns train data and labels
-        test: Returns test data and labels
-        data: Returns train data, train labels, validation data,
-            validation labels, test data and test labels
-    """
-
-    def __init__(self):
-        self._train_data = []
-        self._test_data = []
-        self._train_labels = []
-        self._test_labels = []
-
-    @property
-    def train(self):
-        return self._train_data, self._train_labels
-
-    @property
-    def test(self):
-        return self._test_data, self._test_labels
-
-    @property
-    def data(self):
-        return self._train_data, self._train_labels, \
-               self._test_data, self._test_labels
-
-    @abc.abstractmethod
-    def load_data(self):
-        """
-        Abstract method that loads the data
-        """
-
-    def shuffle(self):
-        """
-        Shuffles all data
-        """
-        self._train_data, self._train_labels = \
-            shuffle_rows(self._train_data, self._train_labels)
-        self._test_data, self._test_labels = \
-            shuffle_rows(self._test_data, self._test_labels)
-
-
-class LabeledDatabase(DataBase):
-    """
-    Class to create generic labeled database from data and labels vectors.
-    By default, the data is shuffled and split into train and test.
-
-    # Arguments
-        data: Data features to load
-        labels: Labels for this features
-        train_percentage: float between 0 and 1 to indicate how much data
-            is dedicated to train (if 1 is provided, data is
-            assigned entirely to train)
-        shuffle: Boolean for shuffling rows before the train/test split
-            (default True)
-    """
-
-    def __init__(self, data, labels, train_percentage=0.8, shuffle=True):
-        super(LabeledDatabase, self).__init__()
-        self._data = data
-        self._labels = labels
-        self._train_percentage = train_percentage
-        self._shuffle = shuffle
-
-    def load_data(self):
-        """
-        Returns all data. If not loaded, loads the data.
-
-        # Returns
-            all_data : train data, train labels, test data and test labels
-        """
-
-        if not self._train_data:
-            self._load_data()
-
-        return self.data
-
-    def _load_data(self):
-        """
-        Populates private attributes train data and labels,
-        and test data and labels.
-        """
-
-        if self._train_percentage < 1.:
-            self._train_data, self._train_labels, \
-                self._test_data, self._test_labels = \
-                split_train_test(self._data, self._labels,
-                                 self._train_percentage, self._shuffle)
-        else:
-            self._train_data, self._train_labels = self._data, self._labels

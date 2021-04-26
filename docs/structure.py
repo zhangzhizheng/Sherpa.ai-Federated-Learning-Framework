@@ -1,5 +1,4 @@
 from shfl import differential_privacy
-from shfl import differential_privacy
 from shfl import private
 from shfl import model
 from shfl import data_base
@@ -29,6 +28,7 @@ PAGES = [
             private.node.DataNode.apply_data_transformation,
             private.node.DataNode.query,
             private.node.DataNode.query_model_params,
+            private.node.DataNode.query_model,
             private.node.DataNode.set_model_params,
             private.node.DataNode.train_model,
             private.node.DataNode.predict,
@@ -57,21 +57,27 @@ PAGES = [
     {
         'page': 'private/federated_operation.md',
         'classes': [
-            (private.federated_operation.FederatedData, ["add_data_node", "num_nodes",
-                                                         "configure_data_access", "query"]),
+            (private.federated_operation.FederatedData, ["add_data_node",
+                                                         "num_nodes",
+                                                         "_create_apply_method"]),
             (private.federated_operation.FederatedDataNode, ['configure_data_access',
                                                              'set_private_data',
                                                              'set_private_test_data',
                                                              'train_model',
                                                              'apply_data_transformation',
                                                              'split_train_test']),
+            (private.federated_operation.ServerDataNode, ["deploy_collaborative_model",
+                                                          "evaluate_collaborative_model",
+                                                          "aggregate_weights"]),
+            (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
+                                                                  "evaluate_collaborative_model",
+                                                                  "aggregate_weights",
+                                                                  "_check_indices_matching"]),
             (private.federated_operation.FederatedTransformation, ["apply"]),
             private.federated_operation.Normalize
         ],
         'functions': [
             private.federated_operation.federate_array,
-            private.federated_operation.apply_federated_transformation,
-            private.federated_operation.split_train_test
         ]
     },
     {
@@ -99,10 +105,15 @@ PAGES = [
             (data_base.data_base.DataBase, ['load_data',
                                             "shuffle"]),
             data_base.data_base.LabeledDatabase,
+            data_base.california_housing.CaliforniaHousing,
+            data_base.cifar.Cifar10,
+            data_base.cifar.Cifar100,
             data_base.emnist.Emnist,
             data_base.fashion_mnist.FashionMnist,
-            data_base.california_housing.CaliforniaHousing,
-            data_base.iris.Iris
+            data_base.federated_emnist.FederatedEmnist,
+            data_base.iris.Iris,
+            data_base.lfw.Lfw,
+            data_base.purchase100.Purchase100
         ],
         'functions': [
             data_base.data_base.split_train_test
@@ -130,9 +141,13 @@ PAGES = [
         'classes': [
             model.deep_learning_model.DeepLearningModel,
             model.deep_learning_model_pt.DeepLearningModelPyTorch,
+            model.kmeans_model.KMeansModel,
             model.linear_regression_model.LinearRegressionModel,
             model.linear_classifier_model.LinearClassifierModel,
-
+            model.recommender.Recommender,
+            model.mean_recommender.MeanRecommender,
+            # model.vertical_deep_learning_model.VerticalNeuralNetClient,
+            # model.vertical_deep_learning_model.VerticalNeuralNetServer
         ]
     },
     {
@@ -163,11 +178,7 @@ PAGES = [
     {
         'page': 'federated_government.md',
         'classes': [
-            (federated_government.federated_government.FederatedGovernment, ['evaluate_global_model',
-                                                                             'deploy_central_model',
-                                                                             'evaluate_clients',
-                                                                             'train_all_clients',
-                                                                             'aggregate_weights',
+            (federated_government.federated_government.FederatedGovernment, ['evaluate_clients',
                                                                              'run_rounds']),
             (federated_government.federated_images_classifier.FederatedImagesClassifier, ['run_rounds',
                                                                                           'model_builder']),

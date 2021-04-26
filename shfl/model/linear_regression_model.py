@@ -5,12 +5,13 @@ from sklearn import metrics
 
 
 class LinearRegressionModel(TrainableModel):
-    """
-    This class offers support for scikit-learn linear regression model. It implements [TrainableModel](../model/#trainablemodel-class)
+    """Supports scikit-learn linear regression model.
+
+    It implements [TrainableModel](../#trainablemodel-class).
 
     # Arguments:
-        n_features: number of features (independent variables)
-        n_targets: number of targets to predict (default is 1)
+        n_features: Number of features (independent variables).
+        n_targets: Optional; Number of targets to predict (default is 1).
     """
     def __init__(self, n_features, n_targets=1):
         self._check_initialization(n_features)
@@ -20,13 +21,14 @@ class LinearRegressionModel(TrainableModel):
         self._n_targets = n_targets
         self.set_model_params([np.zeros(n_targets), np.zeros((n_targets, n_features))])
         
-    def train(self, data, labels):
+    def train(self, data, labels, **kwargs):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
 
-        # Arguments
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target, array-like of shape (n_samples,) or (n_samples, n_targets)
+        # Arguments:
+            data: Data, array-like object of shape (n_samples, n_features).
+            labels: Target, array-like object of shape (n_samples,)
+                or (n_samples, n_targets).
         """
         self._check_data(data)
         self._check_labels(labels)
@@ -35,13 +37,13 @@ class LinearRegressionModel(TrainableModel):
 
     def predict(self, data):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
 
         # Arguments:
             data: Data, array-like of shape (n_samples, n_features)
 
         # Returns:
-            prediction: array with predictions for data argument
+            prediction: Array with predictions for data argument.
         """
         self._check_data(data)
         
@@ -51,12 +53,13 @@ class LinearRegressionModel(TrainableModel):
     
     def evaluate(self, data, labels):
         """
-        Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
         Metrics for evaluating model's performance.
         
         # Arguments:
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target, array-like of shape (n_samples,) or (n_samples, n_targets)
+            data: Data, array-like object of shape (n_samples, n_features).
+            labels: Target, array-like object of shape (n_samples,)
+                or (n_samples, n_targets).
 
         # Returns:
             rmse: RMSE value for the prediction. [MSE](
@@ -78,11 +81,12 @@ class LinearRegressionModel(TrainableModel):
         Implementation of abstract method of class [TrainableModel](../model/#trainablemodel-class)
 
         # Arguments:
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target, array-like of shape (n_samples,) or (n_samples, n_targets)
+            data: Data, array-like object of shape (n_samples, n_features).
+            labels: Target, array-like object of shape (n_samples,)
+                or (n_samples, n_targets).
 
         # Returns:
-            negative_rmse: Negative RMSE value for the prediction
+            negative_rmse: Negative RMSE value for the prediction.
         """
         self._check_data(data)
         self._check_labels(labels)
@@ -94,14 +98,14 @@ class LinearRegressionModel(TrainableModel):
 
     def get_model_params(self):
         """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
         """
         
         return [self._model.intercept_, self._model.coef_]
 
     def set_model_params(self, params):
         """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
+        Implementation of abstract method of class [TrainableModel](../#trainablemodel-class)
         """
         
         self._model.intercept_ = params[0]
@@ -112,7 +116,7 @@ class LinearRegressionModel(TrainableModel):
         Method that checks if the data dimension if correct.
 
         # Arguments:
-            data: array with data
+            data: Array with data.
         """
         if data.ndim == 1:
             if self._n_features != 1:
@@ -127,7 +131,7 @@ class LinearRegressionModel(TrainableModel):
         Method that checks if the labels dimension is correct.
 
         # Arguments:
-            labels: array with labels
+            labels: Array with labels.
         """
         if labels.ndim == 1:
             if self._n_targets != 1:

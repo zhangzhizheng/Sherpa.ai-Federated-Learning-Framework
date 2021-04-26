@@ -14,11 +14,11 @@ class FederatedAggregator(abc.ABC):
 
     @abc.abstractmethod
     def aggregate_weights(self, clients_params):
-        """
-        Abstract method that aggregates the weights of the client models.
+        """Abstract method that aggregates clients' models.
 
         # Arguments:
-            clients_params: Params that represents local clients learning models.
+            clients_params: Parameters that represent clients' models
+
         # Returns:
-            aggregated_weights: Aggregated weights
+            aggregated_weights: Aggregated parameters
         """
