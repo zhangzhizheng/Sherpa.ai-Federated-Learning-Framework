@@ -5,7 +5,7 @@ import pytest
 
 from shfl.federated_government.vertical_federated_government import VerticalFederatedGovernment
 from shfl.private.data import LabeledData
-from shfl.data_distribution.convert_to_federated_data import convert_to_federated_data
+from shfl.private.federated_operation import federate_list
 from shfl.private.data import DataAccessDefinition
 from shfl.private.data import UnprotectedAccess
 from shfl.private.federated_operation import VerticalServerDataNode
@@ -57,7 +57,7 @@ def vertically_split_database(global_vars):
         vertical_split(data, labels, indices_or_sections=global_vars["n_nodes"])
 
     labels_nodes = [train_labels for _ in range(global_vars["n_nodes"])]
-    federated_data = convert_to_federated_data(train_data, labels_nodes)
+    federated_data = federate_list(train_data, labels_nodes)
 
     return federated_data, test_data, test_labels
 

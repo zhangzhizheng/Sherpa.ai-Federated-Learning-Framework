@@ -25,6 +25,7 @@ PAGES = [
             private.node.DataNode.set_private_test_data,
             private.node.DataNode.configure_data_access,
             private.node.DataNode.configure_model_params_access,
+            private.node.DataNode.configure_model_access,
             private.node.DataNode.apply_data_transformation,
             private.node.DataNode.query,
             private.node.DataNode.query_model_params,
@@ -46,20 +47,19 @@ PAGES = [
             private.data.UnprotectedAccess
         ]
     },
-    {
-        'page': 'private/query.md',
-        'classes': [
-            (private.query.Query, ["get"]),
-            private.query.IdentityFunction,
-            private.query.Mean
-        ]
-    },
+    # {
+    #     'page': 'private/query.md',
+    #     'classes': [
+    #         (private.query.Query, ["get"]),
+    #         private.query.IdentityFunction,
+    #         private.query.Mean
+    #     ]
+    # },
     {
         'page': 'private/federated_operation.md',
         'classes': [
-            (private.federated_operation.FederatedData, ["add_data_node",
-                                                         "num_nodes",
-                                                         "_create_apply_method"]),
+            (private.federated_operation.FederatedData, ["append_data_node",
+                                                         "num_nodes"]),
             (private.federated_operation.FederatedDataNode, ['configure_data_access',
                                                              'set_private_data',
                                                              'set_private_test_data',
@@ -69,15 +69,16 @@ PAGES = [
             (private.federated_operation.ServerDataNode, ["deploy_collaborative_model",
                                                           "evaluate_collaborative_model",
                                                           "aggregate_weights"]),
-            (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
-                                                                  "evaluate_collaborative_model",
-                                                                  "aggregate_weights",
-                                                                  "_check_indices_matching"]),
+            # (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
+            #                                                       "evaluate_collaborative_model",
+            #                                                       "aggregate_weights",
+            #                                                       "_check_indices_matching"]),
             (private.federated_operation.FederatedTransformation, ["apply"]),
             private.federated_operation.Normalize
         ],
         'functions': [
             private.federated_operation.federate_array,
+            private.federated_operation.federate_list,
         ]
     },
     {
@@ -102,8 +103,7 @@ PAGES = [
     {
         'page': 'databases.md',
         'classes': [
-            (data_base.data_base.DataBase, ['load_data',
-                                            "shuffle"]),
+            (data_base.data_base.DataBase, ['load_data']),
             data_base.data_base.LabeledDatabase,
             data_base.california_housing.CaliforniaHousing,
             data_base.cifar.Cifar10,
@@ -116,6 +116,7 @@ PAGES = [
             data_base.purchase100.Purchase100
         ],
         'functions': [
+            data_base.data_base.shuffle_rows,
             data_base.data_base.split_train_test
         ]
     },

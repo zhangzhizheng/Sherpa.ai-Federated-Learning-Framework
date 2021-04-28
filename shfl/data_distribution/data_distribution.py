@@ -39,7 +39,7 @@ class DataDistribution(abc.ABC):
         for node in range(num_nodes):
             node_data = LabeledData(federated_train_data[node],
                                     federated_train_label[node])
-            federated_data.add_data_node(node_data)
+            federated_data.append_data_node(node_data)
 
         return federated_data, test_data, test_label
 

@@ -306,7 +306,7 @@ def test_laplace_mechanism_list_of_arrays():
     
     federated_list = shfl.private.federated_operation.FederatedData()
     for node in range(n_nodes):
-        federated_list.add_data_node(data[node])
+        federated_list.append_data_node(data[node])
         
     federated_list.configure_data_access(
         LaplaceMechanism(sensitivity=0.01, epsilon=1))

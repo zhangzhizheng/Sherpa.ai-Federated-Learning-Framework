@@ -2,21 +2,31 @@ from tensorflow.python.keras.utils.data_utils import get_file
 from tensorflow.keras.utils import to_categorical
 import numpy as np
 
-from shfl.data_base import data_base as db
+from shfl.data_base.data_base import LabeledDatabase
 
 
-class Purchase100(db.DataBase):
+class Purchase100(LabeledDatabase):
     """Loads the Purchase100 dataset.
+
+    Implements base class [LabeledDataBase](./#labeleddatabase-class).
+
+    # Arguments:
+        train_proportion: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
+        shuffle: Optional; Boolean for shuffling rows before the
+            train/test split (default is True).
 
     # References:
     [Purchase100 dataset](https://www.kaggle.com/c/
         acquire-valued-shoppers-challenge).
     """
 
-    def load_data(self):
+    def __init__(self, train_proportion=0.8, shuffle=True):
         path_features = get_file(
             "purchase100",
-            origin="https://github.com/xehartnort/Purchase100-dataset/releases/download/v1.1/purchase100.npz",
+            origin="https://github.com/xehartnort/Purchase100-dataset/"
+                   "releases/download/v1.1/purchase100.npz",
             extract=True,
             file_hash="0d7538b9806e7ee622e1a252585e7768",  # md5 hash
             cache_dir='~/.sherpa-ai')
@@ -24,12 +34,4 @@ class Purchase100(db.DataBase):
         all_data = np.load(path_features)
         data = all_data['features']
         labels = to_categorical(all_data['labels'])
-
-        if self._shuffle:
-            data, labels = db.shuffle_rows(data, labels)
-
-        self._train_data, self._train_labels,\
-            self._test_data, self._test_labels = db.split_train_test(
-                data, labels)
-
-        return self.data
+        super().__init__(data, labels, train_proportion, shuffle)

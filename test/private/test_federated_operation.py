@@ -61,7 +61,7 @@ def test_federated_data():
     federated_data = FederatedData()
     assert federated_data.num_nodes() == 0
     array = np.random.rand(data_size)
-    federated_data.add_data_node(array)
+    federated_data.append_data_node(array)
     federated_data.configure_data_access(UnprotectedAccess())
     assert federated_data.num_nodes() == 1
     assert federated_data[0].query()[0] == array[0]
@@ -71,7 +71,7 @@ def test_federated_data_identifier():
     data_size = 10
     federated_data = FederatedData()
     array = np.random.rand(data_size)
-    federated_data.add_data_node(array)
+    federated_data.append_data_node(array)
     federated_data.configure_data_access(UnprotectedAccess())
     with pytest.raises(ValueError):
         federated_data[0].query("bad_identifier_federated_data")
@@ -84,7 +84,7 @@ def test_split_train_test():
 
     federated_data = FederatedData()
     for idx in range(num_nodes):
-        federated_data.add_data_node(LabeledData(data[idx], to_categorical(label[idx])))
+        federated_data.append_data_node(LabeledData(data[idx], to_categorical(label[idx])))
 
     federated_data.configure_data_access(UnprotectedAccess())
     raw_federated_data = federated_data
@@ -104,7 +104,7 @@ def test_split_train_test_pandas():
 
     federated_data = FederatedData()
     for idx in range(num_nodes):
-        federated_data.add_data_node(LabeledData(data[idx], to_categorical(label[idx])))
+        federated_data.append_data_node(LabeledData(data[idx], to_categorical(label[idx])))
 
     federated_data.configure_data_access(UnprotectedAccess())
     raw_federated_data = federated_data

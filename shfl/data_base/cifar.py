@@ -8,6 +8,8 @@ from shfl.data_base.data_base import DataBase
 class Cifar10(DataBase):
     """Loads the CIFAR10 dataset.
 
+    Implements base class [DataBase](./#database-class).
+
     # References:
         [CIFAR10 dataset](https://keras.io/api/datasets/cifar10)
     """
@@ -17,12 +19,14 @@ class Cifar10(DataBase):
 
         self._train_labels = tf.keras.utils.to_categorical(self._train_labels)
         self._test_labels = tf.keras.utils.to_categorical(self._test_labels)
-        
+
         return self.data
 
 
 class Cifar100(DataBase):
     """Loads the CIFAR100 dataset.
+
+    Implements base class [DataBase](./#database-class).
 
     # References:
         [CIFAR100 dataset](https://keras.io/api/datasets/cifar100)
@@ -33,5 +37,5 @@ class Cifar100(DataBase):
 
         self._train_labels = tf.keras.utils.to_categorical(self._train_labels)
         self._test_labels = tf.keras.utils.to_categorical(self._test_labels)
-        
+
         return self.data

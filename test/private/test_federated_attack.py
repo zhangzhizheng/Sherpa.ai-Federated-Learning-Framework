@@ -13,7 +13,7 @@ def test_shuffle_node():
     labeled_data = LabeledData(data, label)
 
     federated_data = FederatedData()
-    federated_data.add_data_node(labeled_data)
+    federated_data.append_data_node(labeled_data)
     for node in federated_data:
         node.apply_data_transformation(ShuffleNode())
 
@@ -31,7 +31,7 @@ def test_federated_poisoning_attack():
         label = np.random.randint(0, 10, 10)
         list_labels.append(label)
         labeled_data = LabeledData(data, label)
-        federated_data.add_data_node(labeled_data)
+        federated_data.append_data_node(labeled_data)
 
     percentage = 10
     simple_attack = FederatedPoisoningDataAttack(percentage=percentage)

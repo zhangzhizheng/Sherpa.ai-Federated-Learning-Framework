@@ -6,17 +6,10 @@ import pandas as pd
 class DataBase(abc.ABC):
     """Abstract class for data base.
 
-    This interface allows for a dataset to interact with the Frameworks methods.
+    This interface allows for a dataset to interact with the Framework's methods.
     In particular, with data distribution methods
     (see: [Data Distribution](../data_distribution)).
     The loaded data should be saved in the protected attributes.
-
-    # Arguments:
-        train_percentage: Optional; Float between 0 and 1 proportional to the
-            amount of data to dedicate to train. If 1 is provided, all data is
-            assigned to train (default is 0.8).
-        shuffle: Optional; Boolean for shuffling rows before the
-            train/test split (default is True).
 
     # Attributes:
         train_data: Array-like object.
@@ -30,9 +23,7 @@ class DataBase(abc.ABC):
         data: 4-Tuple as (train data, train labels, test data, test labels).
     """
 
-    def __init__(self, train_proportion=0.8, shuffle=True):
-        self._train_proportion = train_proportion
-        self._shuffle = shuffle
+    def __init__(self):
         self._train_data = []
         self._test_data = []
         self._train_labels = []
@@ -40,37 +31,55 @@ class DataBase(abc.ABC):
 
     @property
     def train(self):
+        """Returns train data and associated target labels."""
         return self._train_data, self._train_labels
 
     @property
     def test(self):
+        """Returns test data and associated target labels."""
         return self._test_data, self._test_labels
 
     @property
     def data(self):
+        """Returns all data as train data, train labels,
+        test data, test labels.
+        """
         return self._train_data, self._train_labels, \
-               self._test_data, self._test_labels
+            self._test_data, self._test_labels
 
     @abc.abstractmethod
     def load_data(self):
-        """Loads the data."""
+        """Specifies data location and operations at loading.
+        """
 
 
 class LabeledDatabase(DataBase):
-    """Creates a generic labeled database from data and labels vectors.
+    """Creates a generic labeled database from input data and labels.
+
+    Implements base class [DataBase](./#database-class).
 
     # Arguments:
-        data: Array-like object containing the features to load.
+        data: Array-like object containing the features.
         labels: Array-like object containing the target labels.
+        train_proportion: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
+        shuffle: Optional; Boolean for shuffling rows before the
+            train/test split (default is True).
     """
 
+    # pylint: disable=too-many-instance-attributes
+    # Eight is reasonable in this case.
+
     def __init__(self, data, labels, train_proportion=0.8, shuffle=True):
-        super(LabeledDatabase, self).__init__(train_proportion, shuffle)
+        super().__init__()
         self._data = data
         self._labels = labels
+        self._train_proportion = train_proportion
+        self._shuffle = shuffle
 
     def load_data(self):
-        """Returns all data. If not loaded, loads the data.
+        """Loads the data (once) and returns the train/test partitions.
 
         # Returns
             data: 4-Tuple as (train data, train labels, test data, test labels).
@@ -96,9 +105,9 @@ class LabeledDatabase(DataBase):
 
 
 def shuffle_rows(data, labels):
-    """Shuffles rows simultaneously.
+    """Shuffles rows on inputs simultaneously.
 
-    It supports either pd.DataFrame/pd.Series or numpy arrays.
+    It supports either Pandas DataFrame/Series or Numpy arrays.
 
     # Arguments:
         data: Array-like object containing data.
@@ -106,6 +115,8 @@ def shuffle_rows(data, labels):
     """
     randomize = np.arange(len(labels))
     np.random.shuffle(randomize)
+
+    print()
 
     if isinstance(data, (pd.DataFrame, pd.Series)) and \
             isinstance(labels, (pd.DataFrame, pd.Series)):
@@ -130,7 +141,7 @@ def split_train_test(data, labels, train_proportion=0.8):
     # Arguments:
         data: Array-like object containing the data to split.
         labels: Array-like object containing target labels.
-        train_percentage: Optional; Float between 0 and 1 proportional to the
+        train_proportion: Optional; Float between 0 and 1 proportional to the
             amount of data to dedicate to train. If 1 is provided, all data is
             assigned to train (default is 0.8).
 
@@ -184,6 +195,9 @@ def vertical_split(data, labels, indices_or_sections=2,
             of one single chunk
         test_labels: test labels (it is the same for all test chunks)
     """
+
+    # pylint: disable=too-many-arguments
+    # Seven is reasonable, although we might consider future refactoring.
 
     if isinstance(data, np.ndarray):
         def get_slice(dataset, col_index):

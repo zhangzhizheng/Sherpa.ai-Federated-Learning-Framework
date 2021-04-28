@@ -25,7 +25,7 @@ nav:
       - Overview: private/overview.md
       - DataNode: private/data_node.md
       - Data: private/data.md
-      - Query: private/query.md
+#      - Query: private/query.md
       - Federated Operation: private/federated_operation.md
       - Federated Attack: private/federated_attack.md
       - Reproducibility: private/reproducibility.md

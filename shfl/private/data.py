@@ -3,16 +3,15 @@ import numpy as np
 
 
 class LabeledData:
-    """
-    Class to represent labeled data
+    """Represents labeled data.
 
     # Arguments:
-        data: Features representing a data sample
-        label: Label for this sample
+        data: Object containing data.
+        labels: Object containing target labels.
 
     # Properties:
-        data: getter and setter for data
-        label: getter and setter for the data label
+        data: Getter and setter for data.
+        label: Getter and setter for the target labels.
     """
     def __init__(self, data, label):
         self._data = data
@@ -20,6 +19,7 @@ class LabeledData:
 
     @property
     def data(self):
+        """Returns data."""
         return self._data
 
     @data.setter
@@ -28,6 +28,7 @@ class LabeledData:
 
     @property
     def label(self):
+        """Returns target labels."""
         return self._label
 
     @label.setter
@@ -36,115 +37,123 @@ class LabeledData:
 
 
 class DataAccessDefinition(abc.ABC):
-    """
-    Interface that must be implemented in order to define how to access the private data.
+    """Interface defining a query to the node's private properties.
+
+    Depending on the algorithm, queries may have various purposes.
+    Typically, queries access node's private properties
+    such as node's private data, model, and model's parameters.
+    See usage examples in methods `configure_data_access` and
+    `configure_model_access` of the class
+    [DataNode](../data_node/#datanode-class).
     """
 
     @abc.abstractmethod
     def apply(self, data, **kwargs):
-        """
-        Every implementation needs to implement this method defining how data will be returned.
+        """Applies an arbitrary query on the node's private property.
+
+        This method must be implemented in order to define how
+        to query a node's private property.
 
         # Arguments:
-            data: Raw data that are going to be accessed
+            data: Node's private data to be accessed.
 
         # Returns:
-            result_data: Result data, function of argument data
+            result_data: Result from the query on the node's private data.
         """
-            
+
 
 class DPDataAccessDefinition(DataAccessDefinition):
-    """
-    Interface that must be implemented in order to define how to access differentially private data.
-    Moreover, it provides some tools to ensure a proper implementation of Differential Privacy.
+    """Interface defining a differentially private query
+        to the node's private properties.
     """
 
     @staticmethod
     def _check_epsilon_delta(epsilon_delta):
-        """
-        It checks if the epsilon_delta parameter correctly represents the epsilon and delta values in
-        epsilon-delta Differential Privacy. If the check fails, it throws an ValueError exception
-        with the appropriate message
+        """Checks whether epsilon and delta are valid.
+
+        If the check fails, a ValueError exception is raised
+        with the appropriate message.
 
         # Arguments:
-            epsilon_delta: a tuple of values, which should be the epsilon and delta values in
-                epsilon-delta Differential Privacy.
-
+            epsilon_delta: A tuple of values corresponding to the
+                epsilon and delta parameters the differential privacy mechanism.
         """
         if len(epsilon_delta) != 2:
-            raise ValueError("epsilon_delta parameter should be a tuple with two elements, but {} were given"
+            raise ValueError("epsilon_delta parameter should be a tuple with "
+                             "two elements, but {} were given."
                              .format(len(epsilon_delta)))
         if epsilon_delta[0] < 0:
-            raise ValueError("Epsilon has to be greater than zero")
+            raise ValueError("Epsilon has to be greater than zero.")
         if epsilon_delta[1] < 0:
-            raise ValueError("Delta has to be greater than 0 and less than 1")
+            raise ValueError("Delta has to be greater than 0 and less than 1.")
 
     @staticmethod
     def _check_binary_data(data):
-        """
-        It checks if the given argument is made of binary elements or not.
-        If the check fails, it throws an ValueError exception with the appropriate message
+        """Checks whether data is binary.
+
+        If the check fails, a ValueError exception is raised
+        with the appropriate message.
 
         # Arguments:
-            data: input value which is expected to be made of binary elements.
+            data: Input data.
 
         """
         if not np.array_equal(data, data.astype(bool)):
             raise ValueError(
-                "This mechanism works with binary data, but input is not binary")
+                "This mechanism works with binary data, "
+                "but input is not binary.")
 
     @staticmethod
     def _check_sensitivity_positive(sensitivity):
-        """
-        It checks if the given sensitivity values are strictly positive (>0)
+        """Checks whether given sensitivity is strictly positive.
+
+        If the check fails, a ValueError exception is raised
+        with the appropriate message.
 
         # Arguments:
-            sensitivity: sensitivity values which should be strictly positive (>0).
-
-        If the check fails, it throws an ValueError exception with the appropriate message
+            sensitivity: Array-like object containing sensitivity values.
         """
         if isinstance(sensitivity, (np.ScalarType, np.ndarray)):
             sensitivity = np.asarray(sensitivity)
             if (sensitivity < 0).any():
                 raise ValueError(
-                    "Sensitivity of the query cannot be negative")
+                    "Sensitivity of the query cannot be negative.")
 
     @staticmethod
     def _check_sensitivity_shape(sensitivity, query_result):
-        """
-        It checks if the given sensitivity values fit the shape of the query_result
+        """Checks whether given sensitivity shape matches the query result.
+
+        If the check fails, a ValueError exception is raised
+        with the appropriate message.
 
         # Arguments:
-            sensitivity: sensitivity values which should be strictly positive (>0).
-            query_result: output of a query
-
-        If the check fails, it throws an ValueError exception with the appropriate message
+            sensitivity: Array-like object containing sensitivity values.
+            query_result: Array-like object containing the query's result.
         """
         if sensitivity.size > 1:
             if sensitivity.size > query_result.size:
                 raise ValueError(
-                    "Provided more sensitivity values than query outputs")
-            if not all((m == n) for m, n in zip(sensitivity.shape[::-1], query_result.shape[::-1])):
-                raise ValueError("Sensitivity array dimension " + str(sensitivity.shape) +
+                    "Provided more sensitivity values than query outputs.")
+            if not all((m == n) for m, n in zip(sensitivity.shape[::-1],
+                                                query_result.shape[::-1])):
+                raise ValueError("Sensitivity array dimension " +
+                                 str(sensitivity.shape) +
                                  " cannot broadcast to query result dimension " +
-                                 str(query_result.shape))
-    
+                                 str(query_result.shape) + ".")
+
     @property
     @abc.abstractmethod
     def epsilon_delta(self):
-        """
-        Every differentially private mechanism needs to implement this property
+        """Every differentially private mechanism must implement this property.
 
         # Returns:
-            epsilon_delta: Privacy budget spent each time this differentially private mechanism is used
-
+            epsilon_delta: Privacy budget spent each time this
+                differentially private mechanism is used.
         """
 
 
 class UnprotectedAccess(DataAccessDefinition):
+    """Returns plain data.
     """
-    This class implements access to data without restrictions, plain data will be returned.
-    """
-    def apply(self, data):
+    def apply(self, data, **kwargs):
         return data
-

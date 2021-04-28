@@ -1,37 +1,35 @@
-import numpy as np
 import abc
+import numpy as np
 
 
 class Query(abc.ABC):
-    """
-    This class represents a query over private data. This interface exposes a method receiving
-    data and must return a result based on this input.
+    """Queries private data.
+
+    This interface exposes a method that receives the node's private data
+    and must return a result based on this input.
     """
 
     @abc.abstractmethod
     def get(self, data):
-        """
-        Receives data and apply some function to answer it.
+        """Receives data and applies and arbitrary query on it.
 
         # Arguments:
-            data: Data to process
+            data: Data to process.
 
         # Returns:
-            answer: Result of apply query over data
+            answer: Result from applying the query over the input data.
         """
 
 
 class IdentityFunction(Query):
-    """
-    This function doesn't transform data. The answer is the data.
+    """Returns the data.
     """
     def get(self, data):
         return data
 
 
 class Mean(Query):
-    """
-    Implements mean over data array.
+    """Computes the mean over data.
     """
     def get(self, data):
         return np.mean(data)

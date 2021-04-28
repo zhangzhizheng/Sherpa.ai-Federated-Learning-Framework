@@ -7,6 +7,8 @@ from shfl.data_base.data_base import DataBase
 class Emnist(DataBase):
     """Loads the EMNIST dataset.
 
+    Implements base class [DataBase](./#database-class).
+
     # References:
         [EMNIST dataset](https://www.nist.gov/itl/products-and-services/emnist-dataset)
     """

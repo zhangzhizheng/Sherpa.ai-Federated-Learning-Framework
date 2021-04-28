@@ -7,6 +7,8 @@ from shfl.data_base.data_base import DataBase
 class FashionMnist(DataBase):
     """Loads the FASHION-MNIST dataset.
 
+    Implements base class [DataBase](./#database-class).
+
     # References:
         [FASHION-MNIST dataset](https://keras.io/datasets/
             #fashion-mnist-database-of-fashion-articles)

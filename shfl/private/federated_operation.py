@@ -1,14 +1,44 @@
 import abc
 import numpy as np
+
 from shfl.private.node import DataNode
 from shfl.private.data import LabeledData
+from shfl.data_base.data_base import split_train_test
 
 
 class FederatedData:
-    """
-    Class representing data across different data nodes.
-    This object overrides dynamically the callable methods of class
-    FederatedDataNode to make them iterable over different data nodes.
+    """Represents the set of federated nodes.
+
+    This object contains the data nodes of the federated experiment.
+    All node's callable methods (see callable methods in class
+    [FederatedDataNode](./#federateddatanode-class)) are also
+    available at "federated level", meaning that when invoking a node's
+    method from this object, the method gets executed on all the member nodes.
+
+    # Example:
+
+    ```python
+        from shfl.data_base import Emnist
+        from shfl.data_distribution import IidDataDistribution
+        from shfl.private.data import UnprotectedAccess
+
+
+        # Create federated data from a dataset:
+        database = Emnist()
+        database.load_data()
+        iid_distribution = IidDataDistribution(database)
+        federated_data, test_data, test_labels = \\
+            iid_distribution.get_federated_data(num_nodes=5, percent=10)
+
+        # Data access definition at "node level" (only node 0):
+        federated_data[0].configure_data_access(UnprotectedAccess())
+        print(federated_data[0].query())
+        # print(federated_data[1].query())  # Raises an exception
+
+        # Data access definition at "federate level" (all nodes at once):
+        federated_data.configure_data_access(UnprotectedAccess())
+        print(federated_data.query())
+    ```
     """
 
     def __init__(self):
@@ -25,39 +55,38 @@ class FederatedData:
     def __iter__(self):
         return iter(self._data_nodes)
 
-    def add_data_node(self, data):
-        """
-        This method adds a new node containing data to the federated data
+    def append_data_node(self, data):
+        """Appends a new node to the set of federated nodes.
 
         # Arguments:
-            data: Data to add to this node
+            data: Private data of the node to append.
         """
         node = FederatedDataNode(str(id(self)))
         node.set_private_data(data)
         self._data_nodes.append(node)
 
     def num_nodes(self):
-        """
-        # Returns:
-            num_nodes: The number of nodes in this federated data.
+        """Returns the total number of nodes in the set of federated nodes.
         """
         return len(self._data_nodes)
 
     def _create_apply_method(self, method):
-        """Creates generic apply methods.
+        """Applies a method on all the set of federated nodes.
 
-        Creates a function that loops on all the federated data nodes and
-        calls a node's method.
+        Dynamically creates a loop ever all the set of federated nodes
+        to call a node's method (see callable methods in class
+        [FederatedDataNode](./#federateddatanode-class)).
 
         # Arguments:
-            method: String corresponding to a node's method
+            method: String corresponding to a node's method.
 
         # Returns:
-            node_method: Function that loops the desired method on all the nodes
+            node_method: Function that loops the desired method
+                on all the nodes.
         """
 
         def apply_method(*args, **kwargs):
-            """Applies a method on the FederatedData nodes.
+            """Applies a method on the set of federated nodes.
 
             # Returns:
                 output: List containing method's output for every node.
@@ -73,136 +102,114 @@ class FederatedData:
 
 
 class FederatedDataNode(DataNode):
-    """
-    This class represents a [DataNode](../data_node) in a FederatedData. Extends DataNode allowing
-    calls to methods without explicit private data identifier, assuming access to the federated data.
+    """Represents a data node as a member of a set of federated nodes.
 
-    It supports Adaptive Differential Privacy through Privacy Filters
+    Extends the class [DataNode](../data_node/#datanode-class).
+    The main difference with respect its base class is that this
+    class allows calls to node's methods without having to
+    explicitly specify a private identifier, since the latter
+    is being set at initialization time.
+
+    As for an individual data node, the access to the private data must
+    be configured with an access policy before querying it or an
+    exception will be raised (see example in the class
+    [FederatedData](./#federateddata-class)).
 
     # Arguments:
-        federated_data_identifier: identifier to use in private data
-
-    When you iterate over [FederatedData](./#federateddata-class) the kind of DataNode that you obtain is a \
-    FederatedDataNode.
-
-    # Example:
-
-    ```python
-        # Definition of federated data from dataset
-        database = shfl.data_base.Emnist()
-        iid_distribution = shfl.data_distribution.IidDataDistribution(database)
-        federated_data, test_data, test_labels = iid_distribution.get_federated_data(num_nodes=20, percent=10)
-
-        # Data access definition and query node 0
-        federated_data.configure_data_access(UnprotectedAccess())
-        federated_data[0].query()
-    ```
+        federated_data_identifier: String identifying the set
+            of federated nodes.
     """
     def __init__(self, federated_data_identifier):
         super().__init__()
         self._federated_data_identifier = federated_data_identifier
 
     def query(self, private_property=None, **kwargs):
-        """
-        Queries private data previously configured. If the access didn't configured this method will raise exception
-
-        # Arguments:
-            private_property: String with the key identifier for the data
+        """See base class.
         """
         if private_property is None:
             private_property = self._federated_data_identifier
         return super().query(private_property, **kwargs)
 
     def configure_data_access(self, data_access_definition):
+        """See base class.
         """
-        Adds a DataAccessDefinition for some concrete private data.
-
-        # Arguments:
-            data_access_definition: Policy to access data (see: [DataAccessDefinition](../data/#dataaccessdefinition-class))
-        """
-        super().configure_data_access(self._federated_data_identifier, data_access_definition)
+        super().configure_data_access(self._federated_data_identifier,
+                                      data_access_definition)
 
     def set_private_data(self, data):
-        """
-        Creates copy of data in private memory using name as key. If there is a previous value with this key the
-        data will be overridden.
-
-        # Arguments:
-            data: Data to be stored in the private memory of the DataNode
+        """See base class.
         """
         super().set_private_data(self._federated_data_identifier, data)
 
     def set_private_test_data(self, data):
-        """
-        Creates copy of test data in private memory using name as key. If there is a previous value with this key the
-        data will be override.
-
-        # Arguments:
-            data: Data to be stored in the private memory of the DataNode
+        """See base class.
         """
         super().set_private_test_data(self._federated_data_identifier, data)
 
     def train_model(self, **kwargs):
-        """
-        Train the model that has been previously set in the data node
+        """See base class.
         """
         super().train_model(self._federated_data_identifier, **kwargs)
 
     def apply_data_transformation(self, federated_transformation):
+        """See base class.
         """
-        Executes FederatedTransformation (see: [Federated Operation](../federated_operation)) over private data.
+        super().apply_data_transformation(self._federated_data_identifier,
+                                          federated_transformation)
+
+    def evaluate(self, data, labels):
+        """Evaluates the performance of the model.
+
+        The node's model is evaluated on both input data, and, if present,
+        on node's local test data.
 
         # Arguments:
-            federated_transformation: Operation to execute (see: [Federated Operation](../federated_operation))
-        """
-        super().apply_data_transformation(self._federated_data_identifier, federated_transformation)
-
-    def evaluate(self, data, test):
-        """
-        Evaluates the performance of the model
-
-        # Arguments:
-            data: Data to predict
-            test: True values of data
+            data: The data on which to make the evaluation.
+            labels: The true labels.
 
         # Returns:
-            metrics: array with metrics values for predictions for data argument.
+            metrics: Metrics for the evaluation.
         """
-        return super().evaluate(data, test), super().local_evaluate(self._federated_data_identifier)
+        return super().evaluate(data, labels), \
+            super().local_evaluate(self._federated_data_identifier)
 
-    def split_train_test(self, test_split=0.2):
-        """
-        Splits private_data in train and test sets
+    def split_train_test(self, train_proportion=0.8):
+        """Splits node's private data into train and test sets.
 
         # Arguments:
-            test_split: percentage of test split
+            train_proportion: Optional; Float between 0 and 1 proportional to the
+                amount of data to dedicate to train. If 1 is provided, all data is
+                assigned to train (default is 0.8).
         """
         labeled_data = self._private_data.get(self._federated_data_identifier)
-        length = len(labeled_data.data)
-        train_data = labeled_data.data[int(test_split * length):]
-        train_label = labeled_data.label[int(test_split * length):]
-        test_data = labeled_data.data[:int(test_split * length)]
-        test_label = labeled_data.label[:int(test_split * length)]
+        train_data, train_labels, test_data, test_labels = \
+            split_train_test(labeled_data.data, labeled_data.label,
+                             train_proportion=train_proportion)
 
-        self.set_private_data(LabeledData(train_data, train_label))
-        self.set_private_test_data(LabeledData(test_data, test_label))
+        self.set_private_data(LabeledData(train_data, train_labels))
+        self.set_private_test_data(LabeledData(test_data, test_labels))
 
 
 class ServerDataNode(FederatedDataNode):
+    """Represents a server node in the horizontal federated learning setting.
+
+    Extends the class [FederatedDataNode](./#federateddatanode-class).
+    The server node is in charge of querying the clients
+    (i.e. the set of federated nodes).
+    In the horizontal federated learning setting, typical queries
+    are to deploy (update) the collaborative model over
+    the client nodes, and to aggregate the clients' models
+    into the collaborative one, held by the server.
+
+    # Arguments:
+        federated_data: The clients (i.e. the set of federated nodes,
+            see class [FederatedData](./#federateddata-class)).
+        model: Object representing the collaborative model.
+        aggregator: Object representing the aggregator to use (see class
+            [FederatedAggregator](../../federated_aggregator/#federatedaggregator-class)).
+        data: Optional; Object of class [LabeledData](../data/#labeleddata-class)
+            containing the server's private data.
     """
-        This class represents a type Server [DataNode](../data_node)
-        in a FederatedData. It extends DataNode allowing calls to methods
-        without explicit private data identifier,
-        assuming access to the Server's data (if any).
-
-        It supports Adaptive Differential Privacy through Privacy Filters
-
-        # Arguments:
-            federated_data: the set of client nodes
-            model: python object representing the model of the server node
-            aggregator: python object representing the type of aggregator to use
-            data: optional, server's private data
-        """
 
     def __init__(self, federated_data, model, aggregator, data=None):
         super().__init__(federated_data_identifier=str(id(federated_data)))
@@ -212,22 +219,19 @@ class ServerDataNode(FederatedDataNode):
         self.set_private_data(data)
 
     def deploy_collaborative_model(self):
-        """
-        Deployment of the collaborative learning model from server node to
-        each client node.
+        """Sends the server's model to each client node.
         """
         self._federated_data.set_model_params(self.query_model_params())
 
-    def evaluate_collaborative_model(self, data_test, label_test):
-        """
-        Evaluation of the performance of the collaborative model.
+    def evaluate_collaborative_model(self, data, labels):
+        """Evaluates the performance of the collaborative model.
 
         # Arguments:
-            test_data: test dataset
-            test_label: corresponding labels to test dataset
+            data: The data on which to make the evaluation.
+            labels: The true labels.
         """
         evaluation, local_evaluation = \
-            self.evaluate(data_test, label_test)
+            self.evaluate(data, labels)
 
         print("Collaborative model test performance : " + str(evaluation))
         if local_evaluation is not None:
@@ -235,9 +239,9 @@ class ServerDataNode(FederatedDataNode):
                   + str(local_evaluation))
 
     def aggregate_weights(self):
-        """
-        Aggregate weights from all data nodes in the server model and
-        updates the server
+        """Aggregate model's parameters from client nodes.
+
+        After aggregation, updates the collaborative model.
         """
 
         weights = self._federated_data.query_model_params()
@@ -246,19 +250,27 @@ class ServerDataNode(FederatedDataNode):
 
 
 class VerticalServerDataNode(FederatedDataNode):
-    """
-    This class represents a Server data node [DataNode](../data_node) in
-    the Vertical Federated Learning setting.
-    It extends DataNode allowing calls to methods without explicit private
-    data identifier, assuming access to the Server's data (if any).
-    It also Aggregates weights from all data nodes in the server model and
-    trains the server's model.
+    """Represents a server node in the vertical federated learning setting.
+
+    Extends the class [FederatedDataNode](./#federateddatanode-class).
+    As opposed to the horizontal setting, in the vertical
+    federated learning setting the collaborative model is typically
+    distributed between the clients and the server.
+    As a result, neither the clients nor the server hold the entire model,
+    but only part of it. The server node is still in charge
+    of querying the clients (i.e. the set of federated nodes).
+    Typical queries in this case are communication of meta-parameters
+    (e.g. embeddings, gradients etc.) with the clients,
+    as well as prediction and evaluation of the collaborative model.
 
     # Arguments:
-        federated_data: Object of class [FederatedData](./federated_data)
-            representing the set of client nodes
-        model: Object representing the model of the server node
-        data: Optional server's private data
+        federated_data: The clients (i.e. the set of federated nodes,
+            see class [FederatedData](./#federateddata-class)).
+        model: Object representing the collaborative model.
+        aggregator: Object representing the aggregator to use (see class
+            [FederatedAggregator](../../federated_aggregator/#federatedaggregator-class)).
+        data: Optional; Object of class [LabeledData](../data/#labeleddata-class)
+            containing the server's private data.
     """
 
     def __init__(self, federated_data, model, aggregator, data=None):
@@ -269,14 +281,15 @@ class VerticalServerDataNode(FederatedDataNode):
         self.set_private_data(data)
 
     def predict_collaborative_model(self, data):
-        """
-        Make a prediction using the collaborative model.
+        """"Makes a prediction on input data using the collaborative model.
 
         # Arguments:
-            data: List, each item representing the global test
-                dataset for a single client.
-        """
+            data: List, each item represents the input data
+                on which to make the prediction for a single client.
 
+        # Returns:
+            prediction: The prediction using the collaborative model.
+        """
         clients_embeddings = [node.predict(data)
                               for node, data in
                               zip(self._federated_data, data)]
@@ -286,29 +299,29 @@ class VerticalServerDataNode(FederatedDataNode):
 
         return prediction
 
-    def evaluate_collaborative_model(self, test_data=None, test_label=None):
-        """Evaluates the collaborative model.
+    def evaluate_collaborative_model(self, data=None, labels=None):
+        """"Evaluates the performance of the collaborative model.
 
         If the global test_data or test_label are not provided,
         the evaluation is made on the batch of train data and labels
         available at the present iteration.
 
         # Arguments:
-            test_data: List, each item representing the global test
+            data: Optional; List, each item representing the global test
                 dataset for a single client.
-            test_label: Array representing the global labels (the
-                same for all clients)
+            label: Optional; Array representing the global labels (the
+                same for all clients).
         """
 
-        if test_data is not None and test_label is not None:
+        if data is not None and labels is not None:
 
             clients_embeddings = [node.predict(data)
                                   for node, data in
-                                  zip(self._federated_data, test_data)]
+                                  zip(self._federated_data, data)]
             clients_embeddings_aggregated = \
                 self._aggregator.aggregate_weights(clients_embeddings)
             evaluation = self.evaluate(clients_embeddings_aggregated,
-                                       test_label)
+                                       labels)
             print("Collaborative model test evaluation (global, local): " +
                   str(evaluation))
 
@@ -320,94 +333,123 @@ class VerticalServerDataNode(FederatedDataNode):
                   str(evaluation))
 
     def aggregate_weights(self):
-        """Aggregates the parameters from all clients.
+        """Aggregate model's meta-parameters from client nodes.
 
         It is assumed that the last item of each client's
         parameters is constituted by samples' indices (id).
-        The latter are not aggregated and must match among all clients.
+        The latter are not aggregated and must match among all clients,
+        otherwise an exception will be raised.
+
+        # Returns
+            aggregated_meta_params: Array-like object containing the
+                aggregated meta-parameters.
+            matching_indices: Array-like object containing a single copy
+                of samples' indices.
         """
 
         clients_meta_params = self._federated_data.query_model()
         params = [client[param] for client in clients_meta_params
                   for param in range(len(client) - 1)]
         samples_indices = [item[-1] for item in clients_meta_params]
-        matching_indices = self._check_indices_matching(samples_indices)
+        self._check_indices_matching(samples_indices)
         aggregated_meta_params = self._aggregator.aggregate_weights(params)
 
-        return aggregated_meta_params, matching_indices
+        return aggregated_meta_params, samples_indices[0]
 
     @staticmethod
     def _check_indices_matching(sample_indices):
-        """Checks all indices are matching.
+        """Checks that all samples' indices match.
 
-        Checks that all the nodes' indices received by the
-        vertical server are the same. If not, an error is raised.
+        Checks that all the samples' indices received by the
+        server are the same. If not, an exception is raised.
 
         # Arguments:
-            indices_samples: List of multi-dimensional integer arrays.
-                Each entry in the list contains the one client's sample indices.
-
-        # Returns
-            matching_indices: Array containing samples' indices.
+            sample_indices: List, each entry contains
+                one client's sample indices.
         """
 
-        if all(np.array_equal(sample_indices[0], item)
-               for item in sample_indices):
-            return sample_indices[0]
-        else:
+        if not all(np.array_equal(sample_indices[0], item)
+                   for item in sample_indices):
             raise AssertionError("Clients samples' indices do not match.")
-    
+
 
 class FederatedTransformation(abc.ABC):
     """Applies a federated transformation over the federated data.
     """
+
     @abc.abstractmethod
     def apply(self, data):
-        """Performs an arbitrary transformation on a node's data.
+        """Applies an arbitrary transformation on the node's private data.
+
+        This method must be implemented in order to define how
+        to transform the node's private data.
 
         # Arguments:
-            data: The node's data that has to be transformed
+            data: The node's private data to be transformed.
+
+        # Example:
+            See implementation of class [Normalize](./#normalize-class).
         """
 
 
-def federate_array(array, num_data_nodes):
-    """
-    Creates [FederatedData](./#federateddata-class) from an indexable array.
-
-    The array will be divided using the first dimension.
-
-    It supports Adaptive Differential Privacy through Privacy Filters
-
-    # Arguments:
-        array: Indexable array with any number of dimensions
-        num_data_nodes: Number of nodes to use
-
-    # Returns:
-        federated_array: [FederatedData](./#federateddata-class) with an array of size len(array)/num_data_nodes \
-        in every node
-    """
-    split_size = len(array) / float(num_data_nodes)
-    last = 0.0
-    federated_array = FederatedData()
-    while last < len(array):
-        federated_array.add_data_node(array[int(last):int(last + split_size)])
-        last = last + split_size
-
-    return federated_array
-
-
 class Normalize(FederatedTransformation):
-    """
-    Normalization class of federated data [FederatedData](./#federateddata-class). It implements \
+    """Applies a normalization over a set of federated nodes.
+
+    It implements class
     [FederatedTransformation](./#federatedtransformation-class).
 
     # Arguments:
-        mean: mean used for normalization.
-        std: std used for normalization.
+        mean: Mean used for the normalization.
+        std: Standard deviation used for the normalization.
     """
     def __init__(self, mean, std):
         self.__mean = mean
         self.__std = std
 
-    def apply(self, labeled_data):
-        labeled_data.data = (labeled_data.data - self.__mean) / self.__std
+    def apply(self, data):
+        data.data = (data.data - self.__mean) / self.__std
+
+
+def federate_array(data, num_nodes):
+    """Creates a set of federated nodes from an array-like object.
+
+    The data in the input array is evenly split among
+    a specified number of nodes using the array's first dimension.
+
+    # Arguments:
+        array: Array-like object with any number of dimensions.
+        num_nodes: Number of nodes for splitting.
+
+    # Returns:
+        federated_data: Object of class [FederatedData](./#federateddata-class).
+    """
+    split_size = len(data) / float(num_nodes)
+    last = 0.0
+    federated_data = FederatedData()
+    while last < len(data):
+        federated_data.append_data_node(data[int(last):int(last + split_size)])
+        last = last + split_size
+
+    return federated_data
+
+
+def federate_list(data, labels=None):
+    """Converts a list to a set of federated nodes.
+
+    # Arguments:
+        data: List, each element contains one client's private data.
+        labels: Optional; List, each element contains one client's
+            target labels.
+
+    # Returns:
+        federated_data: Object of class [FederatedData](./#federateddata-class).
+    """
+    if labels is None:
+        labels = [None] * len(data)
+
+    federated_data = FederatedData()
+    for node_data, node_labels in zip(data, labels):
+        node_labeled_data = LabeledData(node_data, node_labels)
+        federated_data.append_data_node(node_labeled_data)
+
+    return federated_data
