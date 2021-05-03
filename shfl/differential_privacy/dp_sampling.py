@@ -8,37 +8,32 @@ from operator import mul
 from shfl.private.data import DPDataAccessDefinition
 
 
-def prod(iterable):
-    """
-    This is a multiplicational equivalent of python sum function
-    """
-    return reduce(mul, iterable, 1)
-
-
-array_sampler = np.random.default_rng()
-
-
 class Sampler(DPDataAccessDefinition):
-    """
-    This class implements sampling methods which helps to reduce
-    the epsilon-delta budget spent by a dp-mechanism
+    """Implements sub-sampling methods to amplify differential privacy.
+
+    It implements the class
+    [DPDataAccessDefinition](../../private/data/#dpdataaccessdefinition-class).
 
     # Arguments:
-        sample_size: size of the sample to be taken
+        dp_mechanism: The differential privacy mechanism to apply.
+
+    # References:
+        [Privacy amplification by subsampling:
+        Tight analyses via couplings and divergences](https://arxiv.org/abs/1807.01647)
     """
 
     def __init__(self, dp_mechanism):
         self._dp_mechanism = dp_mechanism
 
-    def apply(self, data):
-        """
-        This method applies a dp-mechanism to a sample of the given data.
+    def apply(self, data, **kwargs):
+        """Samples the input data and applies the differential privacy mechanism.
 
         # Arguments:
-            data: input data to be accessed.
+            data: Input data which to be accessed with differential privacy.
 
         # Returns:
-            A sample of the data accessed with a dp-mechanism.
+            result: Array-type object of length equal to the sample size
+                containing the differentially-private randomized data.
         """
         sampled_data = self.sample(data)
         return self._dp_mechanism.apply(sampled_data)
@@ -49,43 +44,48 @@ class Sampler(DPDataAccessDefinition):
 
     @abc.abstractmethod
     def epsilon_delta_reduction(self, epsilon_delta):
-        """
-        It receives epsilon_delta parameters from a dp-mechanism
-        and computes the new hopefully reduced epsilon_delta
+        """Computes the new epsilon and delta.
+
+         Abstract method.
+
+        It receives epsilon and delta parameters from a
+        differential privacy mechanism and computes the new
+        (hopefully reduced) epsilon and delta.
 
         # Arguments:
-            epsilon_delta: privacy budget provided by a dp-mechanism
+            epsilon_delta: Privacy budget provided by a
+                differential privacy mechanism.
 
         # Returns:
-            new_epsilon_delta: new hopefully reduced epsilon_delta
+            new_epsilon_delta: New epsilon delta values.
         """
 
     @abc.abstractmethod
     def sample(self, data):
-        """
-        It receives some data and returns a sample of it
+        """Samples over the input data.
+
+         Abstract method.
 
         # Arguments:
-            data: Raw data that are going to be sampled
+            data: Raw data that to be sampled.
 
         # Returns:
-            sampled_data: sample of size self._sample_size
+            sampled_data: Sampled data.
         """
 
 
 class SampleWithoutReplacement(Sampler):
-    """
-        It implements the sample with replacement technique (Theorem 9 from the reference) which reduces
-        the epsilon-delta bugdet spent specified.
+    """Implements privacy amplification by sampling without replacement.
 
-        Note that it only can sample the first dimension of a ndarray.
+    It implements the class [Sampler](./#sampler-class).
 
-        # Arguments:
-            sample_size: one dimentional size of the sample
-            data_size: shape of the input data
+    See Theorem 9 in the references.
+    Note that it samples the first dimension of an array-like object.
 
-        # References:
-            - [Privacy Amplification by Subsampling: Tight Analyses via Couplings and Divergences](https://arxiv.org/abs/1807.01647)
+    # Arguments:
+        dp_mechanism: The differential privacy mechanism to apply.
+        sample_size: One dimensional size of the sample.
+        data_size: Shape of the input data.
     """
 
     def __init__(self, dp_mechanism, sample_size, data_size):
@@ -105,27 +105,14 @@ class SampleWithoutReplacement(Sampler):
             self._data_size = self._data_size[0]
 
     def sample(self, data):
+        """See base class.
         """
-        It receives some data and returns a sample of it, using a sample without replacement
-
-        # Arguments:
-            data: Raw data that is going to be sampled
-
-        # Returns:
-            sample of size self._sample_size
-        """
-        return array_sampler.choice(data, size=self._sample_size, replace=False)
+        return array_sampler.choice(data,
+                                    size=self._sample_size,
+                                    replace=False)
 
     def epsilon_delta_reduction(self, epsilon_delta):
-        """
-        It receives epsilon_delta parameters from a dp-mechanism
-        and computes the new hopefully reduced epsilon_delta
-
-        # Arguments:
-            epsilon_delta: privacy budget provided by a dp-mechanism
-
-        # Returns:
-            new_epsilon_delta: new hopefully reduced epsilon_delta
+        """See base class.
         """
         proportion = self._actual_sample_size / self._data_size
         epsilon, delta = epsilon_delta
@@ -137,14 +124,21 @@ class SampleWithoutReplacement(Sampler):
 
 
 def check_sample_size(sample_size, data_size):
-    """
-    This method ensures that the sample simple is smaller than the
-    first dimension of the data_size
+    """Checks sample size smaller than the original.
 
     # Arguments:
-        sample_size: one dimentional size of the sample
-        data_size: shape of the given data, a tuple is expected
+        sample_size: One dimensional size of the sample.
+        data_size: Tuple, shape of the original data.
     """
     if sample_size > data_size[0]:
-        raise ValueError("Sample size {} must be less than data size: {}".format(
-            sample_size, data_size))
+        raise ValueError("Sample size {} must be less than "
+                         "data size: {}".format(sample_size, data_size))
+
+
+def prod(iterable):
+    """Multiplies all items together.
+    """
+    return reduce(mul, iterable, 1)
+
+
+array_sampler = np.random.default_rng()

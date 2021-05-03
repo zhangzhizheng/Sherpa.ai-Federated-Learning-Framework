@@ -4,18 +4,18 @@ import pandas as pd
 
 
 class DataBase(abc.ABC):
-    """Abstract class for data base.
+    """Represents a generic data base.
 
     This interface allows for a dataset to interact with the Framework's methods.
     In particular, with data distribution methods
-    (see: [Data Distribution](../data_distribution)).
+    (see class [Data Distribution](../data_distribution)).
     The loaded data should be saved in the protected attributes.
 
     # Attributes:
-        train_data: Array-like object.
-        train_labels: Array-like object.
-        test_data: Array-like object.
-        test_labels: Array-like object.
+        train_data: Array-like object containing the train data.
+        train_labels: Array-like object containing the train target labels.
+        test_data: Array-like object containing the test data.
+        test_labels: Array-like object containing the test target labels.
 
     # Properties:
         train: 2-Tuple as (train data, train labels).
@@ -50,13 +50,15 @@ class DataBase(abc.ABC):
     @abc.abstractmethod
     def load_data(self):
         """Specifies data location and operations at loading.
+
+        Abstract method.
         """
 
 
 class LabeledDatabase(DataBase):
     """Creates a generic labeled database from input data and labels.
 
-    Implements base class [DataBase](./#database-class).
+    Implements the class [DataBase](./#database-class).
 
     # Arguments:
         data: Array-like object containing the features.

@@ -1,29 +1,32 @@
 import numpy as np
 from numpy import linalg as LA
-
-from shfl.federated_aggregator import FedAvgAggregator
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
+from shfl.federated_aggregator import FedAvgAggregator
+
 
 class NormClipAggregator(FedAvgAggregator):
-    """
-    Implementation of Average Federated Aggregator with Clipped Norm.
+    """Performs an average of the clients' model's parameters with clipped norm.
+
+    It implements the class
+    [FedAvgAggregator](./#fedavgaggregator-class).
+
     It clips the norm of the client's updates and averages them.
 
     # Arguments:
-        clip: value used to clip each client's update
+        clip: Value used to clip each client's update.
     """
 
     def __init__(self, clip):
         self._clip = clip
 
     def _serialize(self, data):
-        """
-        It turns a list of multidimensional arrays into a list of one-dimensional arrays
+        """Converts a list of multidimensional arrays into a list
+            of one-dimensional arrays.
 
         # Arguments:
-            data: list of multidimensional arrays
+            data: List of multidimensional arrays.
         """
         data = [np.array(j) for j in data]
         self._data_shape_list = [j.shape for j in data]
@@ -32,12 +35,13 @@ class NormClipAggregator(FedAvgAggregator):
         return serialized_data
         
     def _deserialize(self, data):
-        """
-        It turns a list of one-dimensional arrays into a list of multidimensional arrays.
-        The multidimensional shape is stored when it is serialized
+        """Converts a list of one-dimensional arrays into
+            a list of multidimensional arrays.
+
+        The multidimensional shape is stored when it is serialized.
 
         # Arguments:
-            data: list of one-dimensional arrays
+            data: List of one-dimensional arrays.
         """
 
         firstInd = 0
@@ -57,7 +61,7 @@ class NormClipAggregator(FedAvgAggregator):
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
-        """Aggregation of arrays"""
+        """Aggregates arrays."""
         clients_params = np.array(params)
         for i, v in enumerate(clients_params):
             norm = LA.norm(v)
@@ -67,8 +71,9 @@ class NormClipAggregator(FedAvgAggregator):
 
     @dispatch(Variadic[list])
     def _aggregate(self, *params):
-        """Aggregation of (nested) lists of arrays"""        
-        serialized_params = np.array([self._serialize(client) for client in params])
+        """Aggregates (nested) lists of arrays."""
+        serialized_params = np.array([self._serialize(client)
+                                      for client in params])
         serialized_aggregation = self._aggregate(*serialized_params)
         aggregated_weights = self._deserialize(serialized_aggregation)
         
@@ -76,16 +81,21 @@ class NormClipAggregator(FedAvgAggregator):
 
 
 class CDPAggregator(NormClipAggregator):
-    """
-    Implementation of Average Federated Aggregator with Differential Privacy also known \
-    as Central Differential Privacy.
-    It clips the norm of the client's updates, averages them and adds gaussian noise \
-    calibrated to noise_mult*clip/number_of_clients.
+    """Performs an average of the clients' model's parameters
+        with differential privacy.
+
+    It implements the class
+    [NormClipAggregator](./#normclipaggregator-class).
+
+    Also known as "Central Differential Privacy" aggregation.
+    It clips the norm of the client's updates, averages them and
+    adds gaussian noise calibrated to `noise_mult * clip / number_of_clients`.
 
     # Arguments:
-        clip: value used to clip each client's update.
-        noise_mult: quantity of noise to add. To ensure proper Differential Privacy, \
-        it must be calibrated according to some composition theorem.
+        clip: The value used to clip each client's update.
+        noise_mult: The amount of noise to add. To ensure proper
+            differential privacy, it must be calibrated according
+            to some composition theorem.
     """
 
     def __init__(self, clip, noise_mult):
@@ -94,34 +104,53 @@ class CDPAggregator(NormClipAggregator):
     
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
-        """Aggregation of arrays with gaussian noise calibrated to noise_mult*clip/number_of_clients"""
+        """Aggregation of arrays.
+
+        The gaussian noise is calibrated to
+        `noise_mult*clip/number_of_clients`
+        """
         clients_params = np.array(params)
         mean = super()._aggregate(*params)
-        noise = np.random.normal(loc=0.0, scale=self._noise_mult*self._clip/len(clients_params), size=mean.shape) 
+        noise = np.random.normal(
+            loc=0.0,
+            scale=self._noise_mult * self._clip / len(clients_params),
+            size=mean.shape)
         return mean + noise
 
     @dispatch(Variadic[list])
     def _aggregate(self, *params):
+        """Aggregation of (nested) lists of arrays.
+
+        The gaussian noise is calibrated to
+        `noise_mult*clip/number_of_clients`
+        """
         return super()._aggregate(*params)
 
 
 class WeakDPAggregator(CDPAggregator):
-    """
-    Implementation of Average Federated Aggregator with Weak Differential Privacy.
-    It clips the norm of the client's updates, averages them and adds gaussian noise \
-    calibrated to 0.025*clip/number_of_clients.
-    The noise multiplier 0.025 is not big enough to ensure proper Differential Privacy.
+    """Performs an average of the clients' model's parameters
+        with _weak_ differential privacy.
+
+    It implements the class
+    [CDPAggregator](./#cdpaggregator-class).
+
+    It clips the norm of the client's updates, averages them and
+    adds gaussian noise calibrated to `0.025*clip/number_of_clients`.
+    The noise multiplier 0.025 is not enough to
+    ensure proper differential privacy.
 
     # Arguments:
-        clip: value used to clip each client's update
+        clip: The value used to clip each client's update.
     """
     def __init__(self, clip, noise_mult=0.025):
-        super().__init__(clip=clip, noise_mult = noise_mult)
+        super().__init__(clip=clip, noise_mult=noise_mult)
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
+        """Aggregates arrays."""
         return super()._aggregate(*params)
 
     @dispatch(Variadic[list])
     def _aggregate(self, *params):
+        """Aggregates (nested) lists of arrays."""
         return super()._aggregate(*params)

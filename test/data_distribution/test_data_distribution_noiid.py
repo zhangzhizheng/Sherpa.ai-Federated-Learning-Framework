@@ -26,7 +26,7 @@ def test_choose_labels():
     data.load_data()
     data_distribution = NonIidDataDistribution(data)
 
-    random_labels = data_distribution.choose_labels(num_nodes, total_labels)
+    random_labels = data_distribution._choose_labels(num_nodes, total_labels)
     all_labels = np.concatenate(random_labels)
 
     for node in random_labels:
@@ -120,7 +120,7 @@ def test_get_federated_data():
     # Identifier and num nodes is checked in private test.
     # Percent and weight is checked in idd and no_idd test.
     num_nodes = 4
-    federated_data, test_data, test_label = dt.get_federated_data(num_nodes)
+    federated_data, test_data, test_label = dt.get_federated_data(num_nodes=num_nodes)
 
     x_c = []
     y_c = []

@@ -5,7 +5,9 @@ import torch
 
 
 class Reproducibility:
-    """Singleton class to ensure reproducibility.
+    """Ensures reproducibility.
+
+    Singleton class.
 
     The server initializes this class and the clients simply get a seed.
     The reproducibility only works for executions on CPU.

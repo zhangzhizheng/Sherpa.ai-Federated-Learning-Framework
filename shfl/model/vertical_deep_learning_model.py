@@ -5,30 +5,29 @@ from shfl.model import DeepLearningModelPyTorch
 
 
 class VerticalNeuralNetClient(DeepLearningModelPyTorch):
-    """Client's Neural Network model in a Vertical Federated Learning (FL) setting.
+    """Represents a **client's model** in a Vertical Federated Learning setting.
 
-    In Vertical FL, the collaborative training might take place using different
-    features in each node, but the same training samples are used (i.e. each
+    Implements the class [DeepLearningModelPyTorch](./#deeplearningmodelpytorch).
+
+    In Vertical Federated Learning (FL), the collaborative training
+    might take place using different features in each node,
+    but the same training samples are used (i.e. each
     node possesses a vertical chunk of the features matrix).
-    The key difference with respect Horizontal FL is that clients'
-    models might differ from client to client (e.g. different model type
-    and/or architecture), and might not even possess the target labels.
-    In the present implementation a
-    [Pytorch Neural Network model](./#DeepLearningModelPyTorch-class) is employed.
+    As opposed to Horizontal FL, in Vertical FL the clients
+    might all have different models (e.g. different model type
+    and/or architecture), and the clients might not even possess
+    the target labels. See also the documentation of the class
+    [VerticalServerDataNode](../../private/federated_operation/#verticalserverdatanode-class).
 
     # Arguments:
-        model: Compiled model, ready to train.
-        criterion: Loss function.
-        optimizer: Optimizer.
-        batch_size: Optional; batch size.
-        epochs: Optional; Number of epochs.
-        metrics: Optional dictionary {name: function to apply, ...};
-            Metrics for performance evaluation (default shows loss).
-        device: Optional; Device where to run (default is cpu).
+        See base class.
 
     # References:
         [VAFL, a Method of Vertical Asynchronous
             Federated Learning](https://arxiv.org/abs/2007.06081)
+
+        [Federated Machine Learning:
+            Concept and Applications](https://arxiv.org/abs/1902.04885)
     """
 
     def __init__(self, model, loss, optimizer, batch_size=32,
@@ -43,8 +42,7 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
         self._epoch_counter = 0
 
     def train(self, data, labels, **kwargs):
-        """Implementation of abstract method of class
-        [TrainableModel](../Model/#trainablemodel-class).
+        """Trains the model.
 
         The training on the Vertical client node is comprised of two stages:
         1) Feedforward, where the embeddings are computed using the local model;
@@ -91,37 +89,36 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
                 self._epoch_counter += 1
 
     def get_meta_params(self):
-        """Returns computed embeddings and associated indices. """
+        """Returns the computed embeddings and associated indices."""
 
         return self._embeddings.detach().cpu().numpy(), \
             self._embeddings_indices
 
 
 class VerticalNeuralNetServer(DeepLearningModelPyTorch):
-    """Server's Neural Network model in a Vertical Federated Learning (FL) setting.
+    """Represents a **server's model** in a Vertical Federated Learning setting.
 
-    In Vertical FL, the collaborative training might take place using different
-    features in each node, but the same training samples are used (i.e. each
+    Implements the class [DeepLearningModelPyTorch](./#deeplearningmodelpytorch).
+
+    In Vertical Federated Learning (FL), the collaborative training
+    might take place using different features in each node,
+    but the same training samples are used (i.e. each
     node possesses a vertical chunk of the features matrix).
-    The key difference with respect Horizontal FL is that clients'
-    models might differ from client to client (e.g. different model type
-    and/or architecture), and might not even possess the target labels.
-    In the present implementation a
-    [Pytorch Neural Network model](./#DeepLearningModelPyTorch-class) is employed.
+    As opposed to Horizontal FL, in Vertical FL the clients
+    might all have different models (e.g. different model type
+    and/or architecture), and the clients might not even possess
+    the target labels. See also the documentation of the class
+    [VerticalServerDataNode](../../private/federated_operation/#verticalserverdatanode-class).
 
     # Arguments:
-        model: Compiled model, ready to train.
-        criterion: Loss function.
-        optimizer: Optimizer.
-        batch_size: Optional; batch size.
-        epochs: Optional; Number of epochs.
-        metrics: Optional dictionary {name: function to apply, ...};
-            Metrics for performance evaluation (default shows loss).
-        device: Optional; Device where to run (default is cpu).
+        See base class.
 
     # References:
         [VAFL, a Method of Vertical Asynchronous
             Federated Learning](https://arxiv.org/abs/2007.06081)
+
+        [Federated Machine Learning:
+            Concept and Applications](https://arxiv.org/abs/1902.04885)
     """
 
     def __init__(self, model, loss, optimizer, batch_size=32,

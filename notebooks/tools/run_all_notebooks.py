@@ -62,7 +62,7 @@ def main(argv):
     for i in range(start_number, end_number):
         print('{}. '.format(i) + notebook_paths[i])
     print('\n')
-    print('Warning: Some notebook might take up to 30 minutes to finish\n')
+    print('Warning: Some notebook might take up to 30 minutes to finish.\n')
 
     for i in range(start_number, end_number):
         root, ext = os.path.splitext(os.path.basename(notebook_paths[i]))
@@ -74,12 +74,12 @@ def main(argv):
                          notebook_paths[i] + '\n')
         sys.stdout.flush()
         run_notebook(notebook_paths[i])
-        sys.stdout.write(' -- Finish in {}s\n'.format(int(time.time()-s)))
+        sys.stdout.write(' -- Finished in {}s.\n'.format(int(time.time()-s)))
         print('\n')
 
     print('\n\033[92m'
           '==========================='
-          ' Notebook testing done '
+          ' Notebook testing done. '
           '==========================='
           '\033[0m')
 

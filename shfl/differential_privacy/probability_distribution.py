@@ -3,51 +3,57 @@ import abc
 
 
 class ProbabilityDistribution(abc.ABC):
-    """
-    Class representing the interface for a probability distribution
+    """Implements a probability distribution for sensitivity sampling.
+
+    This interface must be implemented to define
+    the probability distribution to sample the data from
+    when estimating the sensitivity of a query
+    (see [SensitivitySampler](../sensitivity_sampler/)).
     """
 
     @abc.abstractmethod
     def sample(self, size):
-        """
-        This method must return an array with length "size", sampling the distribution
+        """Samples from the specified probability distribution.
+
+        Abstract method.
 
         # Arguments:
-            size: Size of the sampling
+            size: Sample size.
+
+        # Returns:
+            sample: Array-like object of length equal to `size`.
         """
 
 
 class NormalDistribution(ProbabilityDistribution):
-    """
-    Implements Normal Distribution
+    """Samples from a Normal distribution.
+
+    It implements the class
+    [ProbabilityDistribution](./#probabilitydistribution-class).
 
     # Arguments:
         mean: Mean of the normal distribution.
-        std: Standard deviation of the normal distribution
+        std: Standard deviation of the normal distribution.
     """
     def __init__(self, mean, std):
         self._mean = mean
         self._std = std
 
     def sample(self, size):
-        """
-        This method provides a sample of the given size of a gaussian distributions
-
-        # Arguments:
-            size: size of the sample
-
-        # Returns:
-            Sample of a gaussian distribution of a given size
+        """See base class.
         """
         return np.random.normal(self._mean, self._std, size)
 
 
 class GaussianMixture(ProbabilityDistribution):
-    """
-    Implements the combination of Normal Distributions
+    """Samples from a mixture of normal distributions.
+
+    It implements the class
+    [ProbabilityDistribution](./#probabilitydistribution-class).
 
     # Arguments:
-        params: Array of arrays with mean and std for every gaussian distribution.
+        params: Array of arrays with mean and std
+            for every gaussian distribution.
         weights: Array of weights for every distribution with sum 1.
 
     # Example:
@@ -71,21 +77,18 @@ class GaussianMixture(ProbabilityDistribution):
     def __init__(self, params, weights):
         self._gaussian_distributions = []
         for param in params:
-            self._gaussian_distributions.append(NormalDistribution(param[0], param[1]))
+            self._gaussian_distributions.append(
+                NormalDistribution(param[0], param[1]))
         self._weights = weights
 
     def sample(self, size):
-        """
-        This method provides a sample of the given size of a mixture of gaussian distributions
-
-        # Arguments:
-            size: size of the sample
-
-        # Returns:
-            Sample of a mixture of gaussian distributions of a given size
+        """See base class.
         """
 
-        mixture_idx = np.random.choice(len(self._weights), size=size, replace=True, p=self._weights)
+        mixture_idx = np.random.choice(len(self._weights),
+                                       size=size,
+                                       replace=True,
+                                       p=self._weights)
 
         values = []
         for i in mixture_idx:

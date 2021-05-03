@@ -3,7 +3,9 @@ import numpy as np
 
 
 class Query(abc.ABC):
-    """Queries private data.
+    """Queries the private data.
+
+    Abstract method.
 
     This interface exposes a method that receives the node's private data
     and must return a result based on this input.

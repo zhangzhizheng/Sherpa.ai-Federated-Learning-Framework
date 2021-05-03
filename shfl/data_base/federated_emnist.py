@@ -32,16 +32,21 @@ class FederatedEmnist(DataBase):
         self._type = split
 
     def load_data(self):
-        if self._type not in [e.name for e in Md5Hash]:
+        """
+        Load data of emnist dataset using its federated version, where each data belongs to a \
+            specific user. It returns for each sample a 2-tuple with (id_writer, image).
+        # Returns:
+            all_data : train data, train labels, test data and test labels
+        """
+
+        if not self._type in [e.name for e in Md5Hash]:
             self._type = 'DIGITS'
 
         file_hash_ = Md5Hash[self._type].value
 
         path_dataset = get_file(
             'emnist-digits',
-            origin='https://github.com/sherpaai/federated-emnist-dataset/'
-                   'blob/master/datasets/emnist-' +
-                   self._type +
+            origin='https://github.com/sherpaai/federated-emnist-dataset/blob/master/datasets/emnist-' + self._type +
                    '.mat?raw=true',
             file_hash=file_hash_,
             extract=True,
@@ -50,16 +55,15 @@ class FederatedEmnist(DataBase):
         dataset = loadmat(path_dataset)['dataset']
 
         writers = dataset['train'][0, 0]['writers'][0, 0]
-        data = np.reshape(dataset['train'][0, 0]['images'][0, 0],
-                          (-1, 28, 28, 1), order='F')
-        self._train_data = np.array([(writers[i][0], v)
-                                     for i, v in enumerate(data)])
+        data = np.reshape(dataset['train'][0, 0]['images'][0, 0], (-1, 28, 28, 1), order='F')
+        self._train_data = np.array([(writers[i][0], v) for i, v in enumerate(data)])
         self._train_labels = np.reshape(np.eye(10)[dataset['train'][0, 0]['labels'][0, 0]],
                                         (self._train_data.shape[0], 10))
 
-        self._test_data = np.reshape(dataset['test'][0, 0]['images'][0, 0],
-                                     (-1, 28, 28, 1), order='F')
+        self._test_data = np.reshape(dataset['test'][0, 0]['images'][0, 0], (-1, 28, 28, 1), order='F')
         self._test_labels = np.reshape(np.eye(10)[dataset['test'][0, 0]['labels'][0, 0]],
                                        (self._test_data.shape[0], 10))
+
+        # self.shuffle()
 
         return self.data

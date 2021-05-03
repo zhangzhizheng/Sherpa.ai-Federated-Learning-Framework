@@ -51,7 +51,9 @@ class DataAccessDefinition(abc.ABC):
     def apply(self, data, **kwargs):
         """Applies an arbitrary query on the node's private property.
 
-        This method must be implemented in order to define how
+        Abstract method.
+
+        It must be implemented in order to define how
         to query a node's private property.
 
         # Arguments:
@@ -145,6 +147,8 @@ class DPDataAccessDefinition(DataAccessDefinition):
     @abc.abstractmethod
     def epsilon_delta(self):
         """Every differentially private mechanism must implement this property.
+
+        Abstract method.
 
         # Returns:
             epsilon_delta: Privacy budget spent each time this

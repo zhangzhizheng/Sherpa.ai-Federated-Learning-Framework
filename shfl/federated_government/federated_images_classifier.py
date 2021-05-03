@@ -1,3 +1,7 @@
+from enum import Enum
+import numpy as np
+import tensorflow as tf
+
 from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
@@ -8,43 +12,25 @@ from shfl.data_base.emnist import Emnist
 from shfl.data_base.fashion_mnist import FashionMnist
 from shfl.private.federated_operation import Normalize
 
-from enum import Enum
-import numpy as np
-import tensorflow as tf
-
-
-class Reshape(FederatedTransformation):
-    """
-    Federated transformation to reshape the data
-    """
-    def apply(self, labeled_data):
-        labeled_data.data = np.reshape(
-            labeled_data.data,
-            (labeled_data.data.shape[0],
-             labeled_data.data.shape[1],
-             labeled_data.data.shape[2], 1))
-
-
-class ImagesDataBases(Enum):
-    """
-    Enumeration of possible databases for image classification.
-    """
-    EMNIST = Emnist
-    FASHION_EMNIST = FashionMnist
-
 
 class FederatedImagesClassifier(FederatedGovernment):
-    """
-    Class used to represent a high-level federated image classification
-    (see: [FederatedGovernment](../federated_government/#federatedgovernment-class)).
+    """Runs a federated image classification with minimal user input.
+
+    It overrides the class [FederatedGovernment](./#federatedgovernment-class).
+
+    Runs an image classification federated learning experiment
+    with predefined values. This way, it suffices to just specify
+    which dataset to use.
 
     # Arguments:
-        data_base_name_key: key of the enumeration of valid data bases
-        (see: [ImagesDataBases](./#imagesdatabases-class))
-        iid: boolean which specifies if the distribution if IID (True) or
-            non-IID (False) (True by default)
-        num_nodes: number of clients.
-        percent: percentage of the database to distribute among nodes.
+        data_base_name_key: Key of a valid data base (see possibilities in class
+            [ImagesDataBases](./#imagesdatabases-class)).
+        iid: Optional; Boolean specifying whether the data distribution IID or
+            non-IID. By default set to `iid=True`.
+        num_nodes: Optional; number of client nodes (default is 20).
+        percent: Optional; Percentage of the database to distribute
+            among nodes (by default set to 100, in which case
+            all the available data is used).
     """
 
     def __init__(self, data_base_name_key, iid=True, num_nodes=20, percent=100):
@@ -83,27 +69,19 @@ class FederatedImagesClassifier(FederatedGovernment):
                              " is not included. Try with: " +
                              str(", ".join([e.name for e in ImagesDataBases])))
 
-    def run_rounds(self, n=5):
+    def run_rounds(self, n=5, **kwargs):
+        """See base class.
         """
-        Overriding of the method of run_rounds of
-        [FederatedGovernment](../federated_government/#federatedgovernment-class)).
-
-        Run one more round beginning in the actual state testing in test data
-        and federated_local_test.
-
-        # Arguments:
-            n: Number of rounds (5 by default)
-        """
-        super().run_rounds(n, self._test_data, self._test_labels)
+        super().run_rounds(n, self._test_data, self._test_labels, **kwargs)
 
     @staticmethod
     def model_builder():
-        """
-        Create a Tensorflow Model for image classification.
+        """Creates a Tensorflow model for image classification.
 
         # Returns:
-            model: Instance of DeepLearningModel
-                [DeepLearningModel](../model/#deeplearningmodel-class)).
+            model: Object of class
+                [DeepLearningModel](../model/supervised/#deeplearningmodel),
+                the Tensorflow model to use.
         """
         model = tf.keras.models.Sequential()
         model.add(tf.keras.layers.Conv2D(
@@ -130,3 +108,24 @@ class FederatedImagesClassifier(FederatedGovernment):
 
         return DeepLearningModel(model=model, loss=criterion,
                                  optimizer=optimizer, metrics=metrics)
+
+
+class Reshape(FederatedTransformation):
+    """Reshapes the data in the set of federated nodes.
+    """
+    def apply(self, labeled_data):
+        """See base class."""
+        labeled_data.data = np.reshape(
+            labeled_data.data,
+            (labeled_data.data.shape[0],
+             labeled_data.data.shape[1],
+             labeled_data.data.shape[2], 1))
+
+
+class ImagesDataBases(Enum):
+    """Enumerates the available databases for image classification.
+
+    Options are: `"EMNIST", "FASHION_EMNIST"`.
+    """
+    EMNIST = Emnist
+    FASHION_EMNIST = FashionMnist

@@ -6,14 +6,14 @@ from shfl.private.data import UnprotectedAccess
 class DataNode:
     """Represents an independent data node.
 
-    A data node has its own private data and provides methods.
+    Typically, a data node possesses its own private data and provides methods.
     The access to the private data must be configured with
     an access policy before querying it or an exception will be raised.
     A method to transform the node's private data is also provided,
     allowing data preprocessing and similar tasks.
 
     A model can be deployed in the
-    node to learn from its private data (see: [Model](../../model)).
+    node to learn from its private data (see class [Model](../../model)).
     The access to the model must be also configured
     before making queries.
 
@@ -194,6 +194,9 @@ class DataNode:
         # Arguments:
             private_property: String identifying the private data.
             **kwargs: Optional named parameters.
+
+        # Returns:
+            result: Result from the query.
         """
         if private_property not in self._private_data_access_policies:
             raise ValueError("Data access must be configured before "
@@ -204,6 +207,9 @@ class DataNode:
 
     def query_model_params(self):
         """Queries model's parameters.
+
+        # Returns:
+            params: Parameters defining the model.
         """
         return self._model_params_access_policy.apply(self._model.get_model_params())
 
@@ -215,6 +221,9 @@ class DataNode:
 
         # Arguments:
             **kwargs: Optional named parameters.
+
+        # Returns:
+            result: Result from the query.
         """
         if self._model_access_policy is None:
             raise ValueError("By default, the model cannot be accessed. "
@@ -251,7 +260,7 @@ class DataNode:
             data: The input data on which to make the prediction.
 
         # Returns:
-            prediction: The prediction using the node's model.
+            prediction: The node's model prediction using the input data.
         """
         return self._model.predict(data)
 
@@ -269,10 +278,10 @@ class DataNode:
 
     def performance(self, data, labels):
         """Evaluates the performance of the node's model using
-            the most representative metric.
+            the most representative metrics.
 
         # Arguments:
-            data: The data on which to make the prediction.
+            data: The data on which to make the evaluation.
             labels: The true labels.
 
         # Returns:

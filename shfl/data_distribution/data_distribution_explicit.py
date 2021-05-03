@@ -5,22 +5,22 @@ from shfl.data_distribution.data_distribution import DataDistribution
 
 
 class ExplicitDataDistribution(DataDistribution):
-    """
-    Implementation of an explicit data distribution using \
-        [Data Distribution](../data_distribution/#datadistribution-class)
+    """Distributes the data using the clients' identifier.
 
-    In this data distribution we assume that the data is organised in 2-tuples where the first dimension is the \
-        identifier and the second one correspond with data.
+    Implements class [Data Distribution](../data_distribution/#datadistribution-class).
+
+    It is assumed that the data is organised in 2-tuples where
+    the first dimension is the identifier and the second one
+    correspond with the data.
     """
 
-    def make_data_federated(self, data, labels, percent=None, *args, **kwargs):
+    def make_data_federated(self, data, labels, **kwargs):
         """
         Method that makes data and labels argument federated using the first column as the node.
 
         # Arguments:
             data: Data to federate. The first dimension of the tuple as identifier
             labels: Labels to federate
-            percent: None
 
         # Returns:
               * **federated_data, federated_labels**

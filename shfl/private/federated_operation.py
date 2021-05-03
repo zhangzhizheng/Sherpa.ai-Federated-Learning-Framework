@@ -104,7 +104,8 @@ class FederatedData:
 class FederatedDataNode(DataNode):
     """Represents a data node as a member of a set of federated nodes.
 
-    Extends the class [DataNode](../data_node/#datanode-class).
+    Implements the class [DataNode](../data_node/#datanode-class).
+
     The main difference with respect its base class is that this
     class allows calls to node's methods without having to
     explicitly specify a private identifier, since the latter
@@ -193,7 +194,8 @@ class FederatedDataNode(DataNode):
 class ServerDataNode(FederatedDataNode):
     """Represents a server node in the horizontal federated learning setting.
 
-    Extends the class [FederatedDataNode](./#federateddatanode-class).
+    Implements the class [FederatedDataNode](./#federateddatanode-class).
+
     The server node is in charge of querying the clients
     (i.e. the set of federated nodes).
     In the horizontal federated learning setting, typical queries
@@ -244,15 +246,16 @@ class ServerDataNode(FederatedDataNode):
         After aggregation, updates the collaborative model.
         """
 
-        weights = self._federated_data.query_model_params()
-        aggregated_weights = self._aggregator.aggregate_weights(weights)
-        self._model.set_model_params(aggregated_weights)
+        params = self._federated_data.query_model_params()
+        aggregated_params = self._aggregator.aggregate_weights(params)
+        self._model.set_model_params(aggregated_params)
 
 
 class VerticalServerDataNode(FederatedDataNode):
     """Represents a server node in the vertical federated learning setting.
 
-    Extends the class [FederatedDataNode](./#federateddatanode-class).
+    Implements the class [FederatedDataNode](./#federateddatanode-class).
+
     As opposed to the horizontal setting, in the vertical
     federated learning setting the collaborative model is typically
     distributed between the clients and the server.
@@ -281,14 +284,15 @@ class VerticalServerDataNode(FederatedDataNode):
         self.set_private_data(data)
 
     def predict_collaborative_model(self, data):
-        """"Makes a prediction on input data using the collaborative model.
+        """Makes a prediction on input data using the collaborative model.
 
         # Arguments:
             data: List, each item represents the input data
                 on which to make the prediction for a single client.
 
         # Returns:
-            prediction: The prediction using the collaborative model.
+            prediction: The collaborative model's prediction
+                using the input data.
         """
         clients_embeddings = [node.predict(data)
                               for node, data in
@@ -375,6 +379,8 @@ class VerticalServerDataNode(FederatedDataNode):
 
 class FederatedTransformation(abc.ABC):
     """Applies a federated transformation over the federated data.
+
+    Abstract method.
     """
 
     @abc.abstractmethod
@@ -395,8 +401,7 @@ class FederatedTransformation(abc.ABC):
 class Normalize(FederatedTransformation):
     """Applies a normalization over a set of federated nodes.
 
-    It implements class
-    [FederatedTransformation](./#federatedtransformation-class).
+    Implements the class [FederatedTransformation](./#federatedtransformation-class).
 
     # Arguments:
         mean: Mean used for the normalization.

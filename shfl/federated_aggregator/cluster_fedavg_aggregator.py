@@ -4,22 +4,22 @@ from sklearn.cluster import KMeans
 
 
 class ClusterFedAvgAggregator(FederatedAggregator):
-    """
-    Implementation of Cluster Average Federated Aggregator.
-    It adds another k-means to find the minimum distance of cluster centroids coming from each node.
+    """Performs a cluster aggregation.
 
-    It implements [Federated Aggregator](../federated_aggregator/#federatedaggregator-class)
+    It implements the class
+    [FederatedAggregator](./#federatedaggregator-class).
+
+    It performs a k-means round to find the minimum distance
+    of cluster centroids coming from each node.
+
+    # References:
+        [sklearn.cluster.KMeans](https://scikit-learn.org/stable/
+        modules/generated/sklearn.cluster.KMeans.html)
     """
 
     def aggregate_weights(self, clients_params):
         """
-        Implementation of abstract method of class [AggregateWeightsFunction](../federated_aggregator/#federatedaggregator-class)
-        # Arguments:
-            clients_params: list of multi-dimensional (numeric) arrays. Each entry in the list contains the \
-             model's parameters of one client.
-
-        # Returns:
-            aggregated_weights: aggregator weights representing the global learning model
+        See base class.
         """
         clients_params_array = np.concatenate(clients_params)
 

@@ -4,48 +4,37 @@ from shfl.model.recommender import Recommender
 
 
 class MeanRecommender(Recommender):
-    """Recommender model.
+    """Mean recommender model.
 
-    It implements [Recommender](./#recommender-class).
-    For each client, given a set of labels in the training set,
-    the recommender computes the mean value
-    and uses it to make predictions.
+    Implements the class [Recommender](./#recommender).
+
+    Given a set of labels in the training set of each client,
+    computes the mean value to make predictions.
     """
 
     def __init__(self):
         super().__init__()
         self._mu = None
 
-    def train_recommender(self, data, labels):
-        """
-        Method that trains the model
-
-        # Arguments:
-            data: Data to train the model
-            labels: Label for each train element
-        """
+    def train_recommender(self, data, labels, **kwargs):
+        """See base class."""
         self._mu = np.mean(labels)
 
     def predict_recommender(self, data):
-        """
-        Predict labels for data
-
-        # Arguments:
-            data: Data for predictions. Only includes the data of this client
-
-        # Returns:
-            predictions: Array with predictions for data
-        """
+        """See base class."""
         predictions = np.full(len(data), self._mu)
         return predictions
 
     def evaluate_recommender(self, data, labels):
-        """
-        This method must returns the root mean square error
+        """Evaluates the performance of the model.
 
-        # Arguments:
-            data: Data to be evaluated. Only includes the data of this client
-            labels: True values of data of this client
+        ## Arguments:
+            data: Array-like object containing data on which
+                to make the prediction. The data must belong to
+                only one client.
+            labels: Array-like object containing true target labels.
+        # Returns:
+            rmse: Root mean square error.
         """
         predictions = self.predict(data)
         if predictions.size == 0:
@@ -55,31 +44,15 @@ class MeanRecommender(Recommender):
         return rmse
 
     def get_model_params(self):
-        """
-        Gets the params that define the model
-
-        # Returns:
-            params: Mean rating
-        """
+        """See base class."""
         return self._mu
 
     def set_model_params(self, params):
-        """
-        Update the params that define the model
-
-        # Arguments:
-            params: Parameter defining the model
-        """
+        """See base class."""
         self._mu = params
 
     def performance_recommender(self, data, labels):
-        """
-        This method returns the root mean square error of the recommender.
-
-        # Arguments:
-            data: Data to be evaluated. Only includes the data of this client
-            labels: True values of data of this client
-        """
+        """See base class."""
         predictions = self.predict(data)
         if predictions.size == 0:
             rmse = 0

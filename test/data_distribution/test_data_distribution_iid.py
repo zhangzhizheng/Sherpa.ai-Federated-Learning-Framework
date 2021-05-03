@@ -44,7 +44,7 @@ def test_make_data_federated():
                                                                             percent,
                                                                             num_nodes,
                                                                             weights)
-    data_distribution.get_federated_data(3)
+    data_distribution.get_federated_data(num_nodes=3)
 
     all_data = np.concatenate(federated_data)
     all_label = np.concatenate(federated_label)
@@ -100,7 +100,7 @@ def test_make_data_federated_pandas():
                                                                             percent,
                                                                             num_nodes,
                                                                             weights)
-    data_distribution.get_federated_data(3)
+    data_distribution.get_federated_data(num_nodes=3)
 
     all_data = pd.concat(federated_data)
     all_label = pd.concat(federated_label)
@@ -150,7 +150,7 @@ def test_make_data_federated_wrong_weights():
                                                                             weights)
 
     weights = np.array([float(i) / sum(weights) for i in weights])
-    data_distribution.get_federated_data(3)
+    data_distribution.get_federated_data(num_nodes=3)
 
     all_data = np.concatenate(federated_data)
     all_label = np.concatenate(federated_label)

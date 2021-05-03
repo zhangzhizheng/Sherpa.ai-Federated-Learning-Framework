@@ -2,11 +2,16 @@ import abc
 
 
 class FederatedAggregator(abc.ABC):
-    """
-    Interface for Federated Aggregator.
+    """Defines different aggregators for model's parameters.
+
+    The way the parameters are aggregated must be specified in the
+    abstract method `aggregate_weights` of this class.
 
     # Arguments:
-        percentage: Percentage of total data in each client (default None)
+        percentage: Proportion of the total data that each client possesses
+            The default in None, in which case it is assumed that all clients
+            possess a comparable amount of data.
+
     """
 
     def __init__(self, percentage=None):
@@ -14,11 +19,15 @@ class FederatedAggregator(abc.ABC):
 
     @abc.abstractmethod
     def aggregate_weights(self, clients_params):
-        """Abstract method that aggregates clients' models.
+        """Aggregates clients' model's parameters.
+
+        Abstract method.
 
         # Arguments:
-            clients_params: Parameters that represent clients' models
+            clients_params: List, each element contains one client's
+                model's parameters.
 
         # Returns:
-            aggregated_weights: Aggregated parameters
+            aggregated_weights: The aggregated model's parameters.
+                Typically, this represents the collaborative (global) model.
         """

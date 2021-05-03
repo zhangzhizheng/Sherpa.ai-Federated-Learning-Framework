@@ -7,6 +7,8 @@ from shfl.private.federated_operation import FederatedTransformation
 
 class FederatedDataAttack(abc.ABC):
     """Defines an adversarial attack on a set of federated nodes.
+
+    Abstract method.
     """
 
     @abc.abstractmethod
@@ -27,7 +29,8 @@ class FederatedDataAttack(abc.ABC):
 class FederatedPoisoningDataAttack(FederatedDataAttack):
     """Simulates a poisoning data attack.
 
-    Implements the interface [FederatedDataAttack](./#federateddataattack-class).
+    Implements the class [FederatedDataAttack](./#federateddataattack-class).
+
     This attack consists in shuffling the labels of some nodes, which are
     then considered as *adversarial*.
 
@@ -73,7 +76,7 @@ class FederatedPoisoningDataAttack(FederatedDataAttack):
 class ShuffleNode(FederatedTransformation):
     """Shuffles the target labels in a node.
 
-    Implements interface
+    Implements the class
     [FederatedTransformation](../federated_operation/#federatedtransformation-class).
     """
     def apply(self, data):

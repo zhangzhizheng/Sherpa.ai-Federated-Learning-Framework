@@ -4,20 +4,29 @@ import numpy as np
 
 
 class IowaFederatedGovernment(FederatedGovernment):
-    """
-    Class used to represent the IOWA Federated Government which implements [FederatedGovernment](../federated_government/#federatedgovernment-class)
+    """Defines the IOWA federated learning algorithm.
+
+    It overrides the class [FederatedGovernment](./#federatedgovernment-class).
+
+    See base class.
 
     # Arguments:
-        model_builder: Function that return a trainable model (see: [Model](../model))
-        federated_data: Federated data to use. (see: [FederatedData](../private/federated_operation/#federateddata-class))
-        aggregator: Federated aggregator function (see: [Federated Aggregator](../federated_aggregator))
-        model_param_access: Policy to access model's parameters, by default non-protected (see: [DataAccessDefinition](../private/data/#dataaccessdefinition-class))
-        dynamic: boolean indicating if we use the dynamic or static version (default True)
-        a: first argument of linguistic quantifier (default 0)
-        b: second argument of linguistic quantifier (default 0.2)
-        c: third argument of linguistic quantifier (default 0.8)
-        y_b: fourth argument of linguistic quantifier (default 0.4)
-        k: distance param of the dynamic version (default 3/4)
+        model: Object representing a trainable model
+            (see class [Model](../model)).
+        federated_data: Object of class
+            [FederatedData](../private/federated_operation/#federateddata-class),
+            the set of federated nodes.
+        dynamic: Optional; Boolean indicating whether we use the dynamic
+            or static version (default is True).
+        a: Optional; First argument of linguistic quantifier (default is 0).
+        b: Optional; Second argument of linguistic quantifier (default is 0.2).
+        c: Optional; Third argument of linguistic quantifier (default is 0.8).
+        y_b: Optional; Fourth argument of linguistic quantifier (default is 0.4).
+        k: Optional; Distance param of the dynamic version (default is 3/4).
+
+    # References:
+        [Dynamic federated learning model for identifying
+        adversarial clients](https://arxiv.org/abs/2007.15030)
     """
 
     def __init__(self, model, federated_data, dynamic=True, a=0,
@@ -32,35 +41,25 @@ class IowaFederatedGovernment(FederatedGovernment):
         self._dynamic = dynamic
 
     def performance_clients(self, data_val, label_val):
-        """
-        Evaluation of local learning models over global test dataset.
+        """Evaluates clients' models over a global validation dataset.
 
         # Arguments:
-            val_data: validation dataset
-            val_label: corresponding labels to validation dataset
+            val_data: The global validation dataset.
+            val_label: The global target labels.
 
         # Returns:
             client_performance: Performance for each client.
         """
         client_performance = []
         for data_node in self._federated_data:
-            # Predict local model in test
             local_performance = data_node.performance(data_val, label_val)
             client_performance.append(local_performance)
 
         return np.array(client_performance)
 
-    def run_rounds(self, n, test_data, test_label):
+    def run_rounds(self, n, test_data, test_label, **kwargs):
         """
-        Implementation of the abstract method of class [FederatedGovernment](../federated_government/#federatedgoverment-class)
-
-        Run one more round beginning in the actual state testing in test data and federated_local_test.
-
-        # Arguments:
-            n: Number of rounds
-            test_data: Test data for evaluation between rounds
-            test_label: Test label for evaluation between rounds
-
+        See base class.
         """
         randomize = np.arange(len(test_label))
         np.random.shuffle(randomize)

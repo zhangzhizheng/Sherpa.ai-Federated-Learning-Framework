@@ -47,14 +47,14 @@ PAGES = [
             private.data.UnprotectedAccess
         ]
     },
-    # {
-    #     'page': 'private/query.md',
-    #     'classes': [
-    #         (private.query.Query, ["get"]),
-    #         private.query.IdentityFunction,
-    #         private.query.Mean
-    #     ]
-    # },
+    {
+        'page': 'private/query.md',
+        'classes': [
+            (private.query.Query, ["get"]),
+            private.query.IdentityFunction,
+            private.query.Mean
+        ]
+    },
     {
         'page': 'private/federated_operation.md',
         'classes': [
@@ -69,10 +69,9 @@ PAGES = [
             (private.federated_operation.ServerDataNode, ["deploy_collaborative_model",
                                                           "evaluate_collaborative_model",
                                                           "aggregate_weights"]),
-            # (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
-            #                                                       "evaluate_collaborative_model",
-            #                                                       "aggregate_weights",
-            #                                                       "_check_indices_matching"]),
+            (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
+                                                                  "evaluate_collaborative_model",
+                                                                  "aggregate_weights"]),
             (private.federated_operation.FederatedTransformation, ["apply"]),
             private.federated_operation.Normalize
         ],
@@ -123,11 +122,14 @@ PAGES = [
     {
         'page': 'data_distribution.md',
         'classes': [
-            (data_distribution.data_distribution.DataDistribution, ["get_federated_data", "make_data_federated"]),
-            data_distribution.data_distribution_explicit.ExplicitDataDistribution,
+            (data_distribution.data_distribution.DataDistribution, ["get_federated_data",
+                                                                    "make_data_federated"]),
+            (data_distribution.data_distribution_iid.IidDataDistribution, ["make_data_federated"]),
             data_distribution.data_distribution_sampling.SamplingDataDistribution,
-            data_distribution.data_distribution_iid.IidDataDistribution,
-            (data_distribution.data_distribution_non_iid.NonIidDataDistribution, ['choose_labels'])
+            (data_distribution.data_distribution_non_iid.NonIidDataDistribution, ["make_data_federated",
+                                                                                  "_choose_labels"]),
+            (data_distribution.data_distribution_explicit.ExplicitDataDistribution, ["make_data_federated"]),
+
         ]
     },
     {
@@ -142,13 +144,10 @@ PAGES = [
         'classes': [
             model.deep_learning_model.DeepLearningModel,
             model.deep_learning_model_pt.DeepLearningModelPyTorch,
-            model.kmeans_model.KMeansModel,
             model.linear_regression_model.LinearRegressionModel,
             model.linear_classifier_model.LinearClassifierModel,
-            model.recommender.Recommender,
-            model.mean_recommender.MeanRecommender,
-            # model.vertical_deep_learning_model.VerticalNeuralNetClient,
-            # model.vertical_deep_learning_model.VerticalNeuralNetServer
+            model.vertical_deep_learning_model.VerticalNeuralNetClient,
+            model.vertical_deep_learning_model.VerticalNeuralNetServer
         ]
     },
     {
@@ -169,10 +168,14 @@ PAGES = [
         'page': 'federated_aggregator.md',
         'classes': [
             (federated_aggregator.federated_aggregator.FederatedAggregator, ["aggregate_weights"]),
+            federated_aggregator.fedsum_aggregator.FedSumAggregator,
             federated_aggregator.fedavg_aggregator.FedAvgAggregator,
             federated_aggregator.weighted_fedavg_aggregator.WeightedFedAvgAggregator,
             (federated_aggregator.iowa_federated_aggregator.IowaFederatedAggregator, ['set_ponderation', 'q_function',
                                                                                       'get_ponderation_weights']),
+            federated_aggregator.norm_clip_aggregators.NormClipAggregator,
+            federated_aggregator.norm_clip_aggregators.CDPAggregator,
+            federated_aggregator.norm_clip_aggregators.WeakDPAggregator,
             federated_aggregator.cluster_fedavg_aggregator.ClusterFedAvgAggregator
         ]
     },
@@ -232,8 +235,8 @@ PAGES = [
     {
         'page': 'differential_privacy/composition.md',
         'classes': [
+            differential_privacy.composition_dp.AdaptiveDifferentialPrivacy,
             differential_privacy.composition_dp.ExceededPrivacyBudgetError,
-            differential_privacy.composition_dp.AdaptiveDifferentialPrivacy
         ],
     },
     {
@@ -242,10 +245,10 @@ PAGES = [
             (differential_privacy.dp_sampling.Sampler, ['epsilon_delta_reduction', 'sample']),
             differential_privacy.dp_sampling.SampleWithoutReplacement
         ],
-        'functions': [
-            differential_privacy.dp_sampling.prod,
-            differential_privacy.dp_sampling.check_sample_size
-        ],
+        # 'functions': [
+        #     differential_privacy.dp_sampling.prod,
+        #     differential_privacy.dp_sampling.check_sample_size
+        # ],
     }
 ]
 ROOT = 'http://127.0.0.1/'

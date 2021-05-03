@@ -26,7 +26,8 @@ def test_IowaFederatedGovernment():
     db = IidDataDistribution(database)
 
     num_nodes = 3
-    federated_data, test_data, test_labels = db.get_federated_data(num_nodes)
+    federated_data, test_data, test_labels = \
+        db.get_federated_data(num_nodes=num_nodes)
 
     a = 0
     b = 1
@@ -56,7 +57,8 @@ def test_performance_clients():
     db = IidDataDistribution(database)
 
     num_nodes = 3
-    federated_data, test_data, test_labels = db.get_federated_data(num_nodes)
+    federated_data, test_data, test_labels = \
+        db.get_federated_data(num_nodes=num_nodes)
 
     iowa_fg = IowaFederatedGovernment(model_builder, federated_data)
     for i, data_node in enumerate(iowa_fg._federated_data):
@@ -81,7 +83,8 @@ def test_run_rounds():
     db = IidDataDistribution(database)
 
     num_nodes = 3
-    federated_data, test_data, test_label = db.get_federated_data(num_nodes)
+    federated_data, test_data, test_label = \
+        db.get_federated_data(num_nodes=num_nodes)
 
     iowa_fg = IowaFederatedGovernment(model_builder, federated_data)
 

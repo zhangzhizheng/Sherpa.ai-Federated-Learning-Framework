@@ -8,7 +8,8 @@ The main topics currently covered in the framework are federated learning and di
 be used together, in order to increase the privacy of a federated learning algorithm. 
 
 We have also developed a set of notebooks that cover some of the most common use cases and explain the methodological 
-aspects of the framework. The full list of notebooks is [here](https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/tree/master/notebooks)
+aspects of the framework. 
+The full list of notebooks can be found [here](https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/tree/master/notebooks).
 
 Even if you are mainly interested in differential privacy, a good place to start is this [notebook](https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/blob/master/notebooks/federated_learning/federated_learning_basic_concepts.ipynb), 
 where the main concepts of the Sherpa.ai Federated Learning and Differential Privacy Framework that are used in the tutorials 
@@ -18,6 +19,7 @@ The notebooks make the assumption that you are familiar with Python and some of 
 Keras, and Tensorflow. The documentation is divided following the different packages in the framework. In every section 
 there is a brief introduction of the module with the purpose and some illustrative examples. In many cases the documentation 
 links with a notebook illustrating the use of the different modules and classes.
+The packages of the Framework are the following: 
 
 
 * The [private](../private/overview) package contains most of the core elements of the framework that are used in almost 
