@@ -17,19 +17,20 @@ class Recommender(TrainableModel):
     """
 
     def __init__(self):
-        self._clientId = None
+        self._client_identifier = None
 
     def train(self, data, labels, **kwargs):
         """Trains the model.
 
         # Arguments:
-            data: Data belonging to only one client to train the model.
-            labels: Target labels.
+            data: The data belonging to only one client
+                on which to train the model.
+            labels: The target labels.
             **kwargs: Optional named parameters.
         """
         self._check_data(data)
         self._check_data_labels(data, labels)
-        self._clientId = data[0, 0]
+        self._client_identifier = data[0, 0]
         self.train_recommender(data, labels, **kwargs)
 
     @abc.abstractmethod
@@ -67,12 +68,14 @@ class Recommender(TrainableModel):
         """
         self._check_data(data)
         self._check_data_labels(data, labels)
-        return self.evaluate_recommender(data, labels)
 
-    @abc.abstractmethod
-    def evaluate_recommender(self, data, labels):
-        """Evaluates the performance of the model (abstract method).
-        """
+        predictions = self.predict(data)
+        if predictions.size == 0:
+            rmse = 0
+        else:
+            rmse = np.sqrt(np.mean((predictions - labels) ** 2))
+
+        return rmse
 
     @abc.abstractmethod
     def get_model_params(self):
@@ -94,15 +97,8 @@ class Recommender(TrainableModel):
         # Returns:
             metrics: Most representative metrics for the evaluation.
         """
-        self._check_data(data)
-        self._check_data_labels(data, labels)
-        return self.performance_recommender(data, labels)
 
-    @abc.abstractmethod
-    def performance_recommender(self, data, labels):
-        """Evaluates the performance of the model using
-        the most representative metrics (abstract method).
-        """
+        return self.evaluate(data, labels)
 
     @staticmethod
     def _check_data(data):

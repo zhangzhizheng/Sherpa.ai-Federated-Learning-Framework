@@ -1,6 +1,7 @@
-from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
 import numpy as np
 from sklearn.cluster import KMeans
+
+from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
 
 
 class ClusterFedAvgAggregator(FederatedAggregator):
@@ -9,7 +10,7 @@ class ClusterFedAvgAggregator(FederatedAggregator):
     It implements the class
     [FederatedAggregator](./#federatedaggregator-class).
 
-    It performs a k-means round to find the minimum distance
+    It performs a k_highest-means round to find the minimum distance
     of cluster centroids coming from each node.
 
     # References:

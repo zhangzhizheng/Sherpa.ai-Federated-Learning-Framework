@@ -3,7 +3,7 @@ from numpy import linalg as LA
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
-from shfl.federated_aggregator import FedAvgAggregator
+from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 
 
 class NormClipAggregator(FedAvgAggregator):
@@ -19,7 +19,9 @@ class NormClipAggregator(FedAvgAggregator):
     """
 
     def __init__(self, clip):
+        super().__init__()
         self._clip = clip
+        self._data_shape_list = []
 
     def _serialize(self, data):
         """Converts a list of multidimensional arrays into a list
@@ -33,7 +35,7 @@ class NormClipAggregator(FedAvgAggregator):
         serialized_data = [j.ravel() for j in data]
         serialized_data = np.hstack(serialized_data)
         return serialized_data
-        
+
     def _deserialize(self, data):
         """Converts a list of one-dimensional arrays into
             a list of multidimensional arrays.
@@ -44,7 +46,7 @@ class NormClipAggregator(FedAvgAggregator):
             data: List of one-dimensional arrays.
         """
 
-        firstInd = 0
+        first_index = 0
         deserialized_data = []
         for shp in self._data_shape_list:
             if len(shp) > 1:
@@ -53,21 +55,21 @@ class NormClipAggregator(FedAvgAggregator):
                 shift = 1
             else:
                 shift = shp[0]
-            tmp_array = data[firstInd:firstInd+shift]
+            tmp_array = data[first_index:first_index+shift]
             tmp_array = tmp_array.reshape(shp)
             deserialized_data.append(tmp_array)
-            firstInd += shift
+            first_index += shift
         return deserialized_data
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
         """Aggregates arrays."""
-        clients_params = np.array(params)
-        for i, v in enumerate(clients_params):
-            norm = LA.norm(v)
-            clients_params[i] = np.multiply(v, min(1, self._clip/norm))
-        
-        return np.mean(clients_params, axis=0)
+        array_params = np.array(params)
+        for i, values in enumerate(array_params):
+            norm = LA.norm(values)
+            array_params[i] = np.multiply(values, min(1, self._clip/norm))
+
+        return np.mean(array_params, axis=0)
 
     @dispatch(Variadic[list])
     def _aggregate(self, *params):
@@ -76,7 +78,7 @@ class NormClipAggregator(FedAvgAggregator):
                                       for client in params])
         serialized_aggregation = self._aggregate(*serialized_params)
         aggregated_weights = self._deserialize(serialized_aggregation)
-        
+
         return aggregated_weights
 
 
@@ -101,7 +103,7 @@ class CDPAggregator(NormClipAggregator):
     def __init__(self, clip, noise_mult):
         super().__init__(clip=clip)
         self._noise_mult = noise_mult
-    
+
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
         """Aggregation of arrays.

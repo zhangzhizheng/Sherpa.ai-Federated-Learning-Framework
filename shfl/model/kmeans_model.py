@@ -33,7 +33,7 @@ class KMeansModel(TrainableModel):
         self._n_init = n_init
         self._model._n_threads = None # compatibility: should be removed from scikit-learn
 
-        if type(init) is np.ndarray:
+        if isinstance(init, np.ndarray):
             self._model.cluster_centers_ = init
         else:
             self._model.cluster_centers_ = np.zeros((n_clusters, n_features))

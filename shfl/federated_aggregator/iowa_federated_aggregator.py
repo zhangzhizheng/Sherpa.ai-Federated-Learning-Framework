@@ -1,6 +1,6 @@
-from shfl.federated_aggregator.weighted_fedavg_aggregator import WeightedFedAvgAggregator
-
 import numpy as np
+
+from shfl.federated_aggregator.weighted_fedavg_aggregator import WeightedFedAvgAggregator
 
 
 class IowaFederatedAggregator(WeightedFedAvgAggregator):
@@ -37,7 +37,7 @@ class IowaFederatedAggregator(WeightedFedAvgAggregator):
             b: Optional; Second argument of linguistic quantifier (default is 0.2).
             c: Optional; Third argument of linguistic quantifier (default is 0.8).
             y_b: Optional; Fourth argument of linguistic quantifier (default is 0.4).
-            k: Optional; Distance param of the dynamic version (default is 3/4).
+            k_highest: Optional; Distance param of the dynamic version (default is 3/4).
         """
         self._a = a
         self._b = b

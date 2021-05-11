@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from shfl.model import DeepLearningModelPyTorch
+from shfl.model.deep_learning_model_pt import DeepLearningModelPyTorch
 
 
 class VerticalNeuralNetClient(DeepLearningModelPyTorch):

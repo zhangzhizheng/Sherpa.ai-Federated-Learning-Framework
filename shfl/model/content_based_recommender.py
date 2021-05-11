@@ -50,14 +50,16 @@ class ContentBasedRecommender(Recommender):
         """Method that trains the model
 
         # Arguments:
-            data: Data belonging to only one client to train the model
-                and every item must be in the catalog.
+            data: Array-like object containing data to train the model.
+                The data belongs to only one client and
+                every item must be in the catalog.
             labels: Array-like object containing target labels.
             **kwargs: Optional named parameters.
         """
         self._mu = np.mean(labels)
-        df = self._join_dataframe_with_items_features(data)
-        self._profile = df.multiply(labels - self._mu, axis=0).mean().values
+        joined_data = self._join_dataframe_with_items_features(data)
+        self._profile = \
+            joined_data.multiply(labels - self._mu, axis=0).mean().values
 
     def predict_recommender(self, data):
         """Makes a prediction on input data.
@@ -71,28 +73,9 @@ class ContentBasedRecommender(Recommender):
             predictions: Array-like object containing model's prediction
                 using the input data.
         """
-        df = self._join_dataframe_with_items_features(data)
-        predictions = self._mu + df.values.dot(self._profile)
+        joined_data = self._join_dataframe_with_items_features(data)
+        predictions = self._mu + joined_data.values.dot(self._profile)
         return predictions
-
-    def evaluate_recommender(self, data, labels):
-        """Evaluates the performance of the model.
-
-        ## Arguments:
-            data: Array-like object containing data on which
-                to make the prediction. The data must belong to
-                only one client and every item must be in the catalog.
-            labels: Array-like object containing true target labels.
-
-        # Returns:
-            rmse: Root mean square error.
-        """
-        predictions = self.predict(data)
-        if predictions.size == 0:
-            rmse = 0
-        else:
-            rmse = np.sqrt(np.mean((predictions - labels) ** 2))
-        return rmse
 
     def get_model_params(self):
         """See base class."""
@@ -102,29 +85,25 @@ class ContentBasedRecommender(Recommender):
         """See base class."""
         self._mu, self._profile = params
 
-    def performance_recommender(self, data, labels):
-        """See base class."""
-        return self.evaluate_recommender(data, labels)
-
     def _join_dataframe_with_items_features(self, data):
         self._check_two_columns(data)
         self._check_no_new_items(data, self._df_items)
-        df_data = pd.DataFrame(data, columns=['userid', "itemid"])
-        df = df_data.join(self._df_items, on="itemid").\
+        data = pd.DataFrame(data, columns=['userid', "itemid"])
+        joined_data = data.join(self._df_items, on="itemid").\
             drop(["userid", "itemid"], axis=1)
-        return df
+        return joined_data
 
     @staticmethod
     def _check_two_columns(data):
         number_of_columns = data.shape[1]
         if number_of_columns != 2:
             raise AssertionError(
-                "Data does not have the correct number of columns. "
+                "The data does not have the correct number of columns. "
                 "Current data has {} columns".format(number_of_columns))
 
     @staticmethod
-    def _check_is_dataframe(df):
-        if not isinstance(df, pd.DataFrame):
+    def _check_is_dataframe(df_items):
+        if not isinstance(df_items, pd.DataFrame):
             raise TypeError("df_items should be a dataframe.")
 
     @staticmethod
@@ -132,4 +111,5 @@ class ContentBasedRecommender(Recommender):
         items_in_data = set(np.unique(data[:, 1]))
         items_in_catalog = set(df_items.index)
         if not items_in_data.issubset(items_in_catalog):
-            raise AssertionError("Data has items that are not in the catalog.")
+            raise AssertionError("The data has items that are not "
+                                 "in the catalog.")

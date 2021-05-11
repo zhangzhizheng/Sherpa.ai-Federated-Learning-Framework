@@ -55,16 +55,16 @@ def test_laplace_epsilon_delta():
 
 
 def test_exponential_epsilon_delta():
-    def u(x, r):
-        output = np.zeros(len(r))
-        for i in range(len(r)):
-            output[i] = r[i] * sum(np.greater_equal(x, r[i]))
-        return output
+    def utility(bids, price):
+        revenue = np.zeros(len(price))
+        for i in range(len(price)):
+            revenue[i] = price[i] * sum(np.greater_equal(bids, price[i]))
+        return revenue
 
-    r = np.arange(0, 3.5, 0.001)
-    delta_u = r.max()
+    price_range = np.arange(0, 3.5, 0.001)
+    delta_u = price_range.max(initial=None)
     epsilon = 5
-    exponential_mechanism = ExponentialMechanism(u, r, delta_u, epsilon)
+    exponential_mechanism = ExponentialMechanism(utility, price_range, delta_u, epsilon)
 
     assert exponential_mechanism.epsilon_delta is not None
 
@@ -301,8 +301,8 @@ def test_laplace_scalar_mechanism():
     
 def test_laplace_mechanism_list_of_arrays():
     n_nodes = 15
-    data = [[np.random.rand(3,2), np.random.rand(2,3)] 
-            for node in range(n_nodes)]
+    data = [[np.random.rand(3, 2), np.random.rand(2, 3)]
+            for _ in range(n_nodes)]
     
     federated_list = shfl.private.federated_operation.FederatedData()
     for node in range(n_nodes):
@@ -420,7 +420,8 @@ def test_gaussian_scalar_mechanism():
 
     node = DataNode()
     node.set_private_data("scalar", scalar)
-    node.configure_data_access("scalar", GaussianMechanism(1, epsilon_delta=(0.1, 1)))
+    node.configure_data_access("scalar",
+                               GaussianMechanism(1, epsilon_delta=(0.1, 1)))
 
     result = node.query("scalar")
 
@@ -430,54 +431,73 @@ def test_gaussian_scalar_mechanism():
 
 def test_exponential_mechanism_pricing():
     
-    def u(x, r):
-        output = np.zeros(len(r))
-        for i in range(len(r)): 
-            output[i] = r[i] * sum(np.greater_equal(x, r[i]))
-        return output
+    def utility(bids, prices):
+        revenue = np.zeros(len(prices))
+        for i in range(len(prices)):
+            revenue[i] = prices[i] * sum(np.greater_equal(bids, prices[i]))
+        return revenue
     
-    x = [1.00, 1.00, 1.00, 3.01]    # Input dataset: the true bids
-    r = np.arange(0, 3.5, 0.001)    # Set the interval of possible outputs r
-    delta_u = r.max()               # In this specific case, Delta u = max(r)
+    true_bids = [1.00, 1.00, 1.00, 3.01]    # Input dataset: the true bids
+    price_range = np.arange(0, 3.5, 0.001)    # Set the interval of possible outputs r
+    delta_u = price_range.max(initial=None)   # In this specific case, Delta u = max(r)
     epsilon = 5                     # Set a value for epsilon
     size = 10000                    # We want to repeat the query this many times
 
     node = DataNode()
-    node.set_private_data(name="bids", data=np.array(x)) 
-    data_access_definition = ExponentialMechanism(u, r, delta_u, epsilon, size)
+    node.set_private_data(name="bids", data=np.array(true_bids))
+    data_access_definition = ExponentialMechanism(utility, price_range, delta_u, epsilon, size)
     node.configure_data_access("bids", data_access_definition)
     result = node.query("bids")
-    y_bin, x_bin = np.histogram(a=result, bins=int(round(np.sqrt(len(result)))), density=True)
-    
-    max_price = x_bin[np.where(y_bin == y_bin.max())]
-    min_price = x_bin[np.where(y_bin == y_bin.min())]
-    bin_size = x_bin[1] - x_bin[0]
-    assert (1.00 - x_bin[np.where(y_bin == max_price)] > bin_size).all()       # Check the best price is close to 1.00
-    assert ((x_bin[np.where(y_bin == min_price)] > (3.01 - bin_size)).all()    # Check the no-revenue price is either
-            or x_bin[np.where(y_bin == min_price)][0] < bin_size )             # greater than 3.01 or close to 0.00
+
+    # Define bins edges to include true bids values:
+    bins_edges = np.linspace(start=[0, 1, 3.01], stop=[1, 3.01, 3.5],
+                             num=int(np.sqrt(size)), axis=1, endpoint=False).flatten()
+    y_bin, x_bin = np.histogram(a=result,
+                                bins=bins_edges,
+                                range=(price_range.min(initial=None), price_range.max(initial=None)),
+                                density=True)
+
+    # Min and max revenues: we take the Left edge of the bin
+    max_revenue_price = x_bin[np.where(y_bin == y_bin.max(initial=None))]
+    min_revenue_price = x_bin[np.where(y_bin == y_bin.min(initial=None))]
+
+    print("min_price", min_revenue_price)
+    print("max_price", max_revenue_price)
+
+    # Check the best revenue prices are close 1.00, but not greater:
+    for price in max_revenue_price:
+        assert 0.5 < price < 1.0
+    # Check the lowest revenue prices are either close to zero or greater than 3.01:
+    for price in min_revenue_price:
+        assert price < 0.5 or price >= 3.01
+
+
      
     
 def test_exponential_mechanism_obtain_laplace():
     
-    def u_laplacian(x, r):
-        output = -np.absolute(x - r)
-        return output
+    def utility_laplacian(dataset, domain_range):
+        utility = -np.absolute(dataset - domain_range)
+        return utility
 
-    r = np.arange(-20, 20, 0.001)   # Set the interval of possible outputs r
-    x = 3.5                         # Set a value for the dataset
+    domain = np.arange(-20, 20, 0.001)   # Set the interval of possible outputs domain_range
+    true_dataset = 3.5                         # Set a value for the dataset
     delta_u = 1                     # We simply set it to one
     epsilon = 1                     # Set a value for epsilon
     size = 100000                   # We want to repeat the query this many times
 
     node = DataNode()
-    node.set_private_data(name="identity", data=np.array(x))
+    node.set_private_data(name="identity", data=np.array(true_dataset))
 
-    data_access_definition = ExponentialMechanism(u_laplacian, r, delta_u, epsilon, size)
+    data_access_definition = ExponentialMechanism(utility_laplacian, domain, delta_u, epsilon, size)
     node.configure_data_access("identity", data_access_definition)
     result = node.query("identity")
 
-    assert (result > r.min()).all() and (result < r.max()).all()    # Check all outputs are within range
-    assert np.absolute(np.mean(result) - x) < (delta_u/epsilon)     # Check the mean output is close to true value
+    # Check all outputs are within range:
+    assert (result >= domain.min(initial=None)).all() and \
+           (result <= domain.max(initial=None)).all()
+    # Check the mean output is close to true value:
+    assert np.absolute(np.mean(result) - true_dataset) < (delta_u/epsilon)
 
 
 def test_mechanism_safety_checks():
@@ -498,7 +518,7 @@ def test_gaussian_mechanism_correctness():
 
 def test_randomized_response_correctness():
     with pytest.raises(ValueError):
-        RandomizedResponseBinary(0.1, 2, epsilon = 20)
+        RandomizedResponseBinary(0.1, 2, epsilon=20)
     
     with pytest.raises(ValueError):
         RandomizedResponseBinary(0.8, 0.8, epsilon=0.1)
@@ -506,7 +526,7 @@ def test_randomized_response_correctness():
         
 def test_sensitivity_wrong_input():
     
-    epsilon_delta= (0.1, 1)
+    epsilon_delta = (0.1, 1)
     
     # Negative sensitivity:
     scalar = 175
@@ -514,68 +534,88 @@ def test_sensitivity_wrong_input():
     node = DataNode()
     node.set_private_data("scalar", scalar)
     with pytest.raises(ValueError):
-        node.configure_data_access("scalar", GaussianMechanism(sensitivity=sensitivity, epsilon_delta=epsilon_delta))
+        node.configure_data_access("scalar",
+                                   GaussianMechanism(sensitivity=sensitivity,
+                                                     epsilon_delta=epsilon_delta))
 
     # Scalar query result, Too many sensitivity values provided:
     scalar = 175
     sensitivity = [0.1, 0.5]
     node = DataNode()
     node.set_private_data("scalar", scalar)
-    node.configure_data_access("scalar", GaussianMechanism(sensitivity=sensitivity, epsilon_delta=epsilon_delta))
+    node.configure_data_access("scalar",
+                               GaussianMechanism(sensitivity=sensitivity,
+                                                 epsilon_delta=epsilon_delta))
     with pytest.raises(ValueError):
-         result = node.query("scalar")
+        node.query("scalar")
             
     # Both query result and sensitivity are 1D-arrays, but non-broadcastable:
-    data_array = [10 , 10, 10, 10]  
+    data_array = [10, 10, 10, 10]
     sensitivity = [0.1, 10, 100, 1000, 1000]
     node = DataNode()
     node.set_private_data("data_array", data_array)
-    node.configure_data_access("data_array", GaussianMechanism(sensitivity=sensitivity, epsilon_delta=epsilon_delta))
+    node.configure_data_access("data_array",
+                               GaussianMechanism(sensitivity=sensitivity,
+                                                 epsilon_delta=epsilon_delta))
     with pytest.raises(ValueError):
-         result = node.query("data_array")
+        node.query("data_array")
             
     # ND-array query result and 1D-array sensitivity, but non-broadcastable:
-    data_ndarray = [[10 , 10, 10, 10], [10 , 10, 10, 10], [10 , 10, 10, 10]]
+    data_ndarray = [[10, 10, 10, 10], [10, 10, 10, 10], [10, 10, 10, 10]]
     sensitivity = [0.1, 10, 100]
     node = DataNode()
     node.set_private_data("data_ndarray", data_ndarray)
-    node.configure_data_access("data_ndarray", GaussianMechanism(sensitivity=sensitivity, epsilon_delta=epsilon_delta))
+    node.configure_data_access("data_ndarray",
+                               GaussianMechanism(sensitivity=sensitivity,
+                                                 epsilon_delta=epsilon_delta))
     with pytest.raises(ValueError):
-         result = node.query("data_ndarray")
+        node.query("data_ndarray")
             
     # Both query result and sensitivity are ND-arrays, but non-broadcastable (they should have the same shape
     # in this case):
-    data_ndarray = [[10 , 10, 10, 10], [10 , 10, 10, 10], [10 , 10, 10, 10]]
-    sensitivity = [[0.1, 10, 100, 1000, 10000], [0.1, 10, 100, 1000, 10000], [0.1, 10, 100, 1000, 10000]]
+    data_ndarray = [[10, 10, 10, 10],
+                    [10, 10, 10, 10],
+                    [10, 10, 10, 10]]
+    sensitivity = [[0.1, 10, 100, 1000, 10000],
+                   [0.1, 10, 100, 1000, 10000],
+                   [0.1, 10, 100, 1000, 10000]]
     node = DataNode()
     node.set_private_data("data_ndarray", data_ndarray)
-    node.configure_data_access("data_ndarray", GaussianMechanism(sensitivity=sensitivity, epsilon_delta=epsilon_delta))
+    node.configure_data_access("data_ndarray",
+                               GaussianMechanism(sensitivity=sensitivity,
+                                                 epsilon_delta=epsilon_delta))
     with pytest.raises(ValueError):
-         result = node.query("data_ndarray")
+        node.query("data_ndarray")
 
     # Query result is a list of arrays: sensitivity must be either a scalar, or a list of the same length as query
     data_list = [np.random.rand(30, 20),
                  np.random.rand(20, 30),
                  np.random.rand(50, 40)]
-    sensitivity = np.array([1, 1]) # Array instead of scalar
+    sensitivity = np.array([1, 1])  # Array instead of scalar
     node = DataNode()
     node.set_private_data("data_list", data_list)
-    node.configure_data_access("data_list", LaplaceMechanism(sensitivity=sensitivity, epsilon=1))
+    node.configure_data_access("data_list",
+                               LaplaceMechanism(sensitivity=sensitivity,
+                                                epsilon=1))
     with pytest.raises(ValueError):
-        result = node.query("data_list")
+        node.query("data_list")
 
-    sensitivity = [1, 1] # List of wrong length
+    sensitivity = [1, 1]  # List of wrong length
     node = DataNode()
     node.set_private_data("data_list", data_ndarray)
-    node.configure_data_access("data_list", LaplaceMechanism(sensitivity=sensitivity, epsilon=1))
+    node.configure_data_access("data_list",
+                               LaplaceMechanism(sensitivity=sensitivity,
+                                                epsilon=1))
     with pytest.raises(IndexError):
-        result = node.query("data_list")
+        node.query("data_list")
 
     # Query result is wrong data structure: so far, tuples are not allowed
     data_tuple = (1, 2, 3, 4, 5)
     sensitivity = 2
     node = DataNode()
     node.set_private_data("data_tuple", data_tuple)
-    node.configure_data_access("data_tuple", LaplaceMechanism(sensitivity=sensitivity, epsilon=1))
+    node.configure_data_access("data_tuple",
+                               LaplaceMechanism(sensitivity=sensitivity,
+                                                epsilon=1))
     with pytest.raises(NotImplementedError):
-        result = node.query("data_tuple")
+        node.query("data_tuple")

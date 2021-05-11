@@ -4,7 +4,7 @@ from shfl.private.data import DPDataAccessDefinition
 
 
 class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
-    """Implements adaptive differential privacy through privacy filters.
+    """Defines adaptive differential privacy through privacy filters.
 
     It implements the class
     [DPDataAccessDefinition](../../private/data/#dpdataaccessdefinition-class).
@@ -68,11 +68,12 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
         privacy_budget_exceeded = self.__basic_adaptive_comp_theorem()
         if 0 < self._epsilon_delta[1] < exp(-1):
             privacy_budget_exceeded &= self.__advanced_adaptive_comp_theorem()
+
         if privacy_budget_exceeded:
             self._private_data_epsilon_delta_access_history.pop()
             raise ExceededPrivacyBudgetError(epsilon_delta=self._epsilon_delta)
-        else:
-            return differentially_private_mechanism_to_apply.apply(data)
+
+        return differentially_private_mechanism_to_apply.apply(data)
 
     def _get_data_access_definition(self, data_access_definition):
         """Checks and returns the provided differential privacy mechanism.
@@ -106,9 +107,9 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
             True if the privacy budget if surpassed, False otherwise.
         """
         global_epsilon, global_delta = self._epsilon_delta
-        eps_sum, delta_sum = \
+        epsilon_sum, delta_sum = \
             map(sum, zip(*self._private_data_epsilon_delta_access_history))
-        return eps_sum > global_epsilon or delta_sum > global_delta
+        return epsilon_sum > global_epsilon or delta_sum > global_delta
 
     def __advanced_adaptive_comp_theorem(self):
         """Implements the advance adaptive composition theorem.
@@ -125,16 +126,19 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
         delta_sum = sum(delta_history)
         epsilon_squared_sum = sum(epsilon ** 2 for epsilon in epsilon_history)
 
-        h = global_epsilon ** 2 / (28.04 * log(1 / global_delta))
+        first_fraction = global_epsilon ** 2 / (28.04 * log(1 / global_delta))
 
-        a = sum(eps * (exp(eps) - 1) * 0.5 for eps in epsilon_history)
-        b = epsilon_squared_sum + h
-        c = 2 + log(epsilon_squared_sum / h + 1)
-        d = log(2 / global_delta)
+        first_sum_epsilon = sum(eps * (exp(eps) - 1) * 0.5
+                                for eps in epsilon_history)
+        first_parentheses = epsilon_squared_sum + first_fraction
+        second_parentheses = 2 + log(epsilon_squared_sum / first_fraction + 1)
+        last_factor = log(2 / global_delta)
 
-        k = a + sqrt(b * c * d)
+        privacy_loss_k = first_sum_epsilon + \
+            sqrt(first_parentheses * second_parentheses * last_factor)
 
-        return k > global_epsilon or delta_sum > (global_delta * 0.5)
+        return privacy_loss_k > global_epsilon or \
+            delta_sum > (global_delta * 0.5)
 
 
 def _check_differentially_private_mechanism(data_access_mechanism):
@@ -163,11 +167,12 @@ class ExceededPrivacyBudgetError(Exception):
         notebooks/differential_privacy/differential_privacy_composition_concepts.ipynb).
     """
 
-    def __init__(self, **args):
+    def __init__(self, **kwargs):
+        super().__init__()
         self._epsilon_delta = None
-        if args:
-            if "epsilon_delta" in args:
-                self._epsilon_delta = args["epsilon_delta"]
+        if kwargs:
+            if "epsilon_delta" in kwargs:
+                self._epsilon_delta = kwargs["epsilon_delta"]
 
     def __str__(self):
         return 'Error: Privacy Budget {} has been ' \

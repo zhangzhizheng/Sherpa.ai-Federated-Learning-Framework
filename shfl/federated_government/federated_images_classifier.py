@@ -5,7 +5,6 @@ import tensorflow as tf
 from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
-from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
 from shfl.private.federated_operation import FederatedTransformation
 from shfl.model.deep_learning_model import DeepLearningModel
 from shfl.data_base.emnist import Emnist
@@ -25,29 +24,29 @@ class FederatedImagesClassifier(FederatedGovernment):
     # Arguments:
         data_base_name_key: Key of a valid data base (see possibilities in class
             [ImagesDataBases](./#imagesdatabases-class)).
-        iid: Optional; Boolean specifying whether the data distribution IID or
-            non-IID. By default set to `iid=True`.
+        data_distribution: Optional; Reference to the object defining the data sampling.
+            Options are
+            [IidDataDistribution](../data_distribution/#iiddatadistribution-class) (default)
+            and [NonIidDataDistribution](../data_distribution/#noniiddatadistribution-class).
         num_nodes: Optional; number of client nodes (default is 20).
         percent: Optional; Percentage of the database to distribute
             among nodes (by default set to 100, in which case
             all the available data is used).
     """
 
-    def __init__(self, data_base_name_key, iid=True, num_nodes=20, percent=100):
+    def __init__(self, data_base_name_key,
+                 data_distribution=IidDataDistribution,
+                 num_nodes=20, percent=100):
         if data_base_name_key in ImagesDataBases.__members__.keys():
-            module = ImagesDataBases.__members__[data_base_name_key].value
-            data_base = module()
-            train_data, train_labels, \
-                test_data, test_labels = data_base.load_data()
 
-            if iid:
-                distribution = IidDataDistribution(data_base)
-            else:
-                distribution = NonIidDataDistribution(data_base)
+            data_base = ImagesDataBases[data_base_name_key].value()
+            data_base.load_data()
+            train_data, _ = data_base.train
 
             federated_data, self._test_data, self._test_labels = \
-                distribution.get_federated_data(num_nodes=num_nodes,
-                                                percent=percent)
+                data_distribution(data_base).get_federated_data(
+                    num_nodes=num_nodes,
+                    percent=percent)
 
             self._test_data = np.reshape(
                 self._test_data,
@@ -69,10 +68,10 @@ class FederatedImagesClassifier(FederatedGovernment):
                              " is not included. Try with: " +
                              str(", ".join([e.name for e in ImagesDataBases])))
 
-    def run_rounds(self, n=5, **kwargs):
+    def run_rounds(self, n_rounds=5, **kwargs):
         """See base class.
         """
-        super().run_rounds(n, self._test_data, self._test_labels, **kwargs)
+        super().run_rounds(n_rounds, self._test_data, self._test_labels, **kwargs)
 
     @staticmethod
     def model_builder():
@@ -113,13 +112,13 @@ class FederatedImagesClassifier(FederatedGovernment):
 class Reshape(FederatedTransformation):
     """Reshapes the data in the set of federated nodes.
     """
-    def apply(self, labeled_data):
+    def apply(self, data):
         """See base class."""
-        labeled_data.data = np.reshape(
-            labeled_data.data,
-            (labeled_data.data.shape[0],
-             labeled_data.data.shape[1],
-             labeled_data.data.shape[2], 1))
+        data.data = np.reshape(
+            data.data,
+            (data.data.shape[0],
+             data.data.shape[1],
+             data.data.shape[2], 1))
 
 
 class ImagesDataBases(Enum):

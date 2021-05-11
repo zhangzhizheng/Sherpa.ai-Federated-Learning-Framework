@@ -17,4 +17,3 @@ from shfl.private.reproducibility import Reproducibility
 from shfl.private.federated_attack import FederatedDataAttack
 from shfl.private.federated_attack import ShuffleNode
 from shfl.private.federated_attack import FederatedPoisoningDataAttack
-

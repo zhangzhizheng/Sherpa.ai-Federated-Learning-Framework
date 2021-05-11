@@ -1,6 +1,6 @@
+import copy
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
-import copy
 
 from shfl.model.model import TrainableModel
 
@@ -131,13 +131,13 @@ class DeepLearningModel(TrainableModel):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == "_model":
-                model = tf.keras.models.clone_model(v)
-                model.set_weights(v.get_weights())
-                setattr(result, k, model)
+        for key, value in self.__dict__.items():
+            if key == "_model":
+                model = tf.keras.models.clone_model(value)
+                model.set_weights(value.get_weights())
+                setattr(result, key, model)
             else:
-                setattr(result, k, copy.deepcopy(v, memo))
+                setattr(result, key, copy.deepcopy(value, memo))
         result._model.compile(optimizer=result._optimizer,
                               loss=result._loss,
                               metrics=result._metrics)

@@ -70,9 +70,6 @@ class LabeledDatabase(DataBase):
             train/test split (default is True).
     """
 
-    # pylint: disable=too-many-instance-attributes
-    # Eight is reasonable in this case.
-
     def __init__(self, data, labels, train_proportion=0.8, shuffle=True):
         super().__init__()
         self._data = data

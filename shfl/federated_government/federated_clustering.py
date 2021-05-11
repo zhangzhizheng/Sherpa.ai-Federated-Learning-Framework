@@ -3,7 +3,6 @@ import numpy as np
 
 from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
-from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
 from shfl.federated_aggregator.cluster_fedavg_aggregator import ClusterFedAvgAggregator
 from shfl.model.kmeans_model import KMeansModel
 from shfl.data_base.iris import Iris
@@ -21,35 +20,37 @@ class FederatedClustering(FederatedGovernment):
     # Arguments:
         data_base_name_key: Key of a valid data base (see possibilities
             in class [ClusteringDataBases](./#clusteringdatabases-class)).
-        iid: Optional; Boolean specifying whether the data distribution IID or
-            non-IID. By default set to `iid=True`.
+        data_distribution: Optional; Reference to the object defining the data sampling.
+            Options are
+            [IidDataDistribution](../data_distribution/#iiddatadistribution-class) (default)
+            and [NonIidDataDistribution](../data_distribution/#noniiddatadistribution-class).
         num_nodes: Optional; number of client nodes (default is 20).
         percent: Optional; Percentage of the database to distribute
             among nodes (by default set to 100, in which case
             all the available data is used).
     """
 
-    def __init__(self, data_base_name_key, iid=True, num_nodes=20, percent=100):
+    def __init__(self, data_base_name_key,
+                 data_distribution=IidDataDistribution,
+                 num_nodes=20, percent=100):
         if data_base_name_key in ClusteringDataBases.__members__.keys():
             data_base = ClusteringDataBases[data_base_name_key].value()
-            train_data, train_labels, \
-                test_data, test_labels = data_base.load_data()
+            data_base.load_data()
+            train_data, train_labels = data_base.train
 
-            self._num_clusters = len(np.unique(train_labels))
-            self._num_features = train_data.shape[1]
-
-            if iid:
-                distribution = IidDataDistribution(data_base)
-            else:
-                distribution = NonIidDataDistribution(data_base)
+            n_clusters = len(np.unique(train_labels))
+            n_features = train_data.shape[1]
+            model = KMeansModel(n_clusters=n_clusters,
+                                n_features=n_features)
 
             federated_data, self._test_data, self._test_labels = \
-                distribution.get_federated_data(num_nodes=num_nodes,
-                                                percent=percent)
+                data_distribution(data_base).get_federated_data(
+                    num_nodes=num_nodes,
+                    percent=percent)
 
             aggregator = ClusterFedAvgAggregator()
 
-            super().__init__(self.model_builder(), federated_data, aggregator)
+            super().__init__(model, federated_data, aggregator)
 
         else:
             raise ValueError(
@@ -57,21 +58,10 @@ class FederatedClustering(FederatedGovernment):
                 " is not included. Try with: " +
                 str(", ".join([e.name for e in ClusteringDataBases])))
 
-    def run_rounds(self, n=5, **kwargs):
+    def run_rounds(self, n_rounds=5, **kwargs):
         """See base class.
         """
-        super().run_rounds(n, self._test_data, self._test_labels, **kwargs)
-
-    def model_builder(self):
-        """Creates a k-means model.
-
-        # Returns:
-            model: Object of class [KMeansModel](../model/unsupervised/#kmeansmodel),
-                the k-means model to use.
-        """
-        model = KMeansModel(n_clusters=self._num_clusters,
-                            n_features=self._num_features)
-        return model
+        super().run_rounds(n_rounds, self._test_data, self._test_labels, **kwargs)
 
 
 class ClusteringDataBases(Enum):

@@ -11,7 +11,7 @@ def test_kmeans_model(mock_kmeans):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -49,7 +49,7 @@ def test_train(mock_kmeans):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -68,7 +68,7 @@ def test_predict(mock_kmeans):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -101,7 +101,7 @@ def test_evaluate(mock_adjusted_rand_score,
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -131,7 +131,7 @@ def test_get_model_params(mock_kmeans):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -147,8 +147,8 @@ def test_set_model_params(mock_kmeans):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
-    n_init = 1 # Explicit initial center position passed: performing only one init  
+    init = 'k_highest-means++'
+    n_init = 1  # Explicit initial center position passed: performing only one init
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
     params = np.random.rand(10).reshape((5, 2))
@@ -169,7 +169,7 @@ def test_set_model_params_zeros_array(mock_kmeans):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -193,7 +193,7 @@ def test_performance(mock_kmeans, mock_v_measure_score):
 
     n_clusters = 5
     n_features = 5
-    init = 'k-means++'
+    init = 'k_highest-means++'
     n_init = 10
     kmm = KMeansModel(n_clusters, n_features, init, n_init)
 
@@ -208,4 +208,3 @@ def test_performance(mock_kmeans, mock_v_measure_score):
     assert res == 0
     mock_v_measure_score.assert_called_once_with(labels, prediction)
     kmm.predict.assert_called_once_with(data)
-

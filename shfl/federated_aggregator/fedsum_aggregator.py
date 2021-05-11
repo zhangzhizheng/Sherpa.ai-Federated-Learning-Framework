@@ -1,39 +1,31 @@
 import numpy as np
-
-from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
+from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 
-class FedSumAggregator(FederatedAggregator):
-    """Performs a sum of the clients' model's parameters
+
+class FedSumAggregator(FedAvgAggregator):
+    """Performs a sum of the clients' model's parameters.
 
     It implements the class
-    [FederatedAggregator](./#federatedaggregator-class).
+    [FedAvgAggregator](./#fedavgaggregator-class).
+
+    # Arguments:
+        percentage: Optional; Proportion of the total data
+            that each client possesses. The default is None,
+            in which case it is assumed that all clients
+            possess a comparable amount of data.
+        axis: Optional; Axis or axes along which a sum is performed
+            (default is 0; see options in [Numpy sum
+            function](https://numpy.org/doc/stable/reference/generated/numpy.sum.html)).
     """
-
-    def aggregate_weights(self, clients_params):
-        """
-        See base class.
-        """
-
-        return self._aggregate(*clients_params)
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
     def _aggregate(self, *params):
         """Sums arrays"""
-        return np.sum(np.array(params), axis=0)
+        return np.sum(np.array(params), axis=self._axis)
 
-    @dispatch(Variadic[list])
+    @dispatch(Variadic[list, tuple])
     def _aggregate(self, *params):
-        """Sums (nested) lists of arrays"""
-        aggregated_weights = [self._aggregate(*params)
-                              for params in zip(*params)]
-        return aggregated_weights
-
-    @dispatch(Variadic[tuple])
-    def _aggregate(self, *params):
-        """Sums (nested) tuples of arrays"""
-        aggregated_weights = tuple(self._aggregate(*params)
-                                   for params in zip(*params))
-        return aggregated_weights
+        return super()._aggregate(*params)

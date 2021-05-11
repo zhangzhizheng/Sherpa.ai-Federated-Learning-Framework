@@ -52,7 +52,7 @@ class DeepLearningModelPyTorch(TrainableModel):
         train_loader = DataLoader(dataset, self._batch_size, False)
 
         self._model.to(self._device)
-        for t in range(self._epochs):
+        for _ in range(self._epochs):
             for element in train_loader:
                 inputs, y_true = element[0].float().to(self._device), \
                                  element[1].float().to(self._device)
@@ -123,7 +123,7 @@ class DeepLearningModelPyTorch(TrainableModel):
 
             metrics = [val_loss.item()]
             if self._metrics is not None:
-                for name, metric in self._metrics.items():
+                for _, metric in self._metrics.items():
                     metrics.append(metric(all_y_pred.cpu().numpy(), labels))
 
         return metrics

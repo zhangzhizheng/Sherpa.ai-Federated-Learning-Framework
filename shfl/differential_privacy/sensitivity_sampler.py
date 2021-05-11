@@ -1,9 +1,9 @@
+import copy
+import math
 import numpy as np
 from scipy import special
-from math import pow
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
-import copy
 
 
 class SensitivitySampler:
@@ -15,15 +15,29 @@ class SensitivitySampler:
     (e.g. a function, a model), it can be difficult
     to analytically compute its sensitivity.
 
+    # Example:
+        See how to sample the sensitivity of
+        a linear regression model in the
+        [linear regression notebook](https://github.com/
+        sherpaai/Sherpa.ai-Federated-Learning-Framework/blob/master/
+        notebooks/federated_models/federated_models_linear_regression.ipynb).
+        The same procedure can be applied to estimate the sensitivity
+        of any model or function.
+
     # References
-        - [Pain-free random differential privacy with sensitivity sampling](
-           https://arxiv.org/pdf/1706.02562.pdf)
+        [Pain-free random differential privacy with
+        sensitivity sampling](https://arxiv.org/pdf/1706.02562.pdf)
     """
 
-    def sample_sensitivity(self, query, sensitivity_norm, oracle, n, m=None, gamma=None):
+    def __init__(self):
+        self._sort_axis = 0
+        self._concatenate_axis = 0
+
+    def sample_sensitivity(self, query, sensitivity_norm, oracle, n_data_size,
+                           m_sample_size=None, gamma=None):
         """Samples the sensitivity of a generic query.
 
-        One of m or gamma must be provided.
+        Either `m_sample_size` or `gamma` must be provided.
 
         # Arguments:
             query: Function to apply on private data
@@ -31,55 +45,68 @@ class SensitivitySampler:
             sensitivity_norm: Function defining the norm to use
                 (see [Norm](../norm)).
             oracle: Probability distribution to sample from.
-            n: Integer representing the size of the private data.
-            m: Integer representing the sample size.
+            n_data_size: Integer representing the size of the data
+                to use in each sample.
+            m_sample_size: Integer representing the sample size.
             gamma: Float representing the privacy confidence level.
 
         # Returns:
             sensitivity: Maximum sampled sensitivity.
-            mean: Mean sampled sensitivity.
+            sensitivity_mean: Mean sampled sensitivity.
         """
-        sensitivity_sampler_config = self._sensitivity_sampler_config(m=m, gamma=gamma)
+        optimal_sampling_values = self._get_optimal_values(m_sample_size=m_sample_size,
+                                                           gamma=gamma)
 
-        sensitivity, mean = self._sensitivity_sampler(
+        sensitivity, mean = self._compute_sensitivity(
             query=query,
             sensitivity_norm=sensitivity_norm,
             oracle=oracle,
-            n=n,
-            m=int(sensitivity_sampler_config['m']),
-            k=int(sensitivity_sampler_config['k']))
+            n_data_size=n_data_size,
+            m_sample_size=int(optimal_sampling_values['m_sample_size']),
+            k_highest=int(optimal_sampling_values['k_highest']))
         return sensitivity, mean
 
-    def _sensitivity_sampler(self, query, sensitivity_norm, oracle, n, m, k):
-        """
+    def _compute_sensitivity(self, query, sensitivity_norm, oracle,
+                             n_data_size, m_sample_size, k_highest):
+        """Computes the sensitivity of the samples.
+
+        Each sensitivity computation is as follows:
+            1) Two neighbouring databases are created by sampling
+                on the original database.
+            2) The sensitivity is computed as
+                the norm of the difference of the query outcomes
+                over the two neighbouring databases.
+
         # Arguments:
-            query: Function to apply on private data
+            query: Function to apply on private the data
             (see: [Query](../../private/query)).
-            sensitivity_norm: Function to compute the sensitivity norm
-                (see: [Norm](../norm)).
+            sensitivity_norm: Function defining the norm to use (see: [Norm](../norm)).
             oracle: Probability distribution to sample from.
-            n: Integer representing the size of the private data.
-            m: Integer representing the sample size.
-            k: Element containing the highest sampled value.
+            n_data_size: Integer representing the size of the data
+                to use in each sample.
+            m_sample_size: Integer representing the sample size.
+            k_highest: Element containing the highest sampled value.
 
         # Returns:
             sensitivity: Maximum sampled sensitivity.
-            mean: Mean sampled sensitivity.
+            sensitivity_mean: Mean sampled sensitivity.
         """
-        gs = [np.inf for i in range(m)]
-        
-        for i in range(0, m):
-            db1 = oracle.sample(n - 1)
-            db2 = db1
-            db1 = self._concatenate(db1, oracle.sample(1))
-            db2 = self._concatenate(db2, oracle.sample(1))
-            gs[i] = self._sensitivity_norm(query, sensitivity_norm, db1, db2)
-            
-        return self._sort_sensitivity(*gs, k=k)
+        sensitivity_sampled = [np.inf] * m_sample_size
+
+        for i in range(0, m_sample_size):
+            data_base_1 = oracle.sample(n_data_size - 1)
+            data_base_2 = data_base_1
+            data_base_1 = self._concatenate(data_base_1, oracle.sample(1))
+            data_base_2 = self._concatenate(data_base_2, oracle.sample(1))
+            sensitivity_sampled[i] = \
+                self._sensitivity_norm(query, sensitivity_norm,
+                                       data_base_1, data_base_2)
+
+        return self._sort_sensitivity(*sensitivity_sampled, k_highest=k_highest)
 
     @staticmethod
-    def _sensitivity_norm(query, sensitivity_norm, x1, x2):
-        """Queries the databases x1 and x2 and computes the norm
+    def _sensitivity_norm(query, sensitivity_norm, data_base_1, data_base_2):
+        """Queries two neighbouring databases and computes the norm
         of the difference of the results.
 
         # Arguments:
@@ -87,72 +114,79 @@ class SensitivitySampler:
                 (see: [Query](../../private/query)).
             sensitivity_norm: Function to compute the sensitivity norm
                 (see: [Norm](../norm)).
-            x1: The database to be queried.
-            x2: The database to be queried.
+            data_base_1: The database to be queried.
+            data_base_2: The database to be queried.
 
         # Returns:
             The norm of the difference of the queries.
         """
-        value_1 = query.get(x1)
-        value_2 = query.get(x2)
 
-        return sensitivity_norm.compute(value_1, value_2)
+        return sensitivity_norm.compute(query.get(data_base_1),
+                                        query.get(data_base_2))
 
     @staticmethod
-    def _sensitivity_sampler_config(m, gamma):
-        """Computes the optimal values for m, gamma, k and rho.
+    def _get_optimal_values(m_sample_size, gamma):
+        """Computes the optimal values for m_sample_size, gamma, k_highest and rho.
 
         # Arguments:
-            m: Integer representing the sample size.
+            m_sample_size: Integer representing the sample size.
             gamma: Float representing the privacy confidence level.
 
         # Returns:
             A dictionary with the optimal values.
         """
-        if m is None:
+        if m_sample_size is None:
             lambert_value = np.real(
                 special.lambertw(-gamma / (2 * np.exp(0.5)), 1))
             rho = np.exp(lambert_value + 0.5)
-            m = np.ceil(np.log(1 / rho) / (2 * pow((gamma - rho), 2)))
-            gamma_lo = rho + np.sqrt(np.log(1 / rho) / (2 * m))
-            k = np.ceil(m * (1 - gamma + gamma_lo))
+            m_sample_size = np.ceil(
+                np.log(1 / rho) / (2 * math.pow((gamma - rho), 2)))
+            gamma_lo = rho + np.sqrt(np.log(1 / rho) / (2 * m_sample_size))
+            k_highest = np.ceil(m_sample_size * (1 - gamma + gamma_lo))
         else:
-            rho = np.exp(np.real(special.lambertw(-1 / (4 * m), 1)) / 2)
-            gamma_lo = rho + np.sqrt(np.log(1 / rho) / (2 * m))
+            rho = np.exp(
+                np.real(special.lambertw(-1 / (4 * m_sample_size), 1)) / 2)
+            gamma_lo = rho + np.sqrt(np.log(1 / rho) / (2 * m_sample_size))
             if gamma is None:
                 gamma = gamma_lo
-                k = m
+                k_highest = m_sample_size
             else:
-                k = np.ceil(m * (1 - gamma + gamma_lo))
+                k_highest = np.ceil(m_sample_size * (1 - gamma + gamma_lo))
 
-        return {'m': m, 'gamma': gamma, 'k': k, 'rho': rho}
+        optimal_values = {'m_sample_size': m_sample_size,
+                          'gamma': gamma,
+                          'k_highest': k_highest,
+                          'rho': rho}
 
-    @staticmethod
-    def _seq_iter(obj):
-        return obj if isinstance(obj, dict) else range(len(obj))
+        return optimal_values
 
     @dispatch(Variadic[(np.ndarray, list)])
-    def _sort_sensitivity(self, *gs, k):
+    def _sort_sensitivity(self, *sensitivity_sampled, k_highest):
         """Sorts arrays or lists of arrays.
         """
-        gs_sorted = [np.sort(np.array(item), axis=0) for item in zip(*gs)]
-        gs_max = [item[k - 1] for item in gs_sorted]
-        gs_mean = [np.mean(item, axis=0) for item in gs_sorted]
+        sensitivity_sorted = [np.sort(np.array(item), axis=self._sort_axis)
+                              for item in zip(*sensitivity_sampled)]
+        sensitivity_max = [item[k_highest - 1]
+                           for item in sensitivity_sorted]
+        sensitivity_mean = [np.mean(item, axis=self._sort_axis)
+                            for item in sensitivity_sorted]
 
-        return gs_max, gs_mean
+        return sensitivity_max, sensitivity_mean
 
     @dispatch(Variadic[np.ScalarType])
-    def _sort_sensitivity(self, *gs, k):
+    def _sort_sensitivity(self, *sensitivity_sampled, k_highest):
         """Sorts scalars.
         """
-        gs = [[item] for item in gs]
-        [gs_max], [gs_mean] = self._sort_sensitivity(*gs, k=k)
+        sensitivity_sampled = [[item] for item in sensitivity_sampled]
+        [sensitivity_max], [sensitivity_mean] = \
+            self._sort_sensitivity(*sensitivity_sampled,
+                                   k_highest=k_highest)
 
-        return gs_max, gs_mean
+        return sensitivity_max, sensitivity_mean
 
     @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
     def _concatenate(self, x_1, x_2):
-        return np.concatenate((x_1, x_2))
+        return np.concatenate((x_1, x_2), axis=self._concatenate_axis)
 
     @dispatch((list, dict), (list, dict))
     def _concatenate(self, x_1, x_2):
@@ -160,3 +194,7 @@ class SensitivitySampler:
         for i, j in zip(self._seq_iter(x_1), self._seq_iter(x_2)):
             output[i] = self._concatenate(x_1[i], x_2[j])
         return output
+
+    @staticmethod
+    def _seq_iter(obj):
+        return obj if isinstance(obj, dict) else range(len(obj))

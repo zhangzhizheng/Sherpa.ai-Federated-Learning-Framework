@@ -31,7 +31,7 @@ def test_linear_regression_model_wrong_initialization():
     n_targets = [1, 1, -1, 1.5]
     for init_ in zip(n_features, n_targets):
         with pytest.raises(AssertionError):
-            lnr = LinearRegressionModel(n_features=init_[0], n_targets=init_[1])
+            LinearRegressionModel(n_features=init_[0], n_targets=init_[1])
 
 
 def test_linear_regression_model_train_wrong_input_data():

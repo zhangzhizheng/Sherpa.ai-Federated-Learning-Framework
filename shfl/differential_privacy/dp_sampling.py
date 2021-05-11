@@ -1,15 +1,15 @@
 import abc
-import numpy as np
 from math import log
 from math import exp
 from functools import reduce
 from operator import mul
+import numpy as np
 
 from shfl.private.data import DPDataAccessDefinition
 
 
 class Sampler(DPDataAccessDefinition):
-    """Implements sub-sampling methods to amplify differential privacy.
+    """Defines sub-sampling methods to amplify differential privacy.
 
     It implements the class
     [DPDataAccessDefinition](../../private/data/#dpdataaccessdefinition-class).
@@ -75,7 +75,7 @@ class Sampler(DPDataAccessDefinition):
 
 
 class SampleWithoutReplacement(Sampler):
-    """Implements privacy amplification by sampling without replacement.
+    """Amplifies privacy by sampling without replacement.
 
     It implements the class [Sampler](./#sampler-class).
 
@@ -124,7 +124,7 @@ class SampleWithoutReplacement(Sampler):
 
 
 def check_sample_size(sample_size, data_size):
-    """Checks sample size smaller than the original.
+    """Checks that the sample size is smaller than the original.
 
     # Arguments:
         sample_size: One dimensional size of the sample.

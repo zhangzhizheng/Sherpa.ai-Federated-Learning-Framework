@@ -28,6 +28,7 @@ class LinearClassifierModel(TrainableModel):
         [sklearn.svm.SVC](https://scikit-learn.org/stable/modules/
         generated/sklearn.svm.SVC.html)
     """
+
     def __init__(self, n_features, classes, model=None):
         if model is None:
             model = LogisticRegression(solver='lbfgs', multi_class='auto')
@@ -41,7 +42,7 @@ class LinearClassifierModel(TrainableModel):
             n_classes = 1
         self.set_model_params([np.zeros(n_classes),
                                np.zeros((n_classes, n_features))])
-        
+
     def train(self, data, labels, **kwargs):
         """Trains the model.
 
@@ -52,9 +53,9 @@ class LinearClassifierModel(TrainableModel):
                 or (n_samples, n_classes) containing the target labels.
             **kwargs: Optional named parameters.
         """
+
         self._check_data(data)
         self._check_labels_train(labels)
-        
         self._model.fit(data, labels)
 
     def predict(self, data):
@@ -67,9 +68,9 @@ class LinearClassifierModel(TrainableModel):
         # Returns:
             prediction: Model's prediction using the input data.
         """
-        
+
         return self._model.predict(data)
-    
+
     def evaluate(self, data, labels):
         """Evaluates the performance of the model.
 
@@ -85,17 +86,17 @@ class LinearClassifierModel(TrainableModel):
 
             cohen_kappa: [Cohen's kappa score](https://scikit-learn.org/
             stable/modules/generated/sklearn.metrics.cohen_kappa_score.html).
-
         """
+
         self._check_data(data)
         self._check_labels_predict(labels)
-        
+
         prediction = self.predict(data)
         balanced_accuracy = metrics.balanced_accuracy_score(labels, prediction)
         cohen_kappa = metrics.cohen_kappa_score(labels, prediction)
-        
+
         return balanced_accuracy, cohen_kappa
-    
+
     def performance(self, data, labels):
         """Evaluates the performance of the model using
             the most representative metrics.
@@ -110,9 +111,10 @@ class LinearClassifierModel(TrainableModel):
             balanced_accuracy: [Balanced accuracy score](https://scikit-learn.org/
             stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html).
         """
+
         self._check_data(data)
         self._check_labels_predict(labels)
-        
+
         prediction = self.predict(data)
         balanced_accuracy = metrics.balanced_accuracy_score(labels, prediction)
 
@@ -152,7 +154,7 @@ class LinearClassifierModel(TrainableModel):
                 "When training, labels need to have the same classes "
                 "described by the model " + str(self._model.classes_) +
                 ". Labels of this node are " + str(classes) + ".")
-            
+
     def _check_labels_predict(self, labels):
         """Checks whether the classes to predict are correct.
 
@@ -165,7 +167,7 @@ class LinearClassifierModel(TrainableModel):
                 "When predicting, labels need to be a subset of the classes "
                 "described by the model " + str(self._model.classes_) +
                 ". Labels in the given data are " + str(classes) + ".")
-    
+
     @staticmethod
     def _check_initialization(n_features, classes):
         """Checks whether the model's initialization is correct.

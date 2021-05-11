@@ -8,10 +8,10 @@ class FederatedAggregator(abc.ABC):
     abstract method `aggregate_weights` of this class.
 
     # Arguments:
-        percentage: Proportion of the total data that each client possesses
-            The default in None, in which case it is assumed that all clients
+        percentage: Optional; Proportion of the total data
+            that each client possesses. The default is None,
+            in which case it is assumed that all clients
             possess a comparable amount of data.
-
     """
 
     def __init__(self, percentage=None):

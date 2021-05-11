@@ -1,68 +1,77 @@
-from shfl.federated_government.federated_images_classifier import FederatedImagesClassifier, ImagesDataBases
-from shfl.model.deep_learning_model import DeepLearningModel
-from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
-from shfl.private.federated_operation import FederatedData
 from unittest.mock import Mock
 import random
 import string
 import pytest
 
+from shfl.federated_government.federated_images_classifier import FederatedImagesClassifier
+from shfl.model.deep_learning_model import DeepLearningModel
+from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
+from shfl.private.federated_operation import FederatedData
+from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
+
 
 def test_images_classifier_iid():
-    example_database = list(ImagesDataBases.__members__.keys())[0]
-    fic = FederatedImagesClassifier(example_database)
+    database = "EMNIST"
+    federated_classifier = FederatedImagesClassifier(database,
+                                                     num_nodes=3,
+                                                     percent=5)
 
-    for node in fic._federated_data:
+    for node in federated_classifier._federated_data:
+        print("model", node._model)
         assert isinstance(node._model, DeepLearningModel)
 
-    assert isinstance(fic._server._model, DeepLearningModel)
-    assert isinstance(fic._server._aggregator, FederatedAggregator)
-    assert isinstance(fic._federated_data, FederatedData)
+    assert isinstance(federated_classifier._server._model, DeepLearningModel)
+    assert isinstance(federated_classifier._server._aggregator, FederatedAggregator)
+    assert isinstance(federated_classifier._federated_data, FederatedData)
 
-    assert fic._test_data is not None
-    assert fic._test_labels is not None
+    assert federated_classifier._test_data is not None
+    assert federated_classifier._test_labels is not None
 
 
-def test_images_classifier_noiid():
-    example_database = list(ImagesDataBases.__members__.keys())[0]
-    fic = FederatedImagesClassifier(example_database, False)
+def test_images_classifier_no_iid():
+    database = "EMNIST"
+    federated_classifier = FederatedImagesClassifier(database,
+                                                     data_distribution=NonIidDataDistribution,
+                                                     num_nodes=3,
+                                                     percent=5)
 
-    for node in fic._federated_data:
+    for node in federated_classifier._federated_data:
         assert isinstance(node._model, DeepLearningModel)
 
-    assert isinstance(fic._server._model, DeepLearningModel)
-    assert isinstance(fic._server._aggregator, FederatedAggregator)
-    assert isinstance(fic._federated_data, FederatedData)
+    assert isinstance(federated_classifier._server._model, DeepLearningModel)
+    assert isinstance(federated_classifier._server._aggregator, FederatedAggregator)
+    assert isinstance(federated_classifier._federated_data, FederatedData)
 
-    assert fic._test_data is not None
-    assert fic._test_labels is not None
+    assert federated_classifier._test_data is not None
+    assert federated_classifier._test_labels is not None
 
 
 def test_images_classifier_wrong_database():
     letters = string.ascii_lowercase
-    wrong_database = ''.join(random.choice(letters) for i in range(10))
+    wrong_database = ''.join(random.choice(letters) for _ in range(10))
 
     with pytest.raises(ValueError):
-        fic = FederatedImagesClassifier(wrong_database)
+        FederatedImagesClassifier(wrong_database)
 
 
 def test_run_rounds():
-    example_database = list(ImagesDataBases.__members__.keys())[0]
+    database = "EMNIST"
+    federated_classifier = FederatedImagesClassifier(database,
+                                                     num_nodes=3,
+                                                     percent=5)
 
-    fic = FederatedImagesClassifier(example_database)
+    federated_classifier._server.deploy_collaborative_model = Mock()
+    federated_classifier._federated_data.train_model = Mock()
+    federated_classifier.evaluate_clients = Mock()
+    federated_classifier._server.aggregate_weights = Mock()
+    federated_classifier._server.evaluate_collaborative_model = Mock()
 
-    fic._server.deploy_collaborative_model = Mock()
-    fic._federated_data.train_model = Mock()
-    fic.evaluate_clients = Mock()
-    fic._server.aggregate_weights = Mock()
-    fic._server.evaluate_collaborative_model = Mock()
+    federated_classifier.run_rounds(1)
 
-    fic.run_rounds(1)
-
-    fic._server.deploy_collaborative_model.assert_called_once()
-    fic._federated_data.train_model.assert_called_once()
-    fic.evaluate_clients.assert_called_once_with(
-        fic._test_data, fic._test_labels)
-    fic._server.aggregate_weights.assert_called_once()
-    fic._server.evaluate_collaborative_model.assert_called_once_with(
-        fic._test_data, fic._test_labels)
+    federated_classifier._server.deploy_collaborative_model.assert_called_once()
+    federated_classifier._federated_data.train_model.assert_called_once()
+    federated_classifier.evaluate_clients.assert_called_once_with(
+        federated_classifier._test_data, federated_classifier._test_labels)
+    federated_classifier._server.aggregate_weights.assert_called_once()
+    federated_classifier._server.evaluate_collaborative_model.assert_called_once_with(
+        federated_classifier._test_data, federated_classifier._test_labels)

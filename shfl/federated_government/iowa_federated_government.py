@@ -1,6 +1,7 @@
+import numpy as np
+
 from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.federated_aggregator.iowa_federated_aggregator import IowaFederatedAggregator
-import numpy as np
 
 
 class IowaFederatedGovernment(FederatedGovernment):
@@ -22,7 +23,7 @@ class IowaFederatedGovernment(FederatedGovernment):
         b: Optional; Second argument of linguistic quantifier (default is 0.2).
         c: Optional; Third argument of linguistic quantifier (default is 0.8).
         y_b: Optional; Fourth argument of linguistic quantifier (default is 0.4).
-        k: Optional; Distance param of the dynamic version (default is 3/4).
+        k_highest: Optional; Distance param of the dynamic version (default is 3/4).
 
     # References:
         [Dynamic federated learning model for identifying
@@ -57,7 +58,7 @@ class IowaFederatedGovernment(FederatedGovernment):
 
         return np.array(client_performance)
 
-    def run_rounds(self, n, test_data, test_label, **kwargs):
+    def run_rounds(self, n_rounds, test_data, test_label):
         """
         See base class.
         """
@@ -73,7 +74,7 @@ class IowaFederatedGovernment(FederatedGovernment):
         test_data = test_data[int(0.15 * len(test_label)):, ]
         test_label = test_label[int(0.15 * len(test_label)):]
 
-        for i in range(0, n):
+        for i in range(0, n_rounds):
             print("Accuracy round " + str(i))
             self._server.deploy_collaborative_model()
             self._federated_data.train_model()

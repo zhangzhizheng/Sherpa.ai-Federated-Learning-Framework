@@ -1,5 +1,5 @@
-import numpy as np
 import random
+import numpy as np
 import tensorflow as tf
 
 from shfl.data_base.data_base import shuffle_rows
@@ -54,7 +54,7 @@ class NonIidDataDistribution(SamplingDataDistribution):
             for i in range(0, num_nodes):
                 labels_to_use = random_classes[i]
 
-                idx = np.array([True if i in labels_to_use else False
+                idx = np.array([i in labels_to_use
                                 for i in labels.argmax(axis=-1)])
                 data_aux = data[idx]
                 labels_aux = labels[idx]
@@ -76,7 +76,7 @@ class NonIidDataDistribution(SamplingDataDistribution):
             for i in range(0, num_nodes):
                 labels_to_use = random_classes[i]
 
-                idx = np.array([True if i in labels_to_use else False
+                idx = np.array([i in labels_to_use
                                 for i in labels.argmax(axis=-1)])
                 data_aux = data[idx]
                 rest_data = data[~idx]
@@ -120,11 +120,11 @@ class NonIidDataDistribution(SamplingDataDistribution):
 
         random_labels = []
 
-        for i in range(0, num_nodes):
+        for _ in range(0, num_nodes):
             num_labels = random.randint(2, total_labels)
             labels_to_use = []
 
-            for j in range(num_labels):
+            for _ in range(num_labels):
                 label = random.randint(0, total_labels - 1)
                 if label not in labels_to_use:
                     labels_to_use.append(label)
@@ -136,4 +136,3 @@ class NonIidDataDistribution(SamplingDataDistribution):
             random_labels.append(labels_to_use)
 
         return random_labels
-

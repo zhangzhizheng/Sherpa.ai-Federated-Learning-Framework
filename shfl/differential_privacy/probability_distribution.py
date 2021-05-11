@@ -1,14 +1,14 @@
-import numpy as np
 import abc
+import numpy as np
 
 
 class ProbabilityDistribution(abc.ABC):
-    """Implements a probability distribution for sensitivity sampling.
+    """Defines a probability distribution for sensitivity sampling.
 
     This interface must be implemented to define
     the probability distribution to sample the data from
     when estimating the sensitivity of a query
-    (see [SensitivitySampler](../sensitivity_sampler/)).
+    (see class [SensitivitySampler](../sensitivity_sampler/)).
     """
 
     @abc.abstractmethod

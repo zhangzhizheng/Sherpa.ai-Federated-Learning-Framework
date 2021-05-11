@@ -44,9 +44,11 @@ class FederatedGovernment:
             data: The global test data.
             labels: The global target labels.
         """
+
         for data_node in self._federated_data:
-            evaluation, local_evaluation = data_node.evaluate(data,
-                                                              labels)
+            evaluation, local_evaluation = \
+                data_node.evaluate(data, labels)
+
             if local_evaluation is not None:
                 print("Performance client " + str(data_node) +
                       ": Global test: " + str(evaluation)
@@ -55,20 +57,21 @@ class FederatedGovernment:
                 print("Test performance client " +
                       str(data_node) + ": " + str(evaluation))
 
-    def run_rounds(self, n, test_data, test_label, eval_freq=1):
+    def run_rounds(self, n_rounds, test_data, test_label, eval_freq=1):
         """Runs the federated learning rounds.
-        
-        It starts in the actual state, testing on global test data and, 
-        if present, on local test data too.
+
+        It starts in the actual state, testing on global test data
+        and, if present, on local test data too.
 
         # Arguments:
-            n: The number of federated learning rounds to perform.
+            n_rounds: The number of federated learning rounds to perform.
             test_data: The global test data for evaluation in between rounds.
             test_label: Global test target labels for evaluation
                 in between rounds.
             eval_freq: Frequency for evaluation on global test data.
         """
-        for i in range(0, n):
+
+        for i in range(0, n_rounds):
 
             self._federated_data.train_model()
 

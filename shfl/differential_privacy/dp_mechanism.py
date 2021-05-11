@@ -1,9 +1,10 @@
-import numpy as np
-import scipy
 from math import sqrt
 from math import log
-from multipledispatch import dispatch
 import copy
+import numpy as np
+import scipy
+from multipledispatch import dispatch
+
 
 from shfl.private.data import DPDataAccessDefinition
 from shfl.private.query import IdentityFunction
@@ -189,7 +190,7 @@ class LaplaceMechanism(DPDataAccessDefinition):
     A different sample of the Laplace distribution is taken
     for each element of the query output. For example,
     if the query output is a list containing three
-    arrays of size n * m, then 3*n*m samples are taken from
+    arrays of size n_rounds * m, then 3*n_rounds*m samples are taken from
     the Laplace distribution using the provided sensitivity.
 
     # Arguments:
@@ -207,14 +208,14 @@ class LaplaceMechanism(DPDataAccessDefinition):
             differentially-private mechanism.
 
     # Example 1:
-        If the query output is an array of size n * m, and a scalar
+        If the query output is an array of size n_rounds * m, and a scalar
         sensitivity is provided, then the same sensitivity is applied to
         each entry in the output.
         Instead, providing a vector of sensitivities of size m, then the
         sensitivity is applied column-wise over the query output.
-        Finally, providing a sensitivity array of size n * m,
+        Finally, providing a sensitivity array of size n_rounds * m,
         a different sensitivity value si applied to each element of the
-        query output. Note that in all the cases, n*m Laplace samples are
+        query output. Note that in all the cases, n_rounds*m Laplace samples are
         taken, i.e. each value of the query output is perturbed with a
         different noise value.
 
@@ -259,9 +260,9 @@ class LaplaceMechanism(DPDataAccessDefinition):
         try:
             return sensitivity[i] if isinstance(sensitivity, (dict, list)) \
                 else sensitivity
-        except KeyError:
+        except KeyError as wrong_shape:
             raise KeyError("The sensitivity does not contain "
-                           "the key {}".format(i) + ".")
+                           "the key {}".format(i) + ".") from wrong_shape
 
     def apply(self, data, **kwargs):
         """Applies Laplace noise to the input data.
@@ -284,8 +285,8 @@ class LaplaceMechanism(DPDataAccessDefinition):
         obj = np.asarray(obj)
         self._check_sensitivity_positive(sensitivity_array)
         self._check_sensitivity_shape(sensitivity_array, obj)
-        b = sensitivity / self._epsilon
-        output = obj + np.random.laplace(loc=0.0, scale=b, size=obj.shape)
+        scale = sensitivity / self._epsilon
+        output = obj + np.random.laplace(loc=0.0, scale=scale, size=obj.shape)
         return output
 
     @dispatch((dict, list), (dict, list, np.ndarray, np.ScalarType))
@@ -385,11 +386,11 @@ class ExponentialMechanism(DPDataAccessDefinition):
     notebooks/differential_privacy/differential_privacy_exponential.ipynb)).
 
     # Arguments:
-        u: Utility function with arguments x and r.
+        utility_function: Utility function with arguments x and response_range.
             It should be vectorized, so that for a
             particular database x, it returns
-            as many values as given in r.
-        r: Array representing the response space.
+            as many values as given in response_range.
+        response_range: Array representing the response space.
         delta_u: Float representing the sensitivity of the utility function.
         epsilon: Float representing the desired epsilon.
         size: Optional; The number of queries to perform at once (default is 1).
@@ -408,10 +409,11 @@ class ExponentialMechanism(DPDataAccessDefinition):
            https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf)
     """
 
-    def __init__(self, u, r, delta_u, epsilon, size=1):
+    def __init__(self, utility_function, response_range,
+                 delta_u, epsilon, size=1):
         self._check_epsilon_delta((epsilon, 0))
-        self._u = u
-        self._r = r
+        self._utility_function = utility_function
+        self._response_range = response_range
         self._delta_u = delta_u
         self._epsilon = epsilon
         self._size = size
@@ -430,11 +432,10 @@ class ExponentialMechanism(DPDataAccessDefinition):
             result: Array-type object of same shape as the input
                 containing the differentially-private randomized data.
         """
-        r_range = self._r
-        u_points = self._u(data, r_range)
-        p = np.exp(self._epsilon * u_points / (2 * self._delta_u))
-        p /= p.sum()
+        u_points = self._utility_function(data, self._response_range)
+        probability = np.exp(self._epsilon * u_points / (2 * self._delta_u))
+        probability /= probability.sum()
         sample = np.random.choice(
-            a=r_range, size=self._size, replace=True, p=p)
+            a=self._response_range, size=self._size, replace=True, p=probability)
 
         return sample

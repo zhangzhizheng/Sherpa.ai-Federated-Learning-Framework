@@ -370,7 +370,7 @@ def test_run_rounds(vertical_federated_government,
     vert_fed_gov._server.query_model.return_value = server_meta_params
     vert_fed_gov._server.evaluate_collaborative_model = Mock()
 
-    vert_fed_gov.run_rounds(n=1, test_data=test_data, test_label=test_labels)
+    vert_fed_gov.run_rounds(n_rounds=1, test_data=test_data, test_label=test_labels)
 
     train_model_calls = \
         [call(),

@@ -8,9 +8,9 @@ from shfl.federated_aggregator.iowa_federated_aggregator import IowaFederatedAgg
 from shfl.federated_government.iowa_federated_government import IowaFederatedGovernment
 
 
-class TestDataBase(DataBase):
+class DataBaseTest(DataBase):
     def __init__(self):
-        super(TestDataBase, self).__init__()
+        super(DataBaseTest, self).__init__()
 
     def load_data(self):
         self._train_data = np.random.rand(50).reshape([10, 5])
@@ -19,9 +19,9 @@ class TestDataBase(DataBase):
         self._test_labels = np.random.randint(0, 2, 10)
 
 
-def test_IowaFederatedGovernment():
+def test_iowa_federated_government():
     model_builder = Mock()
-    database = TestDataBase()
+    database = DataBaseTest()
     database.load_data()
     db = IidDataDistribution(database)
 
@@ -52,7 +52,7 @@ def test_IowaFederatedGovernment():
 
 def test_performance_clients():
     model_builder = Mock()
-    database = TestDataBase()
+    database = DataBaseTest()
     database.load_data()
     db = IidDataDistribution(database)
 
@@ -78,7 +78,7 @@ def test_performance_clients():
 def test_run_rounds():
     np.random.seed(123)
     model_builder = Mock
-    database = TestDataBase()
+    database = DataBaseTest()
     database.load_data()
     db = IidDataDistribution(database)
 

@@ -1,5 +1,5 @@
-import numpy as np
 import abc
+import numpy as np
 from multipledispatch import dispatch
 
 
@@ -33,39 +33,50 @@ class SensitivityNorm(abc.ABC):
 
 
 class L1SensitivityNorm(SensitivityNorm):
-    """Implements the L1 norm of the difference between x_1 and x_2.
+    """Computes the L1 norm of the difference between x_1 and x_2.
 
     It implements the class [SensitivityNorm](./#sensitivitynorm-class).
     """
-    @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
+
     def compute(self, x_1, x_2):
+        """See base class.
+        """
+        return self._compute(x_1, x_2)
+
+    @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
+    def _compute(self, x_1, x_2):
         """L1 norm of the difference between arrays."""
-        x = np.sum(np.abs(x_1 - x_2), axis=self._axis)
-        return x
+        norm = np.sum(np.abs(x_1 - x_2), axis=self._axis)
+        return norm
 
     @dispatch(list, list)
-    def compute(self, x_1, x_2):
+    def _compute(self, x_1, x_2):
         """L1 norm of the difference between (nested) lists of arrays."""
-        x = [self.compute(xi_1, xi_2)
-             for xi_1, xi_2 in zip(x_1, x_2)]
-        return x
+        norm = [self.compute(xi_1, xi_2)
+                for xi_1, xi_2 in zip(x_1, x_2)]
+        return norm
 
 
 class L2SensitivityNorm(SensitivityNorm):
-    """Implements the L2 norm of the difference between x_1 and x_2.
+    """Computes the L2 norm of the difference between x_1 and x_2.
 
     It implements the class [SensitivityNorm](./#sensitivitynorm-class).
     """
 
-    @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
     def compute(self, x_1, x_2):
+        """See base class.
+        """
+        return self._compute(x_1, x_2)
+
+    @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
+    def _compute(self, x_1, x_2):
         """"L2 norm of the difference between arrays."""
-        x = np.sqrt(np.sum((x_1 - x_2)**2, axis=self._axis))
-        return x
+        norm = np.sqrt(np.sum((x_1 - x_2)**2, axis=self._axis))
+        return norm
 
     @dispatch(list, list)
-    def compute(self, x_1, x_2):
+    def _compute(self, x_1, x_2):
         """"L2 norm of the difference between (nested) lists of arrays."""
-        x = [self.compute(xi_1, xi_2)
-             for xi_1, xi_2 in zip(x_1, x_2)]
-        return x
+        norm = [self.compute(xi_1, xi_2)
+                for xi_1, xi_2 in zip(x_1, x_2)]
+        return norm

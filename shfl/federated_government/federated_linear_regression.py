@@ -27,20 +27,26 @@ class FederatedLinearRegression(FederatedGovernment):
 
     def __init__(self, data_base_name_key, num_nodes=20, percent=100):
         if data_base_name_key in LinearRegressionDataBases.__members__.keys():
-            data_base = LinearRegressionDataBases[data_base_name_key].value()
-            train_data, train_labels, test_data, test_labels = \
-                data_base.load_data()
 
-            self._num_features = train_data.shape[1]
+            data_base = LinearRegressionDataBases[data_base_name_key].value()
+            data_base.load_data()
+            train_data, train_label = data_base.train
+
+            n_features = train_data.shape[1]
+            try:
+                n_targets = train_label.shape[1]
+            except IndexError:
+                n_targets = 1
+            model = LinearRegressionModel(n_features=n_features,
+                                          n_targets=n_targets)
 
             distribution = IidDataDistribution(data_base)
-
             federated_data, self._test_data, self._test_labels = \
                 distribution.get_federated_data(num_nodes=num_nodes,
                                                 percent=percent)
             aggregator = FedAvgAggregator()
 
-            super().__init__(self.model_builder(), federated_data, aggregator)
+            super().__init__(model, federated_data, aggregator)
 
         else:
             raise ValueError(
@@ -48,21 +54,10 @@ class FederatedLinearRegression(FederatedGovernment):
                 " is not included. Try with: " +
                 str(", ".join([e.name for e in LinearRegressionDataBases])))
 
-    def run_rounds(self, n=5, **kwargs):
+    def run_rounds(self, n_rounds=5, **kwargs):
         """See base class.
         """
-        super().run_rounds(n, self._test_data, self._test_labels, **kwargs)
-
-    def model_builder(self):
-        """Creates a linear regression model.
-
-        # Returns:
-            model: Object of class
-                [LinearRegressionModel](../model/supervised/#linearregressionmodel),
-                the linear regression model to use.
-        """
-        model = LinearRegressionModel(n_features=self._num_features)
-        return model
+        super().run_rounds(n_rounds, self._test_data, self._test_labels, **kwargs)
 
 
 class LinearRegressionDataBases(Enum):

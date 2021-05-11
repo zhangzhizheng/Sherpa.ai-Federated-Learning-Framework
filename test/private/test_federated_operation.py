@@ -36,26 +36,6 @@ def test_query_federate_data():
         assert answer[i] == random_array[i]
 
 
-def test_federate_array():
-    data_size = 10000
-    num_clients = 1000
-    array = np.random.rand(data_size)
-    federated_array = shfl.private.federated_operation.federate_array(array, num_clients)
-    assert federated_array.num_nodes() == num_clients
-
-
-def test_federate_array_size_private_data():
-    data_size = 10000
-    num_clients = 10
-    array = np.random.rand(data_size)
-    federated_array = shfl.private.federated_operation.federate_array(array, num_clients)
-    federated_array.configure_data_access(UnprotectedAccess())
-    for data_node in federated_array:
-        assert len(data_node.query()) == data_size/num_clients
-
-    assert federated_array[0].query()[0] == array[0]
-
-
 def test_federated_data():
     data_size = 10
     federated_data = FederatedData()
@@ -138,3 +118,51 @@ def test_evaluate(mock_super_local_evaluate, mock_super_evaluate):
     mock_super_local_evaluate.assert_called_once_with(identifier)
 
 
+def test_federate_array():
+    data_size = 10000
+    num_clients = 1000
+    array = np.random.rand(data_size)
+    federated_array = shfl.private.federated_operation.federate_array(array, num_clients)
+    assert federated_array.num_nodes() == num_clients
+
+
+def test_federate_array_size_private_data():
+    data_size = 10000
+    num_clients = 10
+    array = np.random.rand(data_size)
+    federated_array = shfl.private.federated_operation.federate_array(array, num_clients)
+    federated_array.configure_data_access(UnprotectedAccess())
+    for data_node in federated_array:
+        assert len(data_node.query()) == data_size / num_clients
+
+    assert federated_array[0].query()[0] == array[0]
+
+
+def test_federate_list():
+    distributed_data = [np.random.rand(50).reshape([10, -1])
+                        for _ in range(5)],
+    distributed_labels = [np.random.randint(0, 2, size=(10, ))
+                          for _ in range(5)]
+
+    federated_data = shfl.private.federated_operation.federate_list(distributed_data,
+                                                                    distributed_labels)
+    federated_data.configure_data_access(UnprotectedAccess())
+
+    for i, node in enumerate(federated_data):
+        np.testing.assert_array_equal(node.query().data,
+                                      distributed_data[i])
+        np.testing.assert_array_equal(node.query().label,
+                                      distributed_labels[i])
+
+
+def test_federate_list_no_labels():
+    distributed_data = [np.random.rand(50).reshape([10, -1])
+                        for _ in range(5)],
+
+    federated_data = shfl.private.federated_operation.federate_list(distributed_data)
+    federated_data.configure_data_access(UnprotectedAccess())
+
+    for i, node in enumerate(federated_data):
+        np.testing.assert_array_equal(node.query().data,
+                                      distributed_data[i])
+        assert node.query().label is None

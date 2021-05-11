@@ -7,36 +7,43 @@ from shfl.data_distribution.data_distribution import DataDistribution
 class ExplicitDataDistribution(DataDistribution):
     """Distributes the data using the clients' identifier.
 
-    Implements class [Data Distribution](../data_distribution/#datadistribution-class).
+    Implements the class
+    [DataDistribution](../data_distribution/#datadistribution-class).
 
-    It is assumed that the data is organised in 2-tuples where
-    the first dimension is the identifier and the second one
-    correspond with the data.
+    It is assumed that the data is a Pandas dataframe where each item
+    contains one data sample in 2-tuples format as
+    `(node_identifier, node_data)`. That is, the first
+    tuple's item is the identifier and the second one
+    correspond with the data. The data will be grouped by identifier and
+    appended to each node's private data.
     """
 
     def make_data_federated(self, data, labels, **kwargs):
-        """
-        Method that makes data and labels argument federated using the first column as the node.
+        """Creates the data partition for each client.
+
+        The first column of the data input must contain the node's identifier.
 
         # Arguments:
-            data: Data to federate. The first dimension of the tuple as identifier
-            labels: Labels to federate
+            data: The data to federate. It is a Dataframe containing tuples where
+                the first element must contain the node's identifier and the
+                second the data.
+            labels: The target labels associated to each entry in data.
 
         # Returns:
-              * **federated_data, federated_labels**
+            federated_data: List containing the data for each client.
+            federated_label: List containing the target labels for each client.
         """
-        # Shuffle data
         data, labels = shuffle_rows(data, labels)
 
         nodes = np.unique(data[:, 0])
         idx = dict()
-        for i, id in enumerate(nodes):
-            idx[id] = i
+        for i, node_identifier in enumerate(nodes):
+            idx[node_identifier] = i
 
         federated_data = [[] for i in range(len(nodes))]
         federated_label = [[] for i in range(len(nodes))]
-        for (k, d), l in zip(data, labels):
-            federated_data[idx[k]].append(d)
-            federated_label[idx[k]].append(l)
+        for (node_identifier, data_chunk), label in zip(data, labels):
+            federated_data[idx[node_identifier]].append(data_chunk)
+            federated_label[idx[node_identifier]].append(label)
 
         return federated_data, federated_label

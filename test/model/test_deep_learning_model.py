@@ -1,13 +1,12 @@
 import numpy as np
 from unittest.mock import Mock
 import pytest
-import tensorflow as tf
 
 from shfl.model.deep_learning_model import DeepLearningModel
 
 
-class TestDeepLearningModel(DeepLearningModel):
-    def train(self, data, labels):
+class DeepLearningModelTest(DeepLearningModel):
+    def train(self, data, labels, **kwargs):
         pass
 
     def predict(self, data):
@@ -37,9 +36,12 @@ def test_deep_learning_model_private_data():
 
     batch = 32
     epoch = 2
-    dpl = TestDeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
+    dpl = DeepLearningModelTest(model, criterion, optimizer,
+                                batch, epoch, metrics)
 
-    dpl._model.compile.assert_called_once_with(optimizer=dpl._optimizer, loss=dpl._loss, metrics=dpl._metrics)
+    dpl._model.compile.assert_called_once_with(optimizer=dpl._optimizer,
+                                               loss=dpl._loss,
+                                               metrics=dpl._metrics)
 
     assert dpl._model.id == model.id
     assert dpl._batch_size == batch
@@ -70,18 +72,18 @@ def test_train_wrong_data():
     kdpl = DeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
 
     num_data = 30
-    data = np.array([np.random.rand(16, 16) for i in range(num_data)])
-    label = np.array([np.zeros(10) for i in range(num_data)])
-    for l in label:
-        l[np.random.randint(0, len(l))] = 1
+    data = np.array([np.random.rand(16, 16) for _ in range(num_data)])
+    label = np.array([np.zeros(10) for _ in range(num_data)])
+    for label_value in label:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     with pytest.raises(AssertionError):
         kdpl.train(data, label)
 
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
-    label = np.array([np.zeros(8) for i in range(num_data)])
-    for l in label:
-        l[np.random.randint(0, len(l))] = 1
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
+    label = np.array([np.zeros(8) for _ in range(num_data)])
+    for label_value in label:
+        label_value[np.random.randint(0, len(label_value))] = 1
     with pytest.raises(AssertionError):
         kdpl.train(data, label)
 
@@ -106,10 +108,10 @@ def test_keras_model_train():
     kdpm = DeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
 
     num_data = 30
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
-    labels = np.array([np.zeros(10) for i in range(num_data)])
-    for l in labels:
-        l[np.random.randint(0, len(l))] = 1
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
+    labels = np.array([np.zeros(10) for _ in range(num_data)])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     kdpm.train(data, labels)
 
@@ -142,10 +144,10 @@ def test_evaluate():
     kdpm = DeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
 
     num_data = 30
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
-    labels = np.array([np.zeros(10) for i in range(num_data)])
-    for l in labels:
-        l[np.random.randint(0, len(l))] = 1
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
+    labels = np.array([np.zeros(10) for _ in range(num_data)])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     kdpm.evaluate(data, labels)
 
@@ -172,7 +174,7 @@ def test_predict():
     kdpm = DeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
 
     num_data = 30
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
 
     kdpm.predict(data)
 
@@ -199,7 +201,7 @@ def test_wrong_predict():
     kdpm = DeepLearningModel(model, criterion, optimizer, batch, epoch, metrics)
 
     num_data = 30
-    data = np.array([np.random.rand(16, 16) for i in range(num_data)])
+    data = np.array([np.random.rand(16, 16) for _ in range(num_data)])
 
     with pytest.raises(AssertionError):
         kdpm.predict(data)
@@ -294,4 +296,3 @@ def test_performance():
     kdpm._model.evaluate.assert_called_once_with(data, labels, verbose=0)
 
     assert res == 0
-

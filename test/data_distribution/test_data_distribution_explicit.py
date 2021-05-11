@@ -1,20 +1,19 @@
 import numpy as np
-import pandas as pd
 
 from shfl.data_base.data_base import DataBase
 from shfl.data_distribution.data_distribution_explicit import ExplicitDataDistribution
 
 
-class TestDataBase(DataBase):
+class DataBaseTest(DataBase):
     def __init__(self):
-        super(TestDataBase, self).__init__()
+        super(DataBaseTest, self).__init__()
 
     def load_data(self):
         self._train_data = np.array([(0, [2, 3, 51]),
                                      (1, [1, 34, 6]),
                                      (2, [22, 33, 7]),
                                      (3, [22, 13, 65]),
-                                     (4, [1, 3, 15])])
+                                     (4, [1, 3, 15])], dtype=object)
         self._test_data = np.array([[2, 2, 1],
                                     [0, 22, 4],
                                     [3, 1, 5]])
@@ -23,14 +22,14 @@ class TestDataBase(DataBase):
 
 
 def test_make_data_federated():
-    data = TestDataBase()
+    data = DataBaseTest()
     data.load_data()
     data_distribution = ExplicitDataDistribution(data)
 
     train_data, train_label = data_distribution._database.train
 
-    federated_data, federated_label = data_distribution.make_data_federated(train_data,
-                                                                            train_label)
+    federated_data, federated_label = \
+        data_distribution.make_data_federated(train_data, train_label)
 
     all_data = np.concatenate(federated_data)
     all_label = np.concatenate(federated_label)

@@ -4,14 +4,17 @@ import abc
 class TrainableModel(abc.ABC):
     """Wraps a machine learning model.
 
-    Allows an arbitrary model to interact with the federated learning framework.
-    It is useful when you want to use a custom model that is not already
+    Allows an arbitrary model to interact with the
+    federated learning framework. It is useful when
+    you want to use a custom model that is not already
     provided by the framework.
 
     # Example:
-        See example of wrapping a custom model in this
-        [notebook](https://github.com/sherpaai/Sherpa.ai-Federated-Learning-Framework/
-        blob/master/notebooks/federated_models/federated_models_custom_model.ipynb).
+        See the [notebook on wrapping a custom model
+        in the Framework](https://github.com/sherpaai/
+        Sherpa.ai-Federated-Learning-Framework/
+        blob/master/notebooks/federated_models/
+        federated_models_custom_model.ipynb).
     """
 
     @abc.abstractmethod

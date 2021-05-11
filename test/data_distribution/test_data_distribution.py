@@ -4,17 +4,17 @@ from shfl.data_base.data_base import DataBase
 from shfl.data_distribution.data_distribution import DataDistribution
 
 
-class TestDataDistribution(DataDistribution):
+class DataDistributionTest(DataDistribution):
     def __init__(self, database):
-        super(TestDataDistribution, self).__init__(database)
+        super().__init__(database)
 
-    def make_data_federated(self, data, labels, num_nodes, percent, weights):
+    def make_data_federated(self, data, labels, **kwargs):
         pass
 
 
-class TestDataBase(DataBase):
+class DataBaseTest(DataBase):
     def __init__(self):
-        super(TestDataBase, self).__init__()
+        super().__init__()
 
     def load_data(self):
         self._train_data = np.random.rand(50).reshape([10, 5])
@@ -26,9 +26,9 @@ class TestDataBase(DataBase):
 
 
 def test_data_distribution_private_data():
-    data = TestDataBase()
+    data = DataBaseTest()
     data.load_data()
 
-    dt = TestDataDistribution(data)
+    dt = DataDistributionTest(data)
 
     assert data == dt._database

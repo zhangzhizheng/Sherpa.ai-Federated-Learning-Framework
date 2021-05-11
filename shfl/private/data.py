@@ -37,14 +37,15 @@ class LabeledData:
 
 
 class DataAccessDefinition(abc.ABC):
-    """Interface defining a query to the node's private properties.
+    """Defines the access to the node's private properties.
 
     Depending on the algorithm, queries may have various purposes.
     Typically, queries access node's private properties
     such as node's private data, model, and model's parameters.
-    See usage examples in methods `configure_data_access` and
-    `configure_model_access` of the class
-    [DataNode](../data_node/#datanode-class).
+    See usage examples in methods
+    [configure_data_access](../data_node/#configure_data_access) and
+    [configure_model_access](../data_node/#configure_model_access))
+    of the class [DataNode](../data_node/#datanode-class).
     """
 
     @abc.abstractmethod
@@ -67,6 +68,9 @@ class DataAccessDefinition(abc.ABC):
 class DPDataAccessDefinition(DataAccessDefinition):
     """Interface defining a differentially private query
         to the node's private properties.
+
+    It implements the class
+    [DataAccessDefinition](./#dataaccessdefinition-class).
     """
 
     @staticmethod

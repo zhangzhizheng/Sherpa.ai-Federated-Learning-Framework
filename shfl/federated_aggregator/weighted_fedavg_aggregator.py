@@ -1,19 +1,26 @@
 import numpy as np
 from multipledispatch import dispatch
-from multipledispatch.variadic import Variadic
 
-from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
+from shfl.federated_aggregator.fedsum_aggregator import FedSumAggregator
 
 
-class WeightedFedAvgAggregator(FederatedAggregator):
+class WeightedFedAvgAggregator(FedSumAggregator):
     """Performs a weighted average of the clients' model's parameters.
 
     It implements the class
-    [FederatedAggregator](./#federatedaggregator-class).
+    [FedSumAggregator](./#fedsumaggregator-class).
 
     The weights are proportional to the amount of data in each client's node.
     In other words, a client possessing more data will have more influence on
     the collaborative (global) model.
+
+    # Arguments:
+        percentage: Optional; Proportion (normalized to 1) of the total data
+            that each client possesses. The default is None,
+            in which case it is assumed that all clients
+            possess a comparable amount of data.
+        axis: Optional; Axis or axes along which a sum is performed
+            (see [Numpy sum](https://numpy.org/doc/stable/reference/generated/numpy.sum.html)).
 
     # Example:
         In the case of three federated clients that possess, respectively,
@@ -25,32 +32,29 @@ class WeightedFedAvgAggregator(FederatedAggregator):
         """
         See base class.
         """
-        ponderated_weights = [self._ponderate_weights(i_client, i_weight)
-                              for i_client, i_weight
-                              in zip(clients_params, self._percentage)]
+        ponderated_weights = \
+            [self._ponderate_weights(client_index, params)
+             for client_index, params
+             in enumerate(clients_params)]
 
-        return self._aggregate(*ponderated_weights)
+        return super()._aggregate(*ponderated_weights)
 
-    @dispatch((np.ndarray, np.ScalarType), np.ScalarType)
-    def _ponderate_weights(self, params, weight):
+    @dispatch(int, (np.ndarray, np.ScalarType))
+    def _ponderate_weights(self, client_index, params):
         """Applies the weights to arrays."""
-        return params * weight
+        client_weight = self._percentage[client_index]
+        return params * client_weight
 
-    @dispatch(list, np.ScalarType)
-    def _ponderate_weights(self, params, weight):
+    @dispatch(int, list)
+    def _ponderate_weights(self, client_index, params):
         """Applies the weights to (nested) lists of arrays."""
-        ponderated_weights = [self._ponderate_weights(i_params, weight)
+        ponderated_weights = [self._ponderate_weights(client_index, i_params)
                               for i_params in params]
         return ponderated_weights
 
-    @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def _aggregate(self, *ponderated_weights):
-        """Sums arrays."""
-        return np.sum(np.array(ponderated_weights), axis=0)
-
-    @dispatch(Variadic[list])
-    def _aggregate(self, *ponderated_weights):
-        """Sums ponderated (nested) lists of arrays"""
-        aggregated_weights = [self._aggregate(*params)
-                              for params in zip(*ponderated_weights)]
-        return aggregated_weights
+    @dispatch(int, tuple)
+    def _ponderate_weights(self, client_index, params):
+        """Applies the weights to (nested) lists of arrays."""
+        ponderated_weights = tuple(self._ponderate_weights(client_index, i_params)
+                                   for i_params in params)
+        return ponderated_weights

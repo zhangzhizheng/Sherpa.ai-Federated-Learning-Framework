@@ -8,23 +8,26 @@ def test_aggregated_weights():
     num_layers = 5
     tams = [[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
 
-    weights = []
+    clients_params = []
     for i in range(num_clients):
-        weights.append([np.random.rand(tams[j][0], tams[j][1]) for j in range(num_layers)])
+        clients_params.append([np.random.rand(tams[j][0], tams[j][1])
+                               for j in range(num_layers)])
 
-    clients_params = np.array(weights)
+    aggregator = FedAvgAggregator()
+    aggregated_weights = aggregator.aggregate_weights(clients_params)
 
-    avgfa = FedAvgAggregator()
-    aggregated_weights = avgfa.aggregate_weights(clients_params)
-
-    own_agg = np.array([np.mean(clients_params[:, layer], axis=0) for layer in range(num_layers)])
+    own_agg = [np.zeros(shape=shape) for shape in tams]
+    for client in range(num_clients):
+        for layer in range(num_layers):
+            own_agg[layer] += clients_params[client][layer]
+    own_agg = [params / num_clients for params in own_agg]
 
     for i in range(num_layers):
         assert np.array_equal(own_agg[i], aggregated_weights[i])
-    assert aggregated_weights.shape[0] == num_layers
+    assert len(aggregated_weights) == num_layers
 
 
-def test_aggregated_weights_multidimensional_2D_array():
+def test_aggregated_weights_multidimensional_2d_array():
     num_clients = 10
     num_rows_params = 3
     num_cols_params = 9
@@ -34,8 +37,8 @@ def test_aggregated_weights_multidimensional_2D_array():
         clients_params.append(np.random.rand(num_rows_params, num_cols_params))
     clients_params = np.array(clients_params)
 
-    avgfa = FedAvgAggregator()
-    aggregated_weights = avgfa.aggregate_weights(clients_params)
+    aggregator = FedAvgAggregator()
+    aggregated_weights = aggregator.aggregate_weights(clients_params)
 
     own_agg = np.zeros((num_rows_params, num_cols_params))
     for i_client in range(num_clients):
@@ -46,7 +49,7 @@ def test_aggregated_weights_multidimensional_2D_array():
     assert aggregated_weights.shape == own_agg.shape
 
 
-def test_aggregated_weights_multidimensional_3D_array():
+def test_aggregated_weights_multidimensional_3d_array():
     num_clients = 10
     num_rows_params = 3
     num_cols_params = 9
@@ -54,11 +57,13 @@ def test_aggregated_weights_multidimensional_3D_array():
 
     clients_params = []
     for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params, num_cols_params, num_k_params))
+        clients_params.append(np.random.rand(num_rows_params,
+                                             num_cols_params,
+                                             num_k_params))
     clients_params = np.array(clients_params)
 
-    avgfa = FedAvgAggregator()
-    aggregated_weights = avgfa.aggregate_weights(clients_params)
+    aggregator = FedAvgAggregator()
+    aggregated_weights = aggregator.aggregate_weights(clients_params)
 
     own_agg = np.zeros((num_rows_params, num_cols_params, num_k_params))
     for i_client in range(num_clients):
@@ -78,8 +83,8 @@ def test_aggregated_weights_list_of_arrays():
                                np.random.rand(20, 30),
                                np.random.rand(50, 40)])
 
-    avgfa = FedAvgAggregator()
-    aggregated_weights = avgfa.aggregate_weights(clients_params)
+    aggregator = FedAvgAggregator()
+    aggregated_weights = aggregator.aggregate_weights(clients_params)
 
     own_agg = [np.zeros((30, 20)),
                np.zeros((20, 30)),

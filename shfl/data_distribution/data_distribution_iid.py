@@ -7,7 +7,8 @@ from shfl.data_distribution.data_distribution_sampling import SamplingDataDistri
 class IidDataDistribution(SamplingDataDistribution):
     """Creates a set of federated nodes from a centralized database.
 
-    Implements the class [Data Distribution](../data_distribution/#datadistribution-class).
+    Implements the class
+    [SamplingDataDistribution](../data_distribution/#samplingdatadistribution-class).
 
     An independent and identically distribution is used, thus each client's
     data will have the same distribution as the centralized data.
@@ -55,7 +56,7 @@ class IidDataDistribution(SamplingDataDistribution):
 
         if sampling == "without_replacement":
             if sum(weights) > 1:
-                weights = np.array([float(i)/sum(weights) for i in weights])
+                weights = [float(i)/sum(weights) for i in weights]
 
             sum_used = 0
             percentage_used = 0

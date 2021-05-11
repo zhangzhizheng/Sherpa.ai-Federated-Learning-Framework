@@ -12,7 +12,8 @@ class SamplingDataDistribution(DataDistribution):
 
     @abc.abstractmethod
     def make_data_federated(self, data, labels, percent=100, num_nodes=1,
-                            weights=None, sampling="without_sampling"):
+                            weights=None, sampling="without_sampling",
+                            **kwargs):
         """Creates the data partition for each client.
 
         # Arguments:

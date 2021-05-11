@@ -14,7 +14,7 @@ def test_reproducibility():
     assert np.random.get_state()[1][0] == seed
 
 
-def test_reproducibiliry_singleton():
+def test_reproducibility_singleton():
     Reproducibility.get_instance().delete_instance()
 
     seed = 1234
@@ -30,7 +30,7 @@ def test_set_seed():
     seed = 1234
     Reproducibility(seed)
 
-    id = 'ID0'
-    Reproducibility.get_instance().set_seed(id)
+    node_id = 'ID0'
+    Reproducibility.get_instance().set_seed(node_id)
 
-    assert Reproducibility.get_instance().seeds[id]
+    assert Reproducibility.get_instance().seeds[node_id]

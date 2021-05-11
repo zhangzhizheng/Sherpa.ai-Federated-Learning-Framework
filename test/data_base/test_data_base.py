@@ -27,28 +27,6 @@ def data_and_labels_dataframes(data_and_labels_arrays):
     return data, labels
 
 
-class TestDataBase(DataBase):
-    def __init__(self):
-        super(TestDataBase, self).__init__()
-
-    def load_data(self):
-        self._train_data = np.random.rand(50).reshape([10, 5])
-        self._test_data = np.random.rand(50).reshape([10, 5])
-        self._train_labels = np.random.randint(10)
-        self._test_labels = np.random.randint(10)
-
-
-class TestDataBasePandas(DataBase):
-    def __init__(self):
-        super(TestDataBasePandas, self).__init__()
-
-    def load_data(self):
-        self._train_data = pd.DataFrame(np.random.rand(50).reshape([10, 5]))
-        self._test_data = pd.DataFrame(np.random.rand(50).reshape([10, 5]))
-        self._train_labels = pd.Series(np.random.randint(10))
-        self._test_labels = pd.Series(np.random.randint(10))
-
-
 @pytest.mark.parametrize("data_labels",
                          ["data_and_labels_arrays",
                           "data_and_labels_dataframes"])

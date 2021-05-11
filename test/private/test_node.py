@@ -28,8 +28,7 @@ def test_query_private_data():
     data_node.set_private_data("random_array", random_array)
     data_node.configure_data_access("random_array", UnprotectedAccess())
     data = data_node.query("random_array")
-    for i in range(len(random_array)):
-        assert data[i] == random_array[i]
+    np.testing.assert_array_equal(data, random_array)
 
 
 def test_query_model_params():
@@ -144,9 +143,9 @@ def test_local_evaluate():
 
     data_node.self_private_test_data = 1
 
-    eval = data_node.local_evaluate(data_key)
+    evaluation = data_node.local_evaluate(data_key)
 
-    assert eval == 0
+    assert evaluation == 0
     data_node._private_test_data.get.assert_called_once_with(data_key)
     data_node._model.evaluate.assert_called_once_with(data.data, data.label)
 
@@ -155,9 +154,9 @@ def test_local_evaluate_wrong():
     data_node = DataNode()
     data_node.self_private_test_data = 0
 
-    eval = data_node.local_evaluate('id')
+    evaluation = data_node.local_evaluate('id')
 
-    assert eval is None
+    assert evaluation is None
 
 
 def test_performance():

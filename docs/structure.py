@@ -168,8 +168,8 @@ PAGES = [
         'page': 'federated_aggregator.md',
         'classes': [
             (federated_aggregator.federated_aggregator.FederatedAggregator, ["aggregate_weights"]),
-            federated_aggregator.fedsum_aggregator.FedSumAggregator,
             federated_aggregator.fedavg_aggregator.FedAvgAggregator,
+            federated_aggregator.fedsum_aggregator.FedSumAggregator,
             federated_aggregator.weighted_fedavg_aggregator.WeightedFedAvgAggregator,
             (federated_aggregator.iowa_federated_aggregator.IowaFederatedAggregator, ['set_ponderation', 'q_function',
                                                                                       'get_ponderation_weights']),
@@ -188,11 +188,9 @@ PAGES = [
                                                                                           'model_builder']),
             federated_government.federated_images_classifier.Reshape,
             federated_government.federated_images_classifier.ImagesDataBases,
-            (federated_government.federated_linear_regression.FederatedLinearRegression, ['run_rounds',
-                                                                                          'model_builder']),
+            (federated_government.federated_linear_regression.FederatedLinearRegression, ['run_rounds']),
             federated_government.federated_linear_regression.LinearRegressionDataBases,
-            (federated_government.federated_clustering.FederatedClustering, ['run_rounds',
-                                                                             'model_builder']),
+            (federated_government.federated_clustering.FederatedClustering, ['run_rounds']),
             federated_government.federated_clustering.ClusteringDataBases,
             (federated_government.iowa_federated_government.IowaFederatedGovernment, ['performance_clients'])
         ]
@@ -200,7 +198,7 @@ PAGES = [
     {
         'page': 'differential_privacy/mechanisms.md',
         'classes': [
-            differential_privacy.dp_mechanism.RandomizedResponseCoins,
+            (differential_privacy.dp_mechanism.RandomizedResponseCoins, ["apply"]),
             differential_privacy.dp_mechanism.RandomizedResponseBinary,
             differential_privacy.dp_mechanism.LaplaceMechanism,
             differential_privacy.dp_mechanism.GaussianMechanism,
@@ -210,10 +208,7 @@ PAGES = [
     {
         'page': 'differential_privacy/sensitivity_sampler.md',
         'classes': [
-            differential_privacy.sensitivity_sampler.SensitivitySampler
-        ],
-        'methods': [
-            differential_privacy.sensitivity_sampler.SensitivitySampler.sample_sensitivity
+            (differential_privacy.sensitivity_sampler.SensitivitySampler, ["sample_sensitivity"]),
         ],
     },
     {

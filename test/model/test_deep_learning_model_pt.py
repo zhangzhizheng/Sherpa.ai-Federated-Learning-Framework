@@ -5,8 +5,8 @@ import pytest
 from shfl.model.deep_learning_model_pt import DeepLearningModelPyTorch
 
 
-class TestDeepLearningModel(DeepLearningModelPyTorch):
-    def train(self, data, labels):
+class DeepLearningModelTest(DeepLearningModelPyTorch):
+    def train(self, data, labels, **kwargs):
         pass
 
     def predict(self, data):
@@ -28,7 +28,7 @@ def test_deep_learning_model_private_data():
     epoch = 2
     metrics = [0, 1, 2, 3]
     device = 'device0'
-    dpl = TestDeepLearningModel(model, criterion, optimizer, batch, epoch, metrics, device)
+    dpl = DeepLearningModelTest(model, criterion, optimizer, batch, epoch, metrics, device)
 
     assert dpl._model.id == model.id
     assert dpl._data_shape == 1
@@ -43,9 +43,8 @@ def test_deep_learning_model_private_data():
 
 @patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
 @patch('shfl.model.deep_learning_model_pt.torch')
-@patch('shfl.model.deep_learning_model_pt.TensorDataset')
 @patch('shfl.model.deep_learning_model_pt.DataLoader')
-def test_pytorch_model_train(mock_dl, mock_tdt, mock_torch, mock_get_params):
+def test_pytorch_model_train(mock_dl, mock_torch, mock_get_params):
     criterion = Mock()
     optimizer = Mock()
 
@@ -62,11 +61,11 @@ def test_pytorch_model_train(mock_dl, mock_tdt, mock_torch, mock_get_params):
     kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
 
     num_data = 5
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
     data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-    labels = np.array([np.zeros(10) for i in range(num_data)])
-    for l in labels:
-        l[np.random.randint(0, len(l))] = 1
+    labels = np.array([np.zeros(10) for _ in range(num_data)])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     element = []
     for el, la in zip(data, labels):
@@ -95,10 +94,8 @@ def test_pytorch_model_train(mock_dl, mock_tdt, mock_torch, mock_get_params):
 
 
 @patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-@patch('shfl.model.deep_learning_model_pt.torch')
-@patch('shfl.model.deep_learning_model_pt.TensorDataset')
 @patch('shfl.model.deep_learning_model_pt.DataLoader')
-def test_predict(mock_dl, mock_tdt, mock_torch, mock_get_params):
+def test_predict(mock_dl, mock_get_params):
     criterion = Mock()
     optimizer = Mock()
 
@@ -116,7 +113,7 @@ def test_predict(mock_dl, mock_tdt, mock_torch, mock_get_params):
     kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
 
     num_data = 5
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
     data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
 
     element = []
@@ -176,11 +173,11 @@ def test_evaluate(mock_torch, mock_get_params, mock_predict):
     device = 'cpu'
     kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
 
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
     data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-    labels = np.array([np.zeros(10) for i in range(num_data)])
-    for l in labels:
-        l[np.random.randint(0, len(l))] = 1
+    labels = np.array([np.zeros(10) for _ in range(num_data)])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     res_metrics = kdpm.evaluate(data, labels)
 
@@ -208,11 +205,11 @@ def test_performance(mock_get_params, mock_evaluate):
     device = 'cpu'
     kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
 
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
     data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-    labels = np.array([np.zeros(10) for i in range(num_data)])
-    for l in labels:
-        l[np.random.randint(0, len(l))] = 1
+    labels = np.array([np.zeros(10) for _ in range(num_data)])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     res = kdpm.performance(data, labels)
 
@@ -225,7 +222,7 @@ def test_get_model_params():
     optimizer = Mock()
 
     model = Mock()
-    params = [np.random.rand(5, 1, 2) for i in range(5)]
+    params = [np.random.rand(5, 1, 2) for _ in range(5)]
     params.append(np.random.rand(10))
     weights = []
     for elem in params:
@@ -243,7 +240,7 @@ def test_get_model_params():
     parm = kdpm.get_model_params()
 
     # two calls in constructor and one call in get_model_params method
-    kdpm._model.parameters.assert_has_calls([call() for i in range(3)])
+    kdpm._model.parameters.assert_has_calls([call() for _ in range(3)])
     for one, two in zip(params, parm):
         assert np.array_equal(one, two)
 
@@ -300,7 +297,7 @@ def test_wrong_data(mock_get_params):
     kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
 
     num_data = 5
-    data = np.array([np.random.rand(24, 24) for i in range(num_data)])
+    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
 
     with pytest.raises(AssertionError):
         kdpm._check_data(data)
@@ -323,9 +320,9 @@ def test_wrong_labels(mock_get_params):
     kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
 
     num_data = 5
-    labels = np.array([np.zeros(9) for i in range(num_data)])
-    for l in labels:
-        l[np.random.randint(0, len(l))] = 1
+    labels = np.array([np.zeros(9) for _ in range(num_data)])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
 
     with pytest.raises(AssertionError):
         kdpm._check_labels(labels)

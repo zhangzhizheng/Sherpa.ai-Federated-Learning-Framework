@@ -26,17 +26,17 @@ class VerticalFederatedGovernment:
 
         self._server = server_node
 
-    def run_rounds(self, n, test_data, test_label, eval_freq=1000):
+    def run_rounds(self, n_rounds, test_data, test_label, eval_freq=1000):
         """
         Run federated learning rounds beginning in the actual state.
 
         # Arguments:
-            n: Number of federated learning rounds
+            n_rounds: Number of federated learning rounds
             test_data: Global test data for evaluation between rounds
             test_label: Global test labels for evaluation between rounds
             eval_freq: Frequency for evaluation and print on global test data
         """
-        for i in range(0, n):
+        for i in range(0, n_rounds):
 
             self._federated_data.train_model()
             clients_meta_params = self._server.aggregate_weights()
@@ -49,4 +49,3 @@ class VerticalFederatedGovernment:
                 self._server.evaluate_collaborative_model()
                 self._server.evaluate_collaborative_model(test_data, test_label)
                 print("\n")
-
