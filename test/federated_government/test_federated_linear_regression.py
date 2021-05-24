@@ -1,43 +1,33 @@
-from shfl.federated_government.federated_linear_regression import FederatedLinearRegression
-from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
-from shfl.model.linear_regression_model import LinearRegressionModel
-from unittest.mock import Mock
+from unittest.mock import patch
 import pytest
 
-
-def test_federated_linear_regression():
-    database = 'CALIFORNIA'
-    federated_linear_regression = FederatedLinearRegression(database, num_nodes=3, percent=20)
-
-    assert federated_linear_regression._test_data is not None
-    assert federated_linear_regression._test_labels is not None
-    assert isinstance(federated_linear_regression._server._aggregator, FedAvgAggregator)
-    assert isinstance(federated_linear_regression._server._model, LinearRegressionModel)
-    assert federated_linear_regression._federated_data is not None
+from shfl.federated_government.federated_linear_regression import FederatedLinearRegression
 
 
-def test_federated_linear_regression_wrong_database():
-    database = 'MNIST'
+@patch("shfl.federated_government.FederatedGovernment.__init__")
+def test_initialization(fed_gov_init):
+    """Checks that the federated linear regression is correctly initialized."""
+    database = "CALIFORNIA"
+    federated_government = FederatedLinearRegression(database, num_nodes=3, percent=5)
+    fed_gov_init.assert_called_once()
+    assert hasattr(federated_government, "_test_data")
+    assert hasattr(federated_government, "_test_labels")
+
+
+def test_initialization_wrong_database():
+    """Checks that an error is raised when a wrong database is requested."""
+    wrong_database = "MNIST"
+
     with pytest.raises(ValueError):
-        FederatedLinearRegression(database, num_nodes=3, percent=20)
+        FederatedLinearRegression(wrong_database)
 
 
-def test_run_rounds():
+@patch("shfl.federated_government.FederatedGovernment.run_rounds")
+def test_run_rounds(fed_gov_run_rounds):
+    """Checks that the federated round is called correctly."""
     database = 'CALIFORNIA'
-    federated_linear_regression = FederatedLinearRegression(database, num_nodes=3, percent=20)
-
-    federated_linear_regression._server.deploy_collaborative_model = Mock()
-    federated_linear_regression._federated_data.train_model = Mock()
-    federated_linear_regression.evaluate_clients = Mock()
-    federated_linear_regression._server.aggregate_weights = Mock()
-    federated_linear_regression._server.evaluate_collaborative_model = Mock()
-
-    federated_linear_regression.run_rounds(1, )
-
-    federated_linear_regression._server.deploy_collaborative_model.assert_called_once()
-    federated_linear_regression._federated_data.train_model.assert_called_once()
-    federated_linear_regression.evaluate_clients.assert_called_once_with(
-        federated_linear_regression._test_data, federated_linear_regression._test_labels)
-    federated_linear_regression._server.aggregate_weights.assert_called_once()
-    federated_linear_regression._server.evaluate_collaborative_model.assert_called_once_with(
-        federated_linear_regression._test_data, federated_linear_regression._test_labels)
+    federated_government = FederatedLinearRegression(database,
+                                                     num_nodes=3,
+                                                     percent=20)
+    federated_government.run_rounds(1)
+    fed_gov_run_rounds.assert_called_once()

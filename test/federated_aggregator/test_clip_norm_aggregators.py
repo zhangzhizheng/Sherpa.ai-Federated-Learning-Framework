@@ -4,330 +4,223 @@ from shfl.federated_aggregator import NormClipAggregator
 from shfl.federated_aggregator import WeakDPAggregator
 
 
-def test_aggregated_weights_norm_clip():
-    num_clients = 10
-    num_layers = 5
-    tams = [[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
+class NormClipAggregatorTest(NormClipAggregator):
+    """Creates test class for the clipped norm aggregator."""
+    def serialize(self, data):
+        """Calls the protected member of the parent class."""
+        return self._serialize(data)
 
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append([np.random.rand(tams[j][0], tams[j][1])
-                               for j in range(num_layers)])
-
-    aggregator = NormClipAggregator(clip=100)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    own_agg = [np.zeros(shape=shape) for shape in tams]
-    for client in range(num_clients):
-        for layer in range(num_layers):
-            own_agg[layer] += clients_params[client][layer]
-    own_agg = [params / num_clients for params in own_agg]
-
-    for i in range(num_layers):
-        assert np.array_equal(own_agg[i], aggregated_weights[i])
-    assert len(aggregated_weights) == num_layers
+    def deserialize(self, data):
+        """Calls the protected member of the parent class."""
+        return self._deserialize(data)
 
 
-def test_aggregated_weights_weak_dp():
-    num_clients = 10
-    num_layers = 5
-    tams = [[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
-    clip = 100
-
-    np.random.seed(0)
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append([np.random.rand(tams[j][0], tams[j][1])
-                               for j in range(num_layers)])
-
-    np.random.seed(0)
-    aggregator = WeakDPAggregator(clip=clip)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    np.random.seed(0)
-    serialized_params = [aggregator._serialize(v) for v in clients_params]
-    for i, v in enumerate(serialized_params):
-        serialized_params[i] = v
-    clients_params = [aggregator._deserialize(v) for v in serialized_params]
-
-    own_agg = [np.zeros(shape=shape) for shape in tams]
-    for client in range(num_clients):
-        for layer in range(num_layers):
-            own_agg[layer] += clients_params[client][layer]
-    own_agg = [params / num_clients for params in own_agg]
-
-    for i, v in enumerate(own_agg):
-        noise = np.random.normal(loc=0.0,
-                                 scale=0.025*clip/num_clients,
-                                 size=own_agg[i].shape)
-        own_agg[i] = v + noise
-
-    for i in range(num_layers):
-        assert np.array_equal(own_agg[i], aggregated_weights[i])
-    assert len(aggregated_weights) == num_layers
-
-
-def test_aggregated_weights_multidimensional_2d_array_norm_clip():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
-
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params, num_cols_params))
-    clients_params = np.array(clients_params)
-
-    aggregator = NormClipAggregator(clip=10)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    own_agg = np.zeros((num_rows_params, num_cols_params))
-    for i_client in range(num_clients):
-        own_agg += clients_params[i_client]
-    own_agg = own_agg / num_clients
-
-    assert np.array_equal(own_agg, aggregated_weights)
-    assert aggregated_weights.shape == own_agg.shape
-
-
-def test_aggregated_weights_multidimensional_2d_array_weak_dp():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
-    clip = 100
-
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params, num_cols_params))
-    clients_params = np.array(clients_params)
-
-    np.random.seed(0)
-    aggregator = WeakDPAggregator(clip=clip)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    np.random.seed(0)
-    own_agg = np.zeros((num_rows_params, num_cols_params))
-    for v in clients_params:
-        own_agg += v
-    own_agg = own_agg / num_clients
-    noise = np.random.normal(loc=0.0,
-                             scale=0.025*clip/num_clients,
-                             size=own_agg.shape)
-    own_agg += noise
-
-    assert np.array_equal(own_agg, aggregated_weights)
-    assert len(aggregated_weights) == own_agg.shape[0]
-
-
-def test_aggregated_weights_multidimensional_3d_array_norm_clip():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
-    num_k_params = 5
-
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params,
-                                             num_cols_params,
-                                             num_k_params))
-    clients_params = np.array(clients_params)
-
-    aggregator = NormClipAggregator(clip=10)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    own_agg = np.zeros((num_rows_params, num_cols_params, num_k_params))
-    for i_client in range(num_clients):
-        own_agg += clients_params[i_client]
-    own_agg = own_agg / num_clients
-
-    assert np.array_equal(own_agg, aggregated_weights)
-    assert aggregated_weights.shape == own_agg.shape
-
-
-def test_aggregated_weights_multidimensional_3d_array_weak_dp():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
-    num_k_params = 5
-    clip = 10
-
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params,
-                                             num_cols_params,
-                                             num_k_params))
-    clients_params = np.array(clients_params)
-
-    np.random.seed(0)
-    aggregator = WeakDPAggregator(clip=clip)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    np.random.seed(0)
-    own_agg = np.zeros((num_rows_params, num_cols_params, num_k_params))
-    for v in clients_params:
-        own_agg += v
-    own_agg = own_agg / num_clients
-    noise = np.random.normal(loc=0.0,
-                             scale=0.025*clip/num_clients,
-                             size=own_agg.shape)
-    own_agg += noise
-
-    assert np.array_equal(own_agg, aggregated_weights)
-    assert len(aggregated_weights) == own_agg.shape[0]
-
-
-def test_aggregated_weights_list_of_arrays_norm_clip():
-    num_clients = 10
-
-    clients_params = []
-    for i_client in range(num_clients):
-        clients_params.append([np.random.rand(30, 20),
-                               np.random.rand(20, 30),
-                               np.random.rand(50, 40)])
+def test_norm_clip_aggregator_list_of_arrays(params_definition, helpers):
+    """Checks that the clipped norm aggregator correctly aggregates
+    clients' parameters in a list of arrays with different sizes."""
+    _, _, _, \
+        num_layers, layers_shapes, clients_params = params_definition
 
     aggregator = NormClipAggregator(clip=100)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator.aggregate_weights(clients_params)
 
-    own_agg = [np.zeros((30, 20)),
-               np.zeros((20, 30)),
-               np.zeros((50, 40))]
-    for i_client in range(num_clients):
-        for i_params in range(len(clients_params[0])):
-            own_agg[i_params] += clients_params[i_client][i_params]
-    for i_params in range(len(clients_params[0])):
-        own_agg[i_params] = own_agg[i_params] / num_clients
+    true_aggregation = helpers.average_list_of_arrays(clients_params, layers_shapes)
 
-    for i_params in range(len(clients_params[0])):
-        assert np.array_equal(own_agg[i_params], aggregated_weights[i_params])
-        assert aggregated_weights[i_params].shape == own_agg[i_params].shape
+    for i in range(num_layers):
+        assert np.array_equal(true_aggregation[i], aggregated_params[i])
+    assert len(aggregated_params) == num_layers
 
 
-def test_aggregated_weights_list_of_arrays_weak_dp():
-    num_clients = 10
+def test_weak_dp_aggregator_list_of_arrays(params_definition, helpers):
+    """Checks that the weak differential privacy aggregator correctly
+    aggregates clients' parameters for lists of arrays."""
+    num_clients, _, _, num_layers, layers_shapes, clients_params = params_definition
     seed = 1231231
     clip = 100
 
-    clients_params = []
-    for i_client in range(num_clients):
-        clients_params.append([np.random.rand(30, 20),
-                               np.random.rand(20, 30),
-                               np.random.rand(50, 40)])
     np.random.seed(seed)
     aggregator = WeakDPAggregator(clip=clip)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator.aggregate_weights(clients_params)
 
+    true_aggregation = helpers.sum_list_of_arrays(clients_params, layers_shapes)
     np.random.seed(seed)
-    own_agg = [np.zeros((30, 20)),
-               np.zeros((20, 30)),
-               np.zeros((50, 40))]
-    for i_client in range(num_clients):
-        for i_params in range(len(clients_params[0])):
-            own_agg[i_params] += clients_params[i_client][i_params] 
-    for i_params in range(len(clients_params[0])):
+    for i_params in range(num_layers):
         noise = np.random.normal(loc=0.0,
                                  scale=0.025*clip/num_clients,
-                                 size=own_agg[i_params].shape)
-        own_agg[i_params] = own_agg[i_params] / num_clients + noise
+                                 size=true_aggregation[i_params].shape)
+        true_aggregation[i_params] = true_aggregation[i_params] / num_clients + noise
 
-    for i_params in range(len(clients_params[0])):
-        assert np.allclose(own_agg[i_params], aggregated_weights[i_params])
-        assert aggregated_weights[i_params].shape == own_agg[i_params].shape
+    for i_params in range(num_layers):
+        assert np.allclose(true_aggregation[i_params], aggregated_params[i_params])
+        assert aggregated_params[i_params].shape == true_aggregation[i_params].shape
 
 
-def test_serialization_deserialization_multidimensional_3d_array():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
-    num_k_params = 5
+def test_norm_clip_aggregator_multidimensional_2d(params_definition, helpers):
+    """Checks that the clipped norm aggregator correctly aggregates
+    clients' parameters for 2D arrays."""
+    num_clients, num_rows, num_cols, \
+        _, _, _ = params_definition
+    clip = 100
 
     clients_params = []
-    for i in range(num_clients):
-        clients_params.append(
-            np.random.rand(num_rows_params, num_cols_params, num_k_params))
+    for _ in range(num_clients):
+        clients_params.append(np.random.rand(num_rows, num_cols))
 
-    aggregator = NormClipAggregator(clip=100)
+    aggregator = NormClipAggregator(clip=clip)
+    aggregated_params = aggregator.aggregate_weights(clients_params)
 
-    serialized_params = np.array([aggregator._serialize(client)
+    true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols))
+
+    assert np.array_equal(true_aggregation, aggregated_params)
+    assert aggregated_params.shape == true_aggregation.shape
+
+
+def test_weak_dp_aggregator_multidimensional_2d(params_definition, helpers):
+    """Checks that the weak differential privacy aggregator correctly
+    aggregates clients' parameters for 2D arrays."""
+    num_clients, num_rows, num_cols, \
+        _, _ , _= params_definition
+    clip = 100
+
+    clients_params = []
+    for _ in range(num_clients):
+        clients_params.append(np.random.rand(num_rows, num_cols))
+
+    np.random.seed(0)
+    aggregator = WeakDPAggregator(clip=clip)
+    aggregated_params = aggregator.aggregate_weights(clients_params)
+
+    true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols))
+
+    np.random.seed(0)
+    noise = np.random.normal(loc=0.0,
+                             scale=0.025*clip/num_clients,
+                             size=true_aggregation.shape)
+    true_aggregation += noise
+
+    assert np.array_equal(true_aggregation, aggregated_params)
+    assert len(aggregated_params) == true_aggregation.shape[0]
+
+
+def test_norm_clip_aggregator_multidimensional_3d(params_definition, helpers):
+    """Checks that the clipped norm aggregator correctly aggregates
+    clients' parameters for 3D arrays."""
+    num_clients, num_rows, num_cols, \
+        _, _, _ = params_definition
+    num_k = 5
+    clip = 1000
+
+    clients_params = []
+    for _ in range(num_clients):
+        clients_params.append(np.random.rand(num_rows,
+                                             num_cols,
+                                             num_k))
+
+    aggregator = NormClipAggregator(clip=clip)
+    aggregated_params = aggregator.aggregate_weights(clients_params)
+
+    true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols, num_k))
+
+    assert np.array_equal(true_aggregation, aggregated_params)
+    assert aggregated_params.shape == true_aggregation.shape
+
+
+def test_weak_dp_aggregator_multidimensional_3d(params_definition, helpers):
+    """Checks that the weak differential privacy aggregator correctly
+    aggregates clients' parameters for 3D arrays."""
+    num_clients, num_rows, num_cols, \
+        _, _, _ = params_definition
+    num_k = 5
+    clip = 1000
+
+    clients_params = []
+    for _ in range(num_clients):
+        clients_params.append(np.random.rand(num_rows, num_cols, num_k))
+
+    np.random.seed(0)
+    aggregator = WeakDPAggregator(clip=clip)
+    aggregated_params = aggregator.aggregate_weights(clients_params)
+
+    true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols, num_k))
+
+    np.random.seed(0)
+    noise = np.random.normal(loc=0.0,
+                             scale=0.025*clip/num_clients,
+                             size=true_aggregation.shape)
+    true_aggregation += noise
+
+    assert np.array_equal(true_aggregation, aggregated_params)
+    assert len(aggregated_params) == true_aggregation.shape[0]
+
+
+def test_serialization_deserialization_multidimensional_3d_array(params_definition):
+    """Checks the back and forth serialization of 3d arrays."""
+    num_clients, num_rows, num_cols, \
+        _, _, _ = params_definition
+    num_k = 5
+
+    clients_params = [np.random.rand(num_rows, num_cols, num_k)
+                      for _ in range(num_clients)]
+
+    aggregator = NormClipAggregatorTest(clip=100)
+
+    serialized_params = np.array([aggregator.serialize(client)
                                   for client in clients_params])
-    deserialized_params = np.array([aggregator._deserialize(client)
+    deserialized_params = np.array([aggregator.deserialize(client)
                                     for client in serialized_params])
-    
+
     assert np.array_equal(deserialized_params, clients_params)
 
 
-def test_serialization_deserialization_multidimensional_2d_array():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
+def test_serialization_deserialization_multidimensional_2d_array(params_definition):
+    """Checks the back and forth serialization of 2d arrays."""
+    num_clients, num_rows, num_cols, \
+        _, _, _ = params_definition
 
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params, num_cols_params))
+    clients_params = [np.random.rand(num_rows, num_cols)
+                      for _ in range(num_clients)]
 
-    aggregator = NormClipAggregator(clip=100)
+    aggregator = NormClipAggregatorTest(clip=100)
 
-    serialized_params = np.array([aggregator._serialize(client)
+    serialized_params = np.array([aggregator.serialize(client)
                                   for client in clients_params])
-    deserialized_params = np.array([aggregator._deserialize(client)
+    deserialized_params = np.array([aggregator.deserialize(client)
                                     for client in serialized_params])
-    
+
     assert np.array_equal(deserialized_params, clients_params)
 
 
-def test_serialization_deserialization():
-    num_clients = 10
-    num_layers = 5
-    tams = [[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
-    
-    weights = []
-    for i in range(num_clients):
-        weights.append([np.random.rand(tams[j][0], tams[j][1])
-                        for j in range(num_layers)])
+def test_serialization_deserialization_list_of_arrays(params_definition):
+    """Checks the back and forth serialization of a list of arrays
+    having different shapes."""
+    _, _, _, _, _, clients_params = params_definition
 
-    clients_params = weights
+    aggregator = NormClipAggregatorTest(clip=100)
 
-    aggregator = NormClipAggregator(clip=100)
-
-    serialized_params = np.array([aggregator._serialize(client)
+    serialized_params = np.array([aggregator.serialize(client)
                                   for client in clients_params])
     for i, client in enumerate(serialized_params):
-        deserialized = aggregator._deserialize(client)
+        deserialized = aggregator.deserialize(client)
         for j, arr in enumerate(deserialized):
             assert np.array_equal(arr, clients_params[i][j])
 
 
-def test_serialization_deserialization_list_of_arrays():
-    num_clients = 10
+def test_serialization_deserialization_float_and_arrays(params_definition):
+    """Checks the back and forth serialization of a list of arrays
+    together with float numbers."""
+    num_clients, _, _, _, _, _ = params_definition
 
     clients_params = []
-    for i_client in range(num_clients):
-        clients_params.append([np.random.rand(30, 20),
-                               np.random.rand(20, 30),
-                               np.random.rand(50, 40)])
-
-    aggregator = NormClipAggregator(clip=100)
-
-    serialized_params = np.array([aggregator._serialize(client)
-                                  for client in clients_params])
-    for i, client in enumerate(serialized_params):
-        deserialized = aggregator._deserialize(client)
-        for j, arr in enumerate(deserialized):
-            assert np.array_equal(arr, clients_params[i][j])
-
-
-def test_serialization_deserialization_mixed_list():
-    num_clients = 10
-
-    clients_params = []
-    for i_client in range(num_clients):
+    for _ in range(num_clients):
         clients_params.append([np.random.rand(),
                                np.random.rand(20, 30),
                                np.random.rand(50, 40)])
 
-    aggregator = NormClipAggregator(clip=100)
+    aggregator = NormClipAggregatorTest(clip=100)
 
-    serialized_params = np.array([aggregator._serialize(client)
+    serialized_params = np.array([aggregator.serialize(client)
                                   for client in clients_params])
     for i, client in enumerate(serialized_params):
-        deserialized = aggregator._deserialize(client)
+        deserialized = aggregator.deserialize(client)
         for j, arr in enumerate(deserialized):
             assert np.array_equal(arr, clients_params[i][j])

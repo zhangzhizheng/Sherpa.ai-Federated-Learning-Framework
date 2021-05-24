@@ -1,11 +1,12 @@
-import numpy as np
 from unittest.mock import Mock, patch
+import numpy as np
 
 from shfl.federated_aggregator.cluster_fedavg_aggregator import ClusterFedAvgAggregator
 
 
 @patch('shfl.federated_aggregator.cluster_fedavg_aggregator.KMeans')
 def test_aggregate_weights(mock_kmeans):
+    """Checks the high level federated k-means clustering."""
     cfa = ClusterFedAvgAggregator()
 
     model_aggregator = Mock()
@@ -15,7 +16,7 @@ def test_aggregate_weights(mock_kmeans):
 
     clients_params = np.random.rand(90).reshape((10, 3, 3))
 
-    clients_params_array = np.concatenate((clients_params))
+    clients_params_array = np.concatenate(clients_params)
     n_clusters = clients_params[0].shape[0]
 
     res = cfa.aggregate_weights(clients_params)
@@ -25,4 +26,3 @@ def test_aggregate_weights(mock_kmeans):
     np.testing.assert_array_equal(clients_params_array, model_aggregator.fit.call_args[0][0])
     assert isinstance(res, np.ndarray)
     assert np.array_equal(res, centers)
-

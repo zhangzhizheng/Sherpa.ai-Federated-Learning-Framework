@@ -1,328 +1,253 @@
-import numpy as np
 from unittest.mock import Mock, patch, call
 import pytest
+import numpy as np
 
 from shfl.model.deep_learning_model_pt import DeepLearningModelPyTorch
 
 
-class DeepLearningModelTest(DeepLearningModelPyTorch):
-    def train(self, data, labels, **kwargs):
-        pass
+@pytest.fixture(name="layers_shapes")
+def fixture_layers_shapes():
+    """Returns the shapes of the layers of the test neural network model."""
+    num_data = 5
+    shapes = [(num_data, 1, 24, 64),
+              (64, 128, 64),
+              (num_data, 10)]
 
-    def predict(self, data):
-        pass
-
-    def get_model_params(self):
-        return [np.random.rand(5, 1, 32, 32), np.random.rand(10, )]
-
-    def set_model_params(self, params):
-        pass
+    return shapes
 
 
-def test_deep_learning_model_private_data():
-    criterion = Mock()
-    optimizer = Mock()
+@pytest.fixture(name="layers_weights")
+def fixture_layers_weights(layers_shapes):
+    """Returns random weights for the neural network."""
+    array_params = [np.random.rand(*shapes) for shapes in layers_shapes]
+    mock_params = []
+    for layer in array_params:
+        weights_values = Mock()
+        weights_values.cpu().data.numpy.return_value = layer
+        mock_params.append(weights_values)
+
+    return array_params, mock_params
+
+
+@pytest.fixture(name="input_dataset")
+def fixture_input_dataset(layers_shapes):
+    """Returns a random data base for training.
+
+    Both the iterable data loader and the arrays are returned."""
+    data = np.random.rand(*layers_shapes[0])
+    labels = np.zeros(shape=layers_shapes[-1])
+    for label_value in labels:
+        label_value[np.random.randint(0, len(label_value))] = 1
+
+    iterable = []
+    for data_item, label_item in zip(data, labels):
+        features = Mock()
+        features.float().to.return_value = data_item[np.newaxis]
+        target = Mock()
+        target.float().to.return_value = label_item[np.newaxis]
+
+        iterable.append([features, target])
+
+    return iterable, data, labels[np.newaxis]
+
+
+@pytest.fixture(name="wrapper_arguments")
+def fixture_wrapper_arguments(layers_weights):
+    """Returns the component necessary for wrapping a deep learning model."""
     model = Mock()
-
+    model.parameters.return_value = layers_weights[1]
+    loss = Mock()
+    optimizer = Mock()
     batch = 32
     epoch = 2
     metrics = [0, 1, 2, 3]
-    device = 'device0'
-    dpl = DeepLearningModelTest(model, criterion, optimizer, batch, epoch, metrics, device)
+    device = "cpu"
 
-    assert dpl._model.id == model.id
-    assert dpl._data_shape == 1
-    assert dpl._labels_shape == (10,)
-    assert dpl._loss.id == criterion.id
-    assert dpl._optimizer.id == optimizer.id
-    assert dpl._batch_size == batch
-    assert dpl._epochs == epoch
-    assert np.array_equal(dpl._metrics, metrics)
-    assert dpl._device == device
-
-
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-@patch('shfl.model.deep_learning_model_pt.torch')
-@patch('shfl.model.deep_learning_model_pt.DataLoader')
-def test_pytorch_model_train(mock_dl, mock_torch, mock_get_params):
-    criterion = Mock()
-    optimizer = Mock()
-
-    model = Mock()
-    model_return = [1, 2, 3, 4, 5]
-    model.return_value = model_return
-
-    mock_get_params.return_value = [np.random.rand(5, 1, 24, 24), np.random.rand(10)]
-
-    batch = 1
-    epoch = 2
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
-
-    num_data = 5
-    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
-    data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-    labels = np.array([np.zeros(10) for _ in range(num_data)])
-    for label_value in labels:
-        label_value[np.random.randint(0, len(label_value))] = 1
-
-    element = []
-    for el, la in zip(data, labels):
-        x = Mock()
-        x.float().to.return_value = el[np.newaxis]
-        y = Mock()
-        y.float().to.return_value = la[np.newaxis]
-
-        element.append([x, y])
-    mock_dl.return_value = element
-    kdpm.train(data, labels)
-
-    optimizer_calls = []
-    model_calls = []
-    criterion_calls = []
-    for i in range(epoch):
-        for elem in element:
-            inputs, y_true = elem[0].float().to(), elem[1].float().to()
-            optimizer_calls.extend([call.zero_grad(), call.step()])
-            model_calls.extend([call(inputs), call.zero_grad()])
-            criterion_calls.extend([call(model_return, mock_torch.argmax(y_true, -1)), call().backward()])
-
-    kdpm._optimizer.assert_has_calls(optimizer_calls)
-    kdpm._model.assert_has_calls(model_calls)
-    kdpm._loss.assert_has_calls(criterion_calls)
-
-
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-@patch('shfl.model.deep_learning_model_pt.DataLoader')
-def test_predict(mock_dl, mock_get_params):
-    criterion = Mock()
-    optimizer = Mock()
-
-    model = Mock()
-    model_return = Mock()
-    model_return.cpu().numpy.return_value = [1, 2, 3, 4]
-    model.return_value = model_return
-
-    mock_get_params.return_value = [np.random.rand(5, 1, 24, 24), np.random.rand(10)]
-
-    batch = 32
-    epoch = 1
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
-
-    num_data = 5
-    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
-    data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-
-    element = []
-    for el in data:
-        x = Mock()
-        x.float().to.return_value = el[np.newaxis]
-
-        element.append([x, -1])
-    mock_dl.return_value = element
-    y_pred_return = kdpm.predict(data)
-
-    model_calls = []
-    res = []
-    for elem in element:
-        inputs = elem[0].float().to()
-        model_calls.extend([call(inputs), call(inputs).cpu(), call(inputs).cpu().numpy()])
-        res.extend(model_return.cpu().numpy.return_value)
-
-    kdpm._model.assert_has_calls(model_calls)
-    assert np.array_equal(res, y_pred_return)
+    return model, loss, optimizer, batch, epoch, metrics, device
 
 
 def side_effect_from_numpy(value):
-    x = Mock()
-    x.float.return_value = value
+    """Returns the side effect of pytorch function from numpy."""
+    numpy_array = Mock()
+    numpy_array.float.return_value = value
 
-    return x
+    return numpy_array
 
 
-def side_effect_argmax(value, axis):
+def side_effect_argmax(value, _):
+    """Returns the side effect of argmax function."""
     return value
 
 
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.predict')
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
+def test_initialization(wrapper_arguments):
+    """Checks that the pytorch deep learning model is correctly initialized."""
+    wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
+
+    assert hasattr(wrapped_model, "_model")
+    assert hasattr(wrapped_model, "_data_shape")
+    assert hasattr(wrapped_model, "_labels_shape")
+    assert hasattr(wrapped_model, "_loss")
+    assert hasattr(wrapped_model, "_optimizer")
+    assert hasattr(wrapped_model, "_batch_size")
+    assert hasattr(wrapped_model, "_epochs")
+    assert hasattr(wrapped_model, "_metrics")
+    assert hasattr(wrapped_model, "_device")
+
+
 @patch('shfl.model.deep_learning_model_pt.torch')
-def test_evaluate(mock_torch, mock_get_params, mock_predict):
-    num_data = 5
-    criterion = Mock()
-    optimizer = Mock()
-    criterion.return_value = np.float64(0.0)
+@patch('shfl.model.deep_learning_model_pt.DataLoader')
+def test_train(mock_data_loader, mock_torch,
+                             wrapper_arguments, input_dataset):
+    """Checks that the pytorch deep learning model trains correctly."""
+    model, loss, optimizer = wrapper_arguments[:3]
+    model.return_value = [1, 2, 3, 4, 5]
+    wrapped_model = DeepLearningModelPyTorch(model, *wrapper_arguments[1:])
+    mock_data_loader.return_value = input_dataset[0]
 
-    model = Mock()
+    wrapped_model.train(data=input_dataset[1], labels=input_dataset[2])
 
+    optimizer_calls = []
+    model_calls = []
+    loss_calls = []
+    for _ in range(2):
+        for item in input_dataset[0]:
+            optimizer_calls.extend([call.zero_grad(), call.step()])
+            model_calls.extend([call(item[0].float().to()), call.zero_grad()])
+            loss_calls.extend([call([1, 2, 3, 4, 5],
+                                    mock_torch.argmax(item[1].float().to(), -1)),
+                               call().backward()])
+
+    optimizer.assert_has_calls(optimizer_calls)
+    model.assert_has_calls(model_calls)
+    loss.assert_has_calls(loss_calls)
+
+
+@patch('shfl.model.deep_learning_model_pt.DataLoader')
+def test_predict(mock_data_loader, wrapper_arguments, input_dataset):
+    """Checks that the pytorch deep learning model predicts correctly."""
+    model = wrapper_arguments[0]
+    model_return = Mock()
+    model_return.cpu().numpy.return_value = [1, 2, 3, 4]
+    model.return_value = model_return
+    wrapped_model = DeepLearningModelPyTorch(model, *wrapper_arguments[1:])
+    mock_data_loader.return_value = input_dataset[0]
+
+    prediction = wrapped_model.predict(input_dataset[1])
+
+    model_calls = []
+    output = []
+    for elem in input_dataset[0]:
+        inputs = elem[0].float().to()
+        model_calls.extend([call(inputs),
+                            call(inputs).cpu(),
+                            call(inputs).cpu().numpy()])
+        output.extend(model_return.cpu().numpy.return_value)
+
+    model.assert_has_calls(model_calls)
+    assert np.array_equal(output, prediction)
+
+
+@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.predict')
+@patch('shfl.model.deep_learning_model_pt.torch')
+def test_evaluate(mock_torch, mock_predict,
+                  wrapper_arguments, layers_shapes, input_dataset):
+    """Checks that the pytorch deep learning model evaluates correctly."""
+    loss = wrapper_arguments[1]
+    loss.return_value = np.float64(0.0)
     mock_torch.argmax.side_effect = side_effect_argmax
     mock_torch.from_numpy.side_effect = side_effect_from_numpy
-
     predict_return = Mock()
-    predict_return.cpu().numpy.return_value = np.random.rand(5, 10)
+    predict_return.cpu().numpy.return_value = np.random.rand(*layers_shapes[-1])
     mock_predict.return_value = predict_return
+    wrapped_model = DeepLearningModelPyTorch(model=wrapper_arguments[0],
+                                             loss=loss,
+                                             optimizer=wrapper_arguments[2],
+                                             batch_size=wrapper_arguments[3],
+                                             epochs=wrapper_arguments[4],
+                                             metrics={'aux': lambda x, y: -1},
+                                             device=wrapper_arguments[6])
 
-    mock_get_params.return_value = [np.random.rand(num_data, 1, 24, 24), np.random.rand(10)]
+    output_metrics = wrapped_model.evaluate(*input_dataset[1:3])
 
-    batch = 32
-    epoch = 2
-    metrics = {'aux': lambda x, y: -1}
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
-
-    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
-    data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-    labels = np.array([np.zeros(10) for _ in range(num_data)])
-    for label_value in labels:
-        label_value[np.random.randint(0, len(label_value))] = 1
-
-    res_metrics = kdpm.evaluate(data, labels)
-
-    mock_predict.assert_called_once_with(data)
-    kdpm._loss.assert_called_once_with(mock_predict.return_value, labels)
-    assert np.array_equal([0, -1], res_metrics)
+    mock_predict.assert_called_once_with(input_dataset[1])
+    loss.assert_called_once_with(mock_predict.return_value, input_dataset[2])
+    assert np.array_equal([0, -1], output_metrics)
 
 
 @patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.evaluate')
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-def test_performance(mock_get_params, mock_evaluate):
-    num_data = 5
-    criterion = Mock()
-    optimizer = Mock()
-    model = Mock()
-    criterion.return_value = np.float64(0.0)
-
-    mock_get_params.return_value = [np.random.rand(num_data, 1, 24, 24), np.random.rand(10)]
-
+def test_performance(mock_evaluate,
+                     wrapper_arguments, input_dataset):
+    """Checks that the pytorch deep learning model calls the performance correctly."""
     mock_evaluate.return_value = [0, 1, 2, 3, 4]
+    wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
 
-    batch = 32
-    epoch = 1
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
+    output_performance = wrapped_model.performance(*input_dataset[1:3])
 
-    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
-    data = np.reshape(data, (data.shape[0], 1, data.shape[1], data.shape[2]))
-    labels = np.array([np.zeros(10) for _ in range(num_data)])
-    for label_value in labels:
-        label_value[np.random.randint(0, len(label_value))] = 1
-
-    res = kdpm.performance(data, labels)
-
-    mock_evaluate.assert_called_once_with(data, labels)
-    assert res == mock_evaluate.return_value[0]
+    mock_evaluate.assert_called_once_with(*input_dataset[1:3])
+    assert output_performance == mock_evaluate.return_value[0]
 
 
-def test_get_model_params():
-    criterion = Mock()
-    optimizer = Mock()
+def test_get_model_params(wrapper_arguments, layers_weights):
+    """Checks that the pytorch deep learning model gets the parameters correctly."""
+    model = wrapper_arguments[0]
+    wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
 
-    model = Mock()
-    params = [np.random.rand(5, 1, 2) for _ in range(5)]
-    params.append(np.random.rand(10))
-    weights = []
-    for elem in params:
-        m = Mock()
-        m.cpu().data.numpy.return_value = elem
-        weights.append(m)
-    model.parameters.return_value = weights
-
-    batch = 32
-    epoch = 1
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
-
-    parm = kdpm.get_model_params()
+    output_params = wrapped_model.get_model_params()
 
     # two calls in constructor and one call in get_model_params method
-    kdpm._model.parameters.assert_has_calls([call() for _ in range(3)])
-    for one, two in zip(params, parm):
-        assert np.array_equal(one, two)
+    model.parameters.assert_has_calls([call() for _ in range(3)])
+    for true_values, output_values in zip(layers_weights[0], output_params):
+        assert np.array_equal(true_values, output_values)
 
 
 @patch('shfl.model.deep_learning_model_pt.torch')
 @patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-def test_set_weights(mock_get_params, mock_torch):
-    num_data = 5
-    criterion = Mock()
-    optimizer = Mock()
-    criterion.return_value = np.float64(0.0)
-
-    model = Mock()
-    model_params = [9, 5, 4, 8, 5, 6]
-    m_model_params = []
-    for elem in model_params:
-        aux = Mock()
-        aux.data = elem
-        m_model_params.append(aux)
-    model.parameters.return_value = m_model_params
-
-    mock_get_params.return_value = [np.random.rand(num_data, 1, 24, 24), np.random.rand(10)]
-
+def test_set_weights(mock_get_params, mock_torch,
+                     wrapper_arguments, layers_shapes, layers_weights):
+    """Checks that the pytorch deep learning model sets the parameters correctly."""
+    model = wrapper_arguments[0]
+    mock_get_params.return_value = [np.random.rand(*layers_shapes[0]),
+                                    np.random.rand(layers_shapes[-1][-1])]
+    old_model_params = [np.random.rand(*layer.shape) for layer in layers_weights[0]]
+    mock_params = []
+    for weights_values in old_model_params:
+        layer_weights = Mock()
+        layer_weights.data = weights_values
+        mock_params.append(layer_weights)
+    model.parameters.return_value = mock_params
     mock_torch.from_numpy.side_effect = side_effect_from_numpy
+    wrapped_model = DeepLearningModelPyTorch(model, *wrapper_arguments[1:])
 
-    batch = 32
-    epoch = 1
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
+    wrapped_model.set_model_params(layers_weights[0])
 
-    set_params = [0, 1, 2, 3, 4, 5]
-    kdpm.set_model_params(set_params)
-
-    new_model_params = [x.data for x in kdpm._model.parameters()]
-
-    assert np.array_equal(new_model_params, set_params)
+    assigned_params = [layer.data for layer in model.parameters()]
+    for true_values, assigned_values in zip(layers_weights[0], assigned_params):
+        assert np.array_equal(true_values, assigned_values)
 
 
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-def test_wrong_data(mock_get_params):
-    num_data = 5
-    criterion = Mock()
-    optimizer = Mock()
-    model = Mock()
-    criterion.return_value = np.float64(0.0)
-
-    mock_get_params.return_value = [np.random.rand(num_data, 1, 24, 24), np.random.rand(10)]
-
-    batch = 32
-    epoch = 1
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
-
-    num_data = 5
-    data = np.array([np.random.rand(24, 24) for _ in range(num_data)])
+def test_wrong_data_input(wrapper_arguments, input_dataset):
+    """Checks that the pytorch deep learning model raises an error if wrong shape
+    input data is used."""
+    wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
+    _, data, labels = input_dataset
+    wrong_data_shape = np.array(data.shape)
+    wrong_data_shape[1] += 1
+    wrong_data = np.random.rand(*wrong_data_shape)
 
     with pytest.raises(AssertionError):
-        kdpm._check_data(data)
+        wrapped_model.train(wrong_data, labels)
 
 
-@patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
-def test_wrong_labels(mock_get_params):
-    num_data = 5
-    criterion = Mock()
-    optimizer = Mock()
-    model = Mock()
-    criterion.return_value = np.float64(0.0)
-
-    mock_get_params.return_value = [np.random.rand(num_data, 1, 24, 24), np.random.rand(10)]
-
-    batch = 32
-    epoch = 1
-    metrics = None
-    device = 'cpu'
-    kdpm = DeepLearningModelPyTorch(model, criterion, optimizer, batch, epoch, metrics, device)
-
-    num_data = 5
-    labels = np.array([np.zeros(9) for _ in range(num_data)])
+def test_wrong_label_input(wrapper_arguments, input_dataset):
+    """Checks that the pytorch deep learning model raises an error if wrong shape
+    input label is used."""
+    wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
+    _, data, labels = input_dataset
+    wrong_labels_shape = np.array(labels.shape)
+    wrong_labels_shape[-1] += 1
+    wrong_labels = np.zeros(shape=wrong_labels_shape)
     for label_value in labels:
         label_value[np.random.randint(0, len(label_value))] = 1
 
     with pytest.raises(AssertionError):
-        kdpm._check_labels(labels)
+        wrapped_model.train(data, wrong_labels)

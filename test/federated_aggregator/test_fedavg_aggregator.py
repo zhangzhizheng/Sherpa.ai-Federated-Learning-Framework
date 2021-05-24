@@ -3,98 +3,49 @@ import numpy as np
 from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 
 
-def test_aggregated_weights():
-    num_clients = 10
-    num_layers = 5
-    tams = [[128, 64], [64, 64], [64, 64], [64, 32], [32, 10]]
-
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append([np.random.rand(tams[j][0], tams[j][1])
-                               for j in range(num_layers)])
+def test_aggregated_weights_list_of_arrays(params_definition, helpers):
+    """Checks that the parameters are correctly aggregated for lists of arrays
+    of different sizes."""
+    _, _, _, num_layers, layers_shapes, clients_params = params_definition
 
     aggregator = FedAvgAggregator()
     aggregated_weights = aggregator.aggregate_weights(clients_params)
 
-    own_agg = [np.zeros(shape=shape) for shape in tams]
-    for client in range(num_clients):
-        for layer in range(num_layers):
-            own_agg[layer] += clients_params[client][layer]
-    own_agg = [params / num_clients for params in own_agg]
+    true_aggregation = helpers.average_list_of_arrays(clients_params, layers_shapes)
 
     for i in range(num_layers):
-        assert np.array_equal(own_agg[i], aggregated_weights[i])
+        assert np.array_equal(true_aggregation[i], aggregated_weights[i])
     assert len(aggregated_weights) == num_layers
 
 
-def test_aggregated_weights_multidimensional_2d_array():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
+def test_aggregated_weights_multidimensional_2d_array(params_definition, helpers):
+    """Checks that the parameters are correctly aggregated for 2d arrays."""
+    num_clients, num_rows, num_cols, _, _, _ = params_definition
 
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params, num_cols_params))
-    clients_params = np.array(clients_params)
+    clients_params = [np.random.rand(num_rows, num_cols)
+                      for _ in range(num_clients)]
 
     aggregator = FedAvgAggregator()
     aggregated_weights = aggregator.aggregate_weights(clients_params)
 
-    own_agg = np.zeros((num_rows_params, num_cols_params))
-    for i_client in range(num_clients):
-        own_agg += clients_params[i_client]
-    own_agg = own_agg / num_clients
+    true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols))
 
-    assert np.array_equal(own_agg, aggregated_weights)
-    assert aggregated_weights.shape == own_agg.shape
+    assert np.array_equal(true_aggregation, aggregated_weights)
+    assert aggregated_weights.shape == true_aggregation.shape
 
 
-def test_aggregated_weights_multidimensional_3d_array():
-    num_clients = 10
-    num_rows_params = 3
-    num_cols_params = 9
-    num_k_params = 5
+def test_aggregated_weights_multidimensional_3d_array(params_definition, helpers):
+    """Checks that the parameters are correctly aggregated for 3d arrays."""
+    num_clients, num_rows, num_cols, _, _, _ = params_definition
+    num_k = 7
 
-    clients_params = []
-    for i in range(num_clients):
-        clients_params.append(np.random.rand(num_rows_params,
-                                             num_cols_params,
-                                             num_k_params))
-    clients_params = np.array(clients_params)
+    clients_params = [np.random.rand(num_rows, num_cols, num_k)
+                      for _ in range(num_clients)]
 
     aggregator = FedAvgAggregator()
     aggregated_weights = aggregator.aggregate_weights(clients_params)
 
-    own_agg = np.zeros((num_rows_params, num_cols_params, num_k_params))
-    for i_client in range(num_clients):
-        own_agg += clients_params[i_client]
-    own_agg = own_agg / num_clients
+    true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols, num_k))
 
-    assert np.array_equal(own_agg, aggregated_weights)
-    assert aggregated_weights.shape == own_agg.shape
-
-
-def test_aggregated_weights_list_of_arrays():
-    num_clients = 10
-
-    clients_params = []
-    for i_client in range(num_clients):
-        clients_params.append([np.random.rand(30, 20),
-                               np.random.rand(20, 30),
-                               np.random.rand(50, 40)])
-
-    aggregator = FedAvgAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
-
-    own_agg = [np.zeros((30, 20)),
-               np.zeros((20, 30)),
-               np.zeros((50, 40))]
-    for i_client in range(num_clients):
-        for i_params in range(len(clients_params[0])):
-            own_agg[i_params] += clients_params[i_client][i_params]
-    for i_params in range(len(clients_params[0])):
-        own_agg[i_params] = own_agg[i_params] / num_clients
-
-    for i_params in range(len(clients_params[0])):
-        assert np.array_equal(own_agg[i_params], aggregated_weights[i_params])
-        assert aggregated_weights[i_params].shape == own_agg[i_params].shape
+    assert np.array_equal(true_aggregation, aggregated_weights)
+    assert aggregated_weights.shape == true_aggregation.shape

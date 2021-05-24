@@ -3,23 +3,24 @@ import pandas as pd
 import pytest
 
 import shfl.data_base.data_base
-from shfl.data_base.data_base import DataBase
 from shfl.data_base.data_base import LabeledDatabase
 from shfl.data_base.data_base import shuffle_rows
 from shfl.data_base.data_base import split_train_test
 from shfl.data_base.data_base import vertical_split
 
 
-@pytest.fixture
-def data_and_labels_arrays():
+@pytest.fixture(name="data_and_labels_arrays")
+def fixture_data_and_labels_arrays():
+    """Returns data and labels arrays containing random values."""
     data = np.random.rand(60, 12)
     labels = np.random.randint(0, 2, size=(60,))
 
     return data, labels
 
 
-@pytest.fixture
-def data_and_labels_dataframes(data_and_labels_arrays):
+@pytest.fixture(name="data_and_labels_dataframes")
+def fixture_data_and_labels_dataframes(data_and_labels_arrays):
+    """Returns data and labels dataframes containing random values."""
     data, labels = data_and_labels_arrays
     data = pd.DataFrame(data)
     labels = pd.Series(labels)
@@ -31,6 +32,10 @@ def data_and_labels_dataframes(data_and_labels_arrays):
                          ["data_and_labels_arrays",
                           "data_and_labels_dataframes"])
 def test_split_train_test(data_labels, request):
+    """ Splits the dataset into train and test sets.
+
+    The same test is run both on arrays and dataframes.
+    """
     data, labels = request.getfixturevalue(data_labels)
     train_proportion = 0.8
     train_size = round(len(data) * train_proportion)
@@ -75,6 +80,7 @@ def test_split_train_test(data_labels, request):
 
 
 def test_shuffle_rows_numpy_array(data_and_labels_arrays):
+    """Checks that the rows in an array-like object are randomly shuffled."""
     data, labels = data_and_labels_arrays
     shuffled_data, shuffled_labels = shuffle_rows(data, labels)
 
@@ -90,6 +96,7 @@ def test_shuffle_rows_numpy_array(data_and_labels_arrays):
 
 
 def test_shuffle_rows_pandas_dataframe(data_and_labels_dataframes):
+    """Checks that the rows in dataframe are randomly shuffled."""
     data, labels = data_and_labels_dataframes
     shuffled_data, shuffled_labels = shuffle_rows(data, labels)
 
@@ -105,6 +112,12 @@ def test_shuffle_rows_pandas_dataframe(data_and_labels_dataframes):
 
 
 def test_shuffle_rows_wrong_inputs(data_and_labels_arrays):
+    """Raises an exception if the data input are not in one of the allowed formats.
+
+    Input data must be either an array-like object or a dataframe.
+    If the data are an array but the labels are a dataframe (or series),
+    an exception is raised.
+    """
     data, labels = data_and_labels_arrays
     labels = pd.Series(labels)
 
@@ -116,6 +129,7 @@ def test_shuffle_rows_wrong_inputs(data_and_labels_arrays):
                          ["data_and_labels_arrays",
                           "data_and_labels_dataframes"])
 def test_labeled_database(data_labels, request):
+    """Checks the creation of a labeled database."""
     data, labels = request.getfixturevalue(data_labels)
     database = LabeledDatabase(data, labels)
     train_data, train_labels, test_data, test_labels = database.load_data()
@@ -127,17 +141,25 @@ def test_labeled_database(data_labels, request):
 
     assert len(train_data) + len(test_data) == \
            len(train_labels) + len(test_labels) == len(data)
+    # Disable false positive: both array and dataframe have "shape" member
+    # pylint: disable=maybe-no-member
     assert train_data.shape[1] == test_data.shape[1] == data.shape[1]
 
 
 @pytest.mark.parametrize("data_labels",
                          ["data_and_labels_arrays",
                           "data_and_labels_dataframes"])
-def test_vertical_split(data_labels, request):
+def test_vertical_split_default_values(data_labels, request):
+    """Checks the vertical split of a centralized database.
+
+    The default values are used. It checks that if concatenating the split
+    chunks, the original centralized dataset is recovered exactly.
+    Also checks that different number of columns are assigned to the chunks.
+    """
     data, labels = request.getfixturevalue(data_labels)
     n_samples, n_features = data.shape
-    train_percentage = 0.8
-    dim = round(len(data) * (1 - train_percentage))
+    train_proportion = 0.8
+    test_size = round(len(data) * (1 - train_proportion))
 
     # Default values:
     train_data, train_labels, test_data, test_labels = \
@@ -146,15 +168,26 @@ def test_vertical_split(data_labels, request):
     assert np.concatenate(train_data, axis=1).shape[1] == n_features
     assert np.concatenate(
         [train_data[0], test_data[0]], axis=0).shape[0] == n_samples
-    for i in range(len(train_data)):
-        assert train_data[i].shape[0] == len(train_labels) == len(data) - dim
-        assert test_data[i].shape[0] == len(test_labels) == dim
+    for i, data_chunk in enumerate(train_data):
+        assert data_chunk.shape[0] == len(train_labels) == len(data) - test_size
+        assert test_data[i].shape[0] == len(test_labels) == test_size
+
+
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_vertical_split_different_columns(data_labels, request):
+    """Checks the vertical split of a centralized database.
+
+    Checks that different number of columns are assigned to the chunks.
+    """
+    data, labels = request.getfixturevalue(data_labels)
 
     # Random split: different number of columns in different chunks
     n_runs = 5
     shapes_equal_train = []
     shapes_equal_test = []
-    for i_run in range(n_runs):
+    for _ in range(n_runs):
         train_data, _, test_data, _ = \
             vertical_split(data, labels)
         shapes_equal_train.append(train_data[0].shape == train_data[1].shape)
@@ -162,11 +195,22 @@ def test_vertical_split(data_labels, request):
     assert not np.array(shapes_equal_train).all()
     assert not np.array(shapes_equal_test).all()
 
-    # Equal size split: same number of columns in chunks
+
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_vertical_split_equal_number_columns(data_labels, request):
+    """Checks the vertical split of a centralized database.
+
+    It checks that, if requested by the user, the same number of columns
+    are assigned to each chunk.
+    """
+    data, labels = request.getfixturevalue(data_labels)
+
     n_runs = 5
     shapes_equal_train = []
     shapes_equal_test = []
-    for i_run in range(n_runs):
+    for _ in range(n_runs):
         train_data, _, test_data, _ = \
             vertical_split(
                 data, labels, indices_or_sections=3, equal_size=True)
@@ -179,24 +223,51 @@ def test_vertical_split(data_labels, request):
     assert np.array(shapes_equal_train).all()
     assert np.array(shapes_equal_test).all()
 
-    # Rise Value error if unable to split in same number of columns in chunks
+
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_vertical_split_unable_equal_number_columns(data_labels, request):
+    """Checks the vertical split of a centralized database.
+
+    It raises an error when the user request equal number of columns in each chunk,
+    but the integer division is not possible. For example, split 10 columns in
+    3 equally sized vertical chunks.
+    """
+    data, labels = request.getfixturevalue(data_labels)
+
     with pytest.raises(ValueError):
         vertical_split(data, labels, indices_or_sections=5, equal_size=True)
+
+
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_vertical_split_no_vertical_shuffle(data_labels, request):
+    """Checks the vertical split of a centralized database.
+
+    Checks that, if requested by the user, the columns and rows of the
+    original centralized dataset are not randomly shuffled before the split.
+    """
+    data, labels = request.getfixturevalue(data_labels)
+    train_proportion = 0.8
+    test_size = round(len(data) * (1 - train_proportion))
 
     # No vertical/horizontal shuffle:
     train_data, train_labels, test_data, test_labels = \
         vertical_split(data, labels, v_shuffle=False, h_shuffle=False)
     if isinstance(data, np.ndarray):
-        assert np.array_equal(np.concatenate(train_data, axis=1), data[:-dim, :])
-        assert np.array_equal(np.concatenate(test_data, axis=1), data[-dim:, :])
+        assert np.array_equal(np.concatenate(train_data, axis=1), data[:-test_size, :])
+        assert np.array_equal(np.concatenate(test_data, axis=1), data[-test_size:, :])
         assert np.array_equal(np.concatenate([train_labels, test_labels]), labels)
     elif isinstance(data, pd.DataFrame):
-        assert pd.concat(train_data, axis=1).equals(data.iloc[:-dim, :])
-        assert pd.concat(test_data, axis=1).equals(data.iloc[-dim:, :])
+        assert pd.concat(train_data, axis=1).equals(data.iloc[:-test_size, :])
+        assert pd.concat(test_data, axis=1).equals(data.iloc[-test_size:, :])
         assert pd.concat([train_labels, test_labels]).equals(labels)
 
 
 def test_vertical_split_wrong_input_type():
+    """Raises an exception if the data input are not in one of the allowed formats."""
     data = list(np.random.rand(60).reshape([10, -1]))
     labels = np.random.rand(10)
 

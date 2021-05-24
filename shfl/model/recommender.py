@@ -71,11 +71,11 @@ class Recommender(TrainableModel):
 
         predictions = self.predict(data)
         if predictions.size == 0:
-            rmse = 0
+            root_mean_square = 0
         else:
-            rmse = np.sqrt(np.mean((predictions - labels) ** 2))
+            root_mean_square = np.sqrt(np.mean((predictions - labels) ** 2))
 
-        return rmse
+        return root_mean_square
 
     @abc.abstractmethod
     def get_model_params(self):

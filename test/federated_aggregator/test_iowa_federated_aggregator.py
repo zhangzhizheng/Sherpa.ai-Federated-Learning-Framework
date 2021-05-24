@@ -1,7 +1,8 @@
-from shfl.federated_aggregator.iowa_federated_aggregator import IowaFederatedAggregator
-from unittest.mock import Mock, patch
 import pytest
+from unittest.mock import Mock, patch
 import numpy as np
+
+from shfl.federated_aggregator.iowa_federated_aggregator import IowaFederatedAggregator
 
 
 @patch('shfl.federated_aggregator.iowa_federated_aggregator.super')

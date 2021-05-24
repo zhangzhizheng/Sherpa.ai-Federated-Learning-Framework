@@ -37,26 +37,6 @@ class FederatedGovernment:
                 model,
                 aggregator)
 
-    def evaluate_clients(self, data, labels):
-        """Evaluates the clients' models using a global dataset.
-
-        # Arguments:
-            data: The global test data.
-            labels: The global target labels.
-        """
-
-        for data_node in self._federated_data:
-            evaluation, local_evaluation = \
-                data_node.evaluate(data, labels)
-
-            if local_evaluation is not None:
-                print("Performance client " + str(data_node) +
-                      ": Global test: " + str(evaluation)
-                      + ", Local test: " + str(local_evaluation))
-            else:
-                print("Test performance client " +
-                      str(data_node) + ": " + str(evaluation))
-
     def run_rounds(self, n_rounds, test_data, test_label, eval_freq=1):
         """Runs the federated learning rounds.
 
@@ -86,3 +66,19 @@ class FederatedGovernment:
                 self._server.evaluate_collaborative_model(
                     test_data, test_label)
                 print("\n")
+
+    def evaluate_clients(self, data, labels):
+        """Evaluates the clients' models using a global dataset.
+
+        # Arguments:
+            data: The global test data.
+            labels: The global target labels.
+        """
+
+        for data_node in self._federated_data:
+            evaluation, local_evaluation = \
+                data_node.evaluate(data, labels)
+
+            print("Performance client " + str(data_node) +
+                  ": Global test: " + str(evaluation)
+                  + ", Local test: " + str(local_evaluation))

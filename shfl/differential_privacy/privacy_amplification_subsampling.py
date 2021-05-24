@@ -85,24 +85,24 @@ class SampleWithoutReplacement(Sampler):
     # Arguments:
         dp_mechanism: The differential privacy mechanism to apply.
         sample_size: One dimensional size of the sample.
-        data_size: Shape of the input data.
+        data_shape: Shape of the input data.
     """
 
-    def __init__(self, dp_mechanism, sample_size, data_size):
+    def __init__(self, dp_mechanism, sample_size, data_shape):
         super().__init__(dp_mechanism)
-        check_sample_size(sample_size, data_size)
+        check_sample_size(sample_size, data_shape)
         self._dp_mechanism = dp_mechanism
-        self._data_size = data_size
+        self._data_shape = data_shape
         self._sample_size = sample_size
-        if len(self._data_size) > 1:
+        if len(self._data_shape) > 1:
             # Data with more than one dimension
             self._actual_sample_size = self._sample_size * \
-                prod(self._data_size[1:])
-            self._data_size = prod(self._data_size)
+                prod(self._data_shape[1:])
+            self._data_shape = prod(self._data_shape)
         else:
             # One dimensional data
             self._actual_sample_size = self._sample_size
-            self._data_size = self._data_size[0]
+            self._data_shape = self._data_shape[0]
 
     def sample(self, data):
         """See base class.
@@ -114,7 +114,7 @@ class SampleWithoutReplacement(Sampler):
     def epsilon_delta_reduction(self, epsilon_delta):
         """See base class.
         """
-        proportion = self._actual_sample_size / self._data_size
+        proportion = self._actual_sample_size / self._data_shape
         epsilon, delta = epsilon_delta
 
         new_epsilon = log(1 + proportion * (exp(epsilon) - 1))
@@ -128,7 +128,7 @@ def check_sample_size(sample_size, data_size):
 
     # Arguments:
         sample_size: One dimensional size of the sample.
-        data_size: Tuple, shape of the original data.
+        data_shape: Tuple, shape of the original data.
     """
     if sample_size > data_size[0]:
         raise ValueError("Sample size {} must be less than "

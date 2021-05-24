@@ -24,8 +24,6 @@ class FederatedEmnist(DataBase):
         self._type = split
 
     def load_data(self):
-        if self._type not in [e.name for e in Md5Hash]:
-            self._type = 'DIGITS'
 
         file_hash_ = Md5Hash[self._type].value
 

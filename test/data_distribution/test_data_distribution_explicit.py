@@ -5,9 +5,7 @@ from shfl.data_distribution.data_distribution_explicit import ExplicitDataDistri
 
 
 class DataBaseTest(DataBase):
-    def __init__(self):
-        super(DataBaseTest, self).__init__()
-
+    """Creates a database with train, test and validation sets of random values."""
     def load_data(self):
         self._train_data = np.array([(0, [2, 3, 51]),
                                      (1, [1, 34, 6]),
@@ -22,11 +20,11 @@ class DataBaseTest(DataBase):
 
 
 def test_make_data_federated():
-    data = DataBaseTest()
-    data.load_data()
-    data_distribution = ExplicitDataDistribution(data)
-
-    train_data, train_label = data_distribution._database.train
+    """Checks that the explicitly divided data is correctly assigned to clients."""
+    data_base = DataBaseTest()
+    data_base.load_data()
+    train_data, train_label, _, _ = data_base.data
+    data_distribution = ExplicitDataDistribution(data_base)
 
     federated_data, federated_label = \
         data_distribution.make_data_federated(train_data, train_label)
@@ -35,8 +33,8 @@ def test_make_data_federated():
     all_label = np.concatenate(federated_label)
 
     idx = []
-    for data in all_data:
-        ids = np.where((data == np.stack(train_data[:, 1])).all(axis=1))[0][0]
+    for data_base in all_data:
+        ids = np.where((data_base == np.stack(train_data[:, 1])).all(axis=1))[0][0]
         idx.append(train_data[ids, 0])
 
     assert all_data.shape[0] == train_data.shape[0]

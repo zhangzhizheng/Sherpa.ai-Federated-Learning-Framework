@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import linalg as LA
+from numpy import linalg as la
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
@@ -22,6 +22,26 @@ class NormClipAggregator(FedAvgAggregator):
         super().__init__()
         self._clip = clip
         self._data_shape_list = []
+
+    @dispatch(Variadic[np.ndarray, np.ScalarType])
+    def _aggregate(self, *params):
+        """Aggregates arrays."""
+        array_params = np.array(params)
+        for i, values in enumerate(array_params):
+            norm = la.norm(values)
+            array_params[i] = np.multiply(values, min(1, self._clip/norm))
+
+        return np.mean(array_params, axis=0)
+
+    @dispatch(Variadic[list])
+    def _aggregate(self, *params):
+        """Aggregates (nested) lists of arrays."""
+        serialized_params = np.array([self._serialize(client)
+                                      for client in params])
+        serialized_aggregation = self._aggregate(*serialized_params)
+        aggregated_weights = self._deserialize(serialized_aggregation)
+
+        return aggregated_weights
 
     def _serialize(self, data):
         """Converts a list of multidimensional arrays into a list
@@ -60,26 +80,6 @@ class NormClipAggregator(FedAvgAggregator):
             deserialized_data.append(tmp_array)
             first_index += shift
         return deserialized_data
-
-    @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def _aggregate(self, *params):
-        """Aggregates arrays."""
-        array_params = np.array(params)
-        for i, values in enumerate(array_params):
-            norm = LA.norm(values)
-            array_params[i] = np.multiply(values, min(1, self._clip/norm))
-
-        return np.mean(array_params, axis=0)
-
-    @dispatch(Variadic[list])
-    def _aggregate(self, *params):
-        """Aggregates (nested) lists of arrays."""
-        serialized_params = np.array([self._serialize(client)
-                                      for client in params])
-        serialized_aggregation = self._aggregate(*serialized_params)
-        aggregated_weights = self._deserialize(serialized_aggregation)
-
-        return aggregated_weights
 
 
 class CDPAggregator(NormClipAggregator):

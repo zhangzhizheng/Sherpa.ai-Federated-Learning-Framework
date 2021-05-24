@@ -1,7 +1,6 @@
-from shfl.model.kmeans_model import KMeansModel
 from unittest.mock import Mock, patch
-
 import numpy as np
+from shfl.model.kmeans_model import KMeansModel
 
 
 @patch('shfl.model.kmeans_model.KMeans')
@@ -13,14 +12,14 @@ def test_kmeans_model(mock_kmeans):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     mock_kmeans.assert_called_once_with(n_clusters=n_clusters, init=init, n_init=n_init)
-    assert model == kmm._model
-    assert init == kmm._init
-    assert n_features == kmm._n_features
-    assert n_init == kmm._n_init
-    assert np.array_equal(np.zeros((n_clusters, n_features)), kmm._model.cluster_centers_)
+    assert model == wrapped_model._model
+    assert init == wrapped_model._init
+    assert n_features == wrapped_model._n_features
+    assert n_init == wrapped_model._n_init
+    assert np.array_equal(np.zeros((n_clusters, n_features)), wrapped_model._model.cluster_centers_)
 
 
 @patch('shfl.model.kmeans_model.KMeans')
@@ -32,14 +31,14 @@ def test_kmeans_model_ndarray(mock_kmeans):
     n_features = 5
     init = np.array([0, 0])
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     mock_kmeans.assert_called_once_with(n_clusters=n_clusters, init=init, n_init=n_init)
-    assert model == kmm._model
-    assert np.array_equal(init, kmm._init)
-    assert n_init == kmm._n_init
-    assert n_features == kmm._n_features
-    assert np.array_equal(init, kmm._model.cluster_centers_)
+    assert model == wrapped_model._model
+    assert np.array_equal(init, wrapped_model._init)
+    assert n_init == wrapped_model._n_init
+    assert n_features == wrapped_model._n_features
+    assert np.array_equal(init, wrapped_model._model.cluster_centers_)
 
 
 @patch('shfl.model.kmeans_model.KMeans')
@@ -51,10 +50,10 @@ def test_train(mock_kmeans):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     data = np.random.rand(10)
-    kmm.train(data)
+    wrapped_model.train(data)
 
     model.fit.assert_called_once_with(data)
 
@@ -70,10 +69,10 @@ def test_predict(mock_kmeans):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     data = np.random.rand(10)
-    y_pred = kmm.predict(data)
+    y_pred = wrapped_model.predict(data)
 
     model.predict.assert_called_once_with(data)
     assert np.array_equal(y_pred_real, y_pred)
@@ -103,17 +102,17 @@ def test_evaluate(mock_adjusted_rand_score,
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
-    kmm.predict = Mock()
+    wrapped_model.predict = Mock()
     y_pred = np.random.randint(0, 2, 10)
-    kmm.predict.return_value = y_pred
+    wrapped_model.predict.return_value = y_pred
 
     data = np.random.rand(10)
     labels = np.random.randint(0, 2, 10)
-    homo, compl, v_meas, rai = kmm.evaluate(data, labels)
+    homo, compl, v_meas, rai = wrapped_model.evaluate(data, labels)
 
-    kmm.predict.assert_called_once_with(data)
+    wrapped_model.predict.assert_called_once_with(data)
     mock_homogeneity_score.assert_called_once_with(labels, y_pred)
     mock_completeness_score.assert_called_once_with(labels, y_pred)
     mock_v_measure_score.assert_called_once_with(labels, y_pred)
@@ -133,11 +132,11 @@ def test_get_model_params(mock_kmeans):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
-    model_params = kmm.get_model_params()
+    model_params = wrapped_model.get_model_params()
 
-    assert np.array_equal(kmm._model.cluster_centers_, model_params)
+    assert np.array_equal(wrapped_model._model.cluster_centers_, model_params)
 
 
 @patch('shfl.model.kmeans_model.KMeans')
@@ -149,17 +148,17 @@ def test_set_model_params(mock_kmeans):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 1  # Explicit initial center position passed: performing only one init
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     params = np.random.rand(10).reshape((5, 2))
 
-    kmm.set_model_params(params)
+    wrapped_model.set_model_params(params)
 
-    assert model == kmm._model
-    assert np.array_equal(params, kmm._init)
-    assert n_init == kmm._n_init
-    assert n_features == kmm._n_features
-    assert np.array_equal(params, kmm._model.cluster_centers_)
+    assert model == wrapped_model._model
+    assert np.array_equal(params, wrapped_model._init)
+    assert n_init == wrapped_model._n_init
+    assert n_features == wrapped_model._n_features
+    assert np.array_equal(params, wrapped_model._model.cluster_centers_)
 
 
 @patch('shfl.model.kmeans_model.KMeans')
@@ -171,17 +170,17 @@ def test_set_model_params_zeros_array(mock_kmeans):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     params = np.zeros(10).reshape((5, 2))
 
-    kmm.set_model_params(params)
+    wrapped_model.set_model_params(params)
 
-    assert model == kmm._model
-    assert init == kmm._init
-    assert n_init == kmm._n_init
-    assert n_features == kmm._n_features
-    assert np.array_equal(np.zeros((params.shape[0], n_features)), kmm._model.cluster_centers_)
+    assert model == wrapped_model._model
+    assert init == wrapped_model._init
+    assert n_init == wrapped_model._n_init
+    assert n_features == wrapped_model._n_features
+    assert np.array_equal(np.zeros((params.shape[0], n_features)), wrapped_model._model.cluster_centers_)
 
 
 @patch('shfl.model.kmeans_model.metrics.v_measure_score')
@@ -195,16 +194,16 @@ def test_performance(mock_kmeans, mock_v_measure_score):
     n_features = 5
     init = 'k_highest-means++'
     n_init = 10
-    kmm = KMeansModel(n_clusters, n_features, init, n_init)
+    wrapped_model = KMeansModel(n_clusters, n_features, init, n_init)
 
     data = np.random.rand(25).reshape((5, 5))
     labels = np.random.randint(0, 2, 5)
-    kmm.predict = Mock()
+    wrapped_model.predict = Mock()
     prediction = ~labels
-    kmm.predict.return_value = prediction
+    wrapped_model.predict.return_value = prediction
 
-    res = kmm.performance(data, labels)
+    res = wrapped_model.performance(data, labels)
 
     assert res == 0
     mock_v_measure_score.assert_called_once_with(labels, prediction)
-    kmm.predict.assert_called_once_with(data)
+    wrapped_model.predict.assert_called_once_with(data)

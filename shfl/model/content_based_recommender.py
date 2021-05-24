@@ -41,9 +41,9 @@ class ContentBasedRecommender(Recommender):
     def __init__(self, df_items):
         super().__init__()
         self._check_is_dataframe(df_items)
-        df_items.index.name = "itemid"
+        df_items.index.name = "item_id"
         self._df_items = df_items
-        self._mu = None
+        self._mean_rating = None
         self._profile = None
 
     def train_recommender(self, data, labels, **kwargs):
@@ -53,44 +53,46 @@ class ContentBasedRecommender(Recommender):
             data: Array-like object containing data to train the model.
                 The data belongs to only one client and
                 every item must be in the catalog.
-            labels: Array-like object containing target labels.
+            labels: Array-like object containing the rating given by the client.
             **kwargs: Optional named parameters.
         """
-        self._mu = np.mean(labels)
+        self._mean_rating = np.mean(labels)
         joined_data = self._join_dataframe_with_items_features(data)
         self._profile = \
-            joined_data.multiply(labels - self._mu, axis=0).mean().values
+            joined_data.multiply(labels - self._mean_rating, axis=0).mean().values
 
     def predict_recommender(self, data):
         """Makes a prediction on input data.
 
         # Arguments:
-            data: Array-like object containing data on which
-                to make the prediction. The data belongs to
-                only one client and every item must be in the catalog.
+            data: Array-like object of shape containing data on which
+                to make the prediction. The shape is (n_samples, 2),
+                where the 2 columns are the ("user_id", "item_id").
+                The data belongs to only one client and every item
+                must be in the catalog.
 
         # Returns:
             predictions: Array-like object containing model's prediction
                 using the input data.
         """
         joined_data = self._join_dataframe_with_items_features(data)
-        predictions = self._mu + joined_data.values.dot(self._profile)
+        predictions = self._mean_rating + joined_data.values.dot(self._profile)
         return predictions
 
     def get_model_params(self):
         """See base class."""
-        return self._mu, self._profile
+        return self._mean_rating, self._profile
 
     def set_model_params(self, params):
         """See base class."""
-        self._mu, self._profile = params
+        self._mean_rating, self._profile = params
 
     def _join_dataframe_with_items_features(self, data):
         self._check_two_columns(data)
         self._check_no_new_items(data, self._df_items)
-        data = pd.DataFrame(data, columns=['userid', "itemid"])
-        joined_data = data.join(self._df_items, on="itemid").\
-            drop(["userid", "itemid"], axis=1)
+        data = pd.DataFrame(data, columns=['userid', "item_id"])
+        joined_data = data.join(self._df_items, on="item_id").\
+            drop(["userid", "item_id"], axis=1)
         return joined_data
 
     @staticmethod

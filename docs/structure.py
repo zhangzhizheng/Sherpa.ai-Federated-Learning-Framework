@@ -198,11 +198,11 @@ PAGES = [
     {
         'page': 'differential_privacy/mechanisms.md',
         'classes': [
-            (differential_privacy.dp_mechanism.RandomizedResponseCoins, ["apply"]),
-            differential_privacy.dp_mechanism.RandomizedResponseBinary,
-            differential_privacy.dp_mechanism.LaplaceMechanism,
-            differential_privacy.dp_mechanism.GaussianMechanism,
-            differential_privacy.dp_mechanism.ExponentialMechanism
+            (differential_privacy.mechanism.RandomizedResponseCoins, ["apply"]),
+            differential_privacy.mechanism.RandomizedResponseBinary,
+            differential_privacy.mechanism.LaplaceMechanism,
+            differential_privacy.mechanism.GaussianMechanism,
+            differential_privacy.mechanism.ExponentialMechanism
         ],
     },
     {
@@ -230,15 +230,15 @@ PAGES = [
     {
         'page': 'differential_privacy/composition.md',
         'classes': [
-            differential_privacy.composition_dp.AdaptiveDifferentialPrivacy,
-            differential_privacy.composition_dp.ExceededPrivacyBudgetError,
+            differential_privacy.composition.AdaptiveDifferentialPrivacy,
+            differential_privacy.composition.ExceededPrivacyBudgetError,
         ],
     },
     {
         'page': 'differential_privacy/sampling.md',
         'classes': [
-            (differential_privacy.dp_sampling.Sampler, ['epsilon_delta_reduction', 'sample']),
-            differential_privacy.dp_sampling.SampleWithoutReplacement
+            (differential_privacy.privacy_amplification_subsampling.Sampler, ['epsilon_delta_reduction', 'sample']),
+            differential_privacy.privacy_amplification_subsampling.SampleWithoutReplacement
         ],
         # 'functions': [
         #     differential_privacy.dp_sampling.prod,

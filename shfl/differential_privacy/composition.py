@@ -29,23 +29,22 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
         Pay-as-you-go composition](https://arxiv.org/pdf/1605.08294.pdf)
     """
 
-    def __init__(self, epsilon_delta, differentially_private_mechanism=None):
+    def __init__(self, epsilon_delta, mechanism=None):
         self._check_epsilon_delta(epsilon_delta)
 
         self._epsilon_delta = epsilon_delta
         self._epsilon_delta_access_history = []
         self._private_data_epsilon_delta_access_history = []
-        if differentially_private_mechanism is not None:
+        if mechanism is not None:
             _check_differentially_private_mechanism(
-                differentially_private_mechanism)
-        self._differentially_private_mechanism = \
-            differentially_private_mechanism
+                mechanism)
+        self._mechanism = mechanism
 
     @property
     def epsilon_delta(self):
         return self._epsilon_delta
 
-    def apply(self, data, differentially_private_mechanism=None):
+    def apply(self, data, mechanism=None):
         """Applies a differentially private mechanism
             if the privacy budget allows it.
 
@@ -61,7 +60,7 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
                 containing the differentially-private randomized data.
         """
         differentially_private_mechanism_to_apply = \
-            self._get_data_access_definition(differentially_private_mechanism)
+            self._get_data_access_definition(mechanism)
         self._private_data_epsilon_delta_access_history.append(
             differentially_private_mechanism_to_apply.epsilon_delta)
 
@@ -93,10 +92,10 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
         if data_access_definition is not None:
             _check_differentially_private_mechanism(data_access_definition)
             return data_access_definition
-        if self._differentially_private_mechanism is None:
-            raise ValueError("Not data access definition provided "
-                             "or default method established")
-        return self._differentially_private_mechanism
+        if self._mechanism is None:
+            raise ValueError("The data access definition is not configured. "
+                             "You must either provide one, or set a default one.")
+        return self._mechanism
 
     def __basic_adaptive_comp_theorem(self):
         """Implements the basic adaptive composition theorem.
