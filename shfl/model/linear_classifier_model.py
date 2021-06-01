@@ -68,6 +68,7 @@ class LinearClassifierModel(TrainableModel):
         # Returns:
             prediction: Model's prediction using the input data.
         """
+        self._check_data(data)
 
         return self._model.predict(data)
 
@@ -88,7 +89,6 @@ class LinearClassifierModel(TrainableModel):
             stable/modules/generated/sklearn.metrics.cohen_kappa_score.html).
         """
 
-        self._check_data(data)
         self._check_labels_predict(labels)
 
         prediction = self.predict(data)
@@ -122,7 +122,7 @@ class LinearClassifierModel(TrainableModel):
 
     def get_model_params(self):
         """See base class."""
-        return [self._model.intercept_, self._model.coef_]
+        return self._model.intercept_, self._model.coef_
 
     def set_model_params(self, params):
         """See base class."""

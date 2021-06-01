@@ -53,7 +53,7 @@ def test_initialization(wrapper_arguments):
         batch, epoch, metrics = wrapper_arguments
 
     wrapped_model = DeepLearningModel(model, loss, optimizer,
-                                          batch, epoch, metrics)
+                                      batch, epoch, metrics)
 
     model.compile.assert_called_once_with(optimizer=optimizer,
                                           loss=loss,

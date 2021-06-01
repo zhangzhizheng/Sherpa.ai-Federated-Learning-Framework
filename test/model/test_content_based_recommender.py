@@ -68,21 +68,17 @@ def test_train(df_items, data_and_labels):
         df_joined.multiply(labels - np.mean(labels), axis=0).mean().values)
 
 
-def test_train_wrong_number_of_columns(df_items, data_and_labels):
+def test_train_wrong_number_of_columns(df_items, data_and_labels, helpers):
     """Checks that the content base recommender raises an error
     if trained with wrong input.
 
     The input data must contain only 2 columns containing the user id and item id."""
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-    _, labels = data_and_labels
+    data, labels = data_and_labels
+    wrong_data = helpers.append_column(data)
     recommender = ContentBasedRecommender(df_items)
 
     with pytest.raises(AssertionError):
-        recommender.train(data, labels)
+        recommender.train(wrong_data, labels)
 
 
 def test_train_wrong_items(df_items, data_and_labels):

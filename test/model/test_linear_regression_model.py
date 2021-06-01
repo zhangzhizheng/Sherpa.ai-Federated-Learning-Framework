@@ -1,166 +1,192 @@
-import numpy as np
 from unittest.mock import Mock, patch
 import pytest
+import numpy as np
+
 from shfl.model.linear_regression_model import LinearRegressionModel
 
 
-def test_linear_regression_model_initialize_single_target():
+@pytest.fixture(name="wrapper_arguments")
+def fixture_wrapper_arguments():
+    """Returns the component necessary for wrapping a k-means clustering model."""
     n_features = 9
     n_targets = 1
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
 
-    assert np.shape(lnr._model.intercept_) == \
-           np.shape(lnr.get_model_params()[0]) == (1,)
-    assert np.shape(lnr._model.coef_) == \
-           np.shape(lnr.get_model_params()[1]) == (1, n_features)
+    return n_features, n_targets
 
 
-def test_linear_regression_model_initialize_multiple_targets():
-    n_features = 9
-    n_targets = 2
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-
-    assert np.shape(lnr._model.intercept_) == \
-           np.shape(lnr.get_model_params()[0]) == (n_targets,)
-    assert np.shape(lnr._model.coef_) == \
-           np.shape(lnr.get_model_params()[1]) == (n_targets, n_features)
-
-
-def test_linear_regression_model_wrong_initialization():
-    n_features = [9.5, -1, 9, 9]
-    n_targets = [1, 1, -1, 1.5]
-    for init_ in zip(n_features, n_targets):
-        with pytest.raises(AssertionError):
-            LinearRegressionModel(n_features=init_[0], n_targets=init_[1])
-
-
-def test_linear_regression_model_train_wrong_input_data():
-    num_data = 30
-
-    # Single feature wrong data input:
-    n_features = 2
-    n_targets = 1
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    data = np.random.rand(num_data)
-    label = np.random.rand(num_data)
-    with pytest.raises(AssertionError):
-        lnr.train(data, label)
-
-    # Multi-feature wrong data input:
-    n_features = 2
-    n_targets = 1
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    data = np.random.rand(num_data, n_features + 1)
-    label = np.random.rand(num_data)
-    with pytest.raises(AssertionError):
-        lnr.train(data, label)
-
-    # Single target wrong input label:
-    n_features = 2
-    n_targets = 2
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
+@pytest.fixture(name="input_data")
+def fixture_input_data(wrapper_arguments):
+    """Returns a random data set with targets."""
+    n_features, n_targets = wrapper_arguments
+    num_data = 50
     data = np.random.rand(num_data, n_features)
-    label = np.random.rand(num_data)
+    labels = np.random.rand(num_data, n_targets)
+
+    return data, labels
+
+
+@pytest.mark.parametrize("n_targets", [1, 2, 3])
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_initialization(mock_regression, n_targets, wrapper_arguments):
+    """Checks that the linear regression model initializes correctly.
+
+    The case of single and multiple targets are tested."""
+    model = Mock()
+    mock_regression.return_value = model
+    LinearRegressionModel(n_features=wrapper_arguments[0], n_targets=n_targets)
+
+    assert model.intercept_.shape == (n_targets,)
+    assert model.coef_.shape == (n_targets, wrapper_arguments[0])
+
+
+@pytest.mark.parametrize("n_features, n_targets", [(9.5, 1),
+                                                   (-1, 1),
+                                                   (0, 1),
+                                                   (1, 0),
+                                                   (9, -1),
+                                                   (9, 1.5)])
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_wrong_initialization(mock_regression, n_features, n_targets):
+    """Checks that the linear regression model throws an error when initialized
+    with wrong inputs.
+
+    Namely, the number of features and targets must be integer
+    and greater or equal to one."""
+    mock_regression.return_value = Mock()
     with pytest.raises(AssertionError):
-        lnr.train(data, label)
+        LinearRegressionModel(n_features, n_targets)
 
-    # Multi target wrong input label:
-    n_features = 2
-    n_targets = 3
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    data = np.random.rand(num_data, n_features)
-    label = np.random.rand(num_data, n_targets + 1)
+
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_train(mock_regression, wrapper_arguments, input_data):
+    """Checks that the linear regression model trains properly."""
+    model = Mock()
+    mock_regression.return_value = model
+    wrapped_model = LinearRegressionModel(*wrapper_arguments)
+
+    wrapped_model.train(*input_data)
+
+    model.fit.assert_called_once_with(*input_data)
+
+
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_train_wrong_input_data_shape(mock_regression, wrapper_arguments, input_data):
+    """Checks that the linear regression model throws an error if a wrong shape
+    input data are used."""
+    n_features, n_targets = wrapper_arguments
+    data, labels = input_data
+    mock_regression.return_value = Mock()
+    wrapped_model = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
+
+    wrong_data_single_feature = np.random.rand(len(data))
     with pytest.raises(AssertionError):
-        lnr.train(data, label)
+        wrapped_model.train(wrong_data_single_feature, labels)
+
+    wrong_data_multiple_features = np.random.rand(len(data), n_features + 1)
+    with pytest.raises(AssertionError):
+        wrapped_model.train(wrong_data_multiple_features, labels)
 
 
-def test_linear_regression_model_train():
-    train_data = np.array([[66], [92], [98], [17], [83], [57], [86], [97], [96], [47]])
-    train_labels = np.array([125.806, 182.860, 201.525, 60.684, 174.566, 117.808, 174.305, 209.767, 203.265, 90.985])
-    test_data = np.array([[84], [47], [61], [48]])
-    test_labels = np.array([195.104, 103.436, 121.397, 87.779])
-
-    # Single feature, single target:
-    n_features = 1
-    n_targets = 1
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    train_features = train_data
-    train_targets = train_labels
-    test_features = test_data
-    test_targets = test_labels
-    lnr.train(data=train_features, labels=train_targets)
-    evaluation = np.array(lnr.evaluate(data=test_features, labels=test_targets))
-    model_params = lnr.get_model_params()
-    assert (pytest.approx(model_params[0], 0.001) == np.array([13.452]))
-    assert (pytest.approx(model_params[1], 0.001) == np.array([1.903]))
-    assert (pytest.approx(evaluation, 0.001) == np.array([14.407, 0.877]))
-
-    # Multi feature, single target: 
-    n_features = 2
-    n_targets = 1
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    train_features = train_data.reshape(-1, 2)
-    train_targets = train_labels[0:len(train_features)]
-    test_features = test_data.reshape(-1, 2)
-    test_targets = test_labels[0:len(test_features)]
-    lnr.train(data=train_features, labels=train_targets)
-    evaluation = np.array(lnr.evaluate(data=test_features, labels=test_targets))
-    model_params = lnr.get_model_params()
-    assert (pytest.approx(model_params[0], 0.001) == np.array([510.521]))
-    assert (pytest.approx(model_params[1], 0.001) == np.array([-2.674, -2.128]))
-    assert (pytest.approx(evaluation, 0.001) == np.array([100.464, -3.804]))
-
-    # Multi feature, multi target: 
-    n_features = 2
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_train_wrong_labels_shape(mock_regression, wrapper_arguments, input_data):
+    """Checks that the linear regression model throws an error if a wrong shape
+    input labels are used."""
+    n_features, _ = wrapper_arguments
     n_targets = 2
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    train_features = train_data.reshape(-1, 2)
-    train_targets = train_labels.reshape(-1, 2)
-    test_features = test_data.reshape(-1, 2)
-    test_targets = test_labels.reshape(-1, 2)
-    lnr.train(data=train_features, labels=train_targets)
-    evaluation = np.array(lnr.evaluate(data=test_features, labels=test_targets))
-    model_params = lnr.get_model_params()
-    assert (pytest.approx(model_params[0], 0.001) == np.array([-3.078e+01, -2.608e+01]))
-    assert (pytest.approx(model_params[1], 0.001) == np.array([[2.414e+00, -8.333e-03],
-                                                               [4.217e-01, 1.972e+00]]))
-    assert (pytest.approx(evaluation, 0.001) == np.array([12.468, 0.710]))
+    data, _ = input_data
+    mock_regression.return_value = Mock()
+    wrapped_model = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
+
+    wrong_label_single_target = np.random.rand(len(data))
+    with pytest.raises(AssertionError):
+        wrapped_model.train(data, wrong_label_single_target)
+
+    wrong_label_multiple_targets = np.random.rand(len(data), n_targets + 1)
+    with pytest.raises(AssertionError):
+        wrapped_model.train(data, wrong_label_multiple_targets)
 
 
-def test_linear_regression_model_set_get_params():
-    n_features = 9
-    n_targets = 3
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
-    intercept = np.random.rand(n_targets)
-    coefficients = np.random.rand(n_targets, n_features)
-    lnr.set_model_params([intercept, coefficients])
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_predict(mock_classifier, wrapper_arguments, input_data):
+    """Checks that the linear regression model predicts correctly."""
+    data, _ = input_data
+    model = Mock()
+    true_prediction = np.random.rand(len(data), wrapper_arguments[1])
+    model.predict.return_value = true_prediction
+    mock_classifier.return_value = model
+    wrapped_model = LinearRegressionModel(*wrapper_arguments)
 
-    assert np.array_equal(lnr.get_model_params()[0], intercept)
-    assert np.array_equal(lnr.get_model_params()[1], coefficients)
+    output_prediction = wrapped_model.predict(data)
+
+    model.predict.assert_called_once_with(data)
+    np.testing.assert_array_equal(output_prediction, true_prediction)
 
 
-@patch('shfl.model.linear_regression_model.metrics.mean_squared_error')
-def test_linear_regression_model_performance(mse_mock):
-    n_features = 9
-    n_targets = 3
-    data = np.random.randint(0, 100, 10).reshape((-1, 1))
-    labels = np.random.rand(10)
+@patch('shfl.model.linear_regression_model.metrics')
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_evaluate(mock_classifier, mock_metrics, wrapper_arguments, input_data):
+    """Checks that the linear regression model predicts correctly."""
+    data, _ = input_data
+    mock_metrics.mean_squared_error.return_value = 0.8
+    mock_metrics.r2_score.return_value = 0.7
+    mock_classifier.return_value = Mock()
+    wrapped_model = LinearRegressionModel(*wrapper_arguments)
+    wrapped_model.predict = Mock()
+    true_prediction = np.random.rand(len(data), wrapper_arguments[1])
+    wrapped_model.predict.return_value = true_prediction
 
-    lnr = LinearRegressionModel(n_features=n_features, n_targets=n_targets)
+    root_mean_squared_error, r2_score = wrapped_model.evaluate(*input_data)
 
-    lnr.predict = Mock()
-    prediction = labels + 0.5
-    lnr.predict.return_value = prediction
-    mse_mock.return_value = 4
+    wrapped_model.predict.assert_called_once_with(data)
+    mock_metrics.mean_squared_error.assert_called_once_with(input_data[1], true_prediction)
+    mock_metrics.r2_score.assert_called_once_with(input_data[1], true_prediction)
+    assert root_mean_squared_error == np.sqrt(0.8)
+    assert r2_score == 0.7
 
-    lnr._check_data = Mock()
-    lnr._check_labels = Mock()
 
-    rmse = lnr.performance(data, labels)
+@patch('shfl.model.linear_regression_model.metrics')
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_performance(mock_classifier, mock_metrics, wrapper_arguments, input_data):
+    """Checks that the linear regression model calls performance correctly."""
+    data, _ = input_data
+    mock_metrics.mean_squared_error.return_value = 0.8
+    mock_classifier.return_value = Mock()
+    wrapped_model = LinearRegressionModel(*wrapper_arguments)
+    wrapped_model.predict = Mock()
+    true_prediction = np.random.rand(len(data), wrapper_arguments[1])
+    wrapped_model.predict.return_value = true_prediction
 
-    lnr._check_data.assert_called_once_with(data)
-    lnr._check_labels.assert_called_once_with(labels)
-    lnr.predict.assert_called_once_with(data)
-    mse_mock.assert_called_once_with(labels, prediction)
+    negative_root_mean_squared_error = wrapped_model.performance(*input_data)
 
-    assert -rmse == np.sqrt(mse_mock.return_value)
+    wrapped_model.predict.assert_called_once_with(data)
+    mock_metrics.mean_squared_error.assert_called_once_with(input_data[1], true_prediction)
+    assert negative_root_mean_squared_error == -np.sqrt(0.8)
+
+
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_get_model_params(mock_classifier, wrapper_arguments):
+    """Checks that the linear regression gets the model's parameters correctly."""
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearRegressionModel(*wrapper_arguments)
+
+    output_params = wrapped_model.get_model_params()
+
+    np.testing.assert_array_equal(model.intercept_, output_params[0])
+    np.testing.assert_array_equal(model.coef_, output_params[1])
+
+
+@patch('shfl.model.linear_regression_model.LinearRegression')
+def test_set_model_params(mock_classifier, wrapper_arguments):
+    """Checks that the linear regression sets the model's parameters correctly."""
+    n_features, n_targets = wrapper_arguments
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearRegressionModel(n_features, n_targets)
+    input_params = (np.random.rand(n_targets),
+                    np.random.rand(n_targets, n_features))
+
+    wrapped_model.set_model_params(input_params)
+
+    np.testing.assert_array_equal(model.intercept_, input_params[0])
+    np.testing.assert_array_equal(model.coef_, input_params[1])

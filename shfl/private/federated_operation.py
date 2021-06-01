@@ -284,7 +284,7 @@ class VerticalServerDataNode(FederatedDataNode):
         self.set_private_data(data)
 
     def predict_collaborative_model(self, data):
-        """Makes a prediction on input data using the collaborative model.
+        """Makes a prediction on the input data using the collaborative model.
 
         # Arguments:
             data: List, each item represents the input data
@@ -294,14 +294,29 @@ class VerticalServerDataNode(FederatedDataNode):
             prediction: The collaborative model's prediction
                 using the input data.
         """
-        clients_embeddings = [node.predict(data)
-                              for node, data in
-                              zip(self._federated_data, data)]
+        clients_embeddings = self.predict_clients(data)
         clients_embeddings_aggregated = \
             self._aggregator.aggregate_weights(clients_embeddings)
         prediction = self.predict(clients_embeddings_aggregated)
 
         return prediction
+
+    def predict_clients(self, data):
+        """Makes a prediction on the input data using only clients' part of the model.
+
+        # Arguments:
+            data: List, each item represents the input data
+                on which to make the prediction for a single client.
+
+        # Returns:
+            clients_embeddings: The clients' part of prediction
+                on the input data.
+        """
+        clients_embeddings = [node.predict(data)
+                              for node, data in
+                              zip(self._federated_data, data)]
+
+        return clients_embeddings
 
     def evaluate_collaborative_model(self, data=None, labels=None):
         """"Evaluates the performance of the collaborative model.
@@ -317,11 +332,9 @@ class VerticalServerDataNode(FederatedDataNode):
                 same for all clients).
         """
 
-        if data is not None and labels is not None:
+        if data is not None:
 
-            clients_embeddings = [node.predict(data)
-                                  for node, data in
-                                  zip(self._federated_data, data)]
+            clients_embeddings = self.predict_clients(data)
             clients_embeddings_aggregated = \
                 self._aggregator.aggregate_weights(clients_embeddings)
             evaluation = self.evaluate(clients_embeddings_aggregated,

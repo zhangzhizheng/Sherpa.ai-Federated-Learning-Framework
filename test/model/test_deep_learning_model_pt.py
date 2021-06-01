@@ -225,17 +225,13 @@ def test_set_weights(mock_get_params, mock_torch,
         assert np.array_equal(true_values, assigned_values)
 
 
-def test_wrong_data_input(wrapper_arguments, input_dataset):
+def test_wrong_data_input(wrapper_arguments, input_dataset, helpers):
     """Checks that the pytorch deep learning model raises an error if wrong shape
     input data is used."""
     wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
     _, data, labels = input_dataset
-    wrong_data_shape = np.array(data.shape)
-    wrong_data_shape[1] += 1
-    wrong_data = np.random.rand(*wrong_data_shape)
 
-    with pytest.raises(AssertionError):
-        wrapped_model.train(wrong_data, labels)
+    helpers.check_wrong_data(wrapped_model, data, labels)
 
 
 def test_wrong_label_input(wrapper_arguments, input_dataset):

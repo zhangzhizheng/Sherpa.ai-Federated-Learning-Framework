@@ -76,14 +76,14 @@ class LinearRegressionModel(TrainableModel):
             stable/modules/generated/sklearn.metrics.r2_score.html).
         """
 
-        self._check_data(data)
         self._check_labels(labels)
 
         prediction = self.predict(data)
-        rmse = np.sqrt(metrics.mean_squared_error(labels, prediction))
+        root_mean_squared_error = np.sqrt(
+            metrics.mean_squared_error(labels, prediction))
         r2_score = metrics.r2_score(labels, prediction)
 
-        return rmse, r2_score
+        return root_mean_squared_error, r2_score
 
     def performance(self, data, labels):
         """Evaluates the performance of the model using
@@ -102,13 +102,14 @@ class LinearRegressionModel(TrainableModel):
         self._check_labels(labels)
 
         prediction = self.predict(data)
-        rmse = np.sqrt(metrics.mean_squared_error(labels, prediction))
+        negative_root_mean_squared_error = - np.sqrt(
+            metrics.mean_squared_error(labels, prediction))
 
-        return -rmse
+        return negative_root_mean_squared_error
 
     def get_model_params(self):
         """See base class."""
-        return [self._model.intercept_, self._model.coef_]
+        return self._model.intercept_, self._model.coef_
 
     def set_model_params(self, params):
         """See base class."""

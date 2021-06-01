@@ -1,16 +1,13 @@
-import numpy as np
+from unittest.mock import Mock, patch
 import pytest
+import numpy as np
 
 from shfl.model.mean_recommender import MeanRecommender
 
 
-def test_mean_recommender():
-    mean_recommender = MeanRecommender()
-
-    assert mean_recommender._client_identifier is None
-
-
-def test_train():
+@pytest.fixture(name="data_and_labels")
+def fixture_data_and_labels():
+    """Returns random data features and rating labels."""
     data = np.array([[2, 3, 51],
                      [2, 34, 6],
                      [2, 33, 7],
@@ -18,181 +15,119 @@ def test_train():
                      [2, 3, 15]])
     labels = np.array([3, 2, 5, 6, 7])
 
+    return data, labels
+
+
+def test_initialization():
+    """Checks that the mean recommender initializes correctly."""
     mean_recommender = MeanRecommender()
-    mean_recommender.train(data, labels)
 
-    assert mean_recommender._client_identifier == data[0, 0]
-    assert mean_recommender._mu == np.mean(labels)
+    assert hasattr(mean_recommender, "_client_identifier")
 
 
-def test_train_wrong_data():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [3, 33, 7],
-                     [4, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 6, 7])
-
+@patch('shfl.model.mean_recommender.np')
+def test_train(mock_numpy, data_and_labels):
+    """Checks that the mean recommender trains correctly."""
     mean_recommender = MeanRecommender()
+    mock_numpy.mean = Mock()
+    mock_numpy.mean.return_value = 5
+
+    mean_recommender.train(*data_and_labels)
+
+    mock_numpy.mean.assert_called_once_with(data_and_labels[1])
+
+
+def test_train_wrong_data(data_and_labels):
+    """Checks that the mean recommender raises an error if wrong data are used as input.
+
+    In this case, the data contains one rating from a different user."""
+    data, labels = data_and_labels
+    wrong_data = data
+    wrong_data[0, 0] += 1
+    mean_recommender = MeanRecommender()
+
     with pytest.raises(AssertionError):
-        mean_recommender.train(data, labels)
+        mean_recommender.train(wrong_data, labels)
 
 
-def test_train_wrong_data_labels():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 7])
-
+def test_train_wrong_data_labels_lengths(data_and_labels):
+    """Checks that the mean recommender raises an error if input data and labels
+    have different lengths."""
+    data, labels = data_and_labels
+    wrong_labels = labels[:-1]
     mean_recommender = MeanRecommender()
+
     with pytest.raises(AssertionError):
-        mean_recommender.train(data, labels)
+        mean_recommender.train(data, wrong_labels)
 
 
-def test_predict():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-
+@patch('shfl.model.mean_recommender.np')
+def test_predict(mock_numpy, data_and_labels):
+    """Checks that the mean recommender predicts correctly."""
     mean_recommender = MeanRecommender()
-    mean_recommender._mu = 2.3
-    predictions = mean_recommender.predict(data)
+    true_prediction = np.ones(shape=data_and_labels[1].shape) * 2.5
+    mock_numpy.full = Mock()
+    mock_numpy.full.return_value = true_prediction
 
-    assert np.array_equal(predictions, np.full(len(data), mean_recommender._mu))
+    output_predictions = mean_recommender.predict(data_and_labels[0])
+
+    np.testing.assert_array_equal(output_predictions, true_prediction)
+    mock_numpy.full.assert_called_once()
 
 
-def test_evaluate():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 6, 7])
-
+def test_evaluate(data_and_labels):
+    """Checks that the mean recommender evaluates correctly."""
     mean_recommender = MeanRecommender()
-    mean_recommender._mu = 2.3
-    rmse = mean_recommender.evaluate(data, labels)
+    mean_recommender.predict = Mock()
+    true_prediction = np.ones(shape=data_and_labels[1].shape) * 2.5
+    mean_recommender.predict.return_value = true_prediction
 
-    assert rmse == np.sqrt(np.mean((mean_recommender._mu - labels) ** 2))
+    root_mean_square = mean_recommender.evaluate(*data_and_labels)
+
+    assert root_mean_square == np.sqrt(np.mean(
+        (true_prediction - data_and_labels[1]) ** 2))
 
 
 def test_evaluate_no_data():
+    """Checks that the mean recommender evaluates correctly when no data is available."""
     data = np.empty((0, 3))
     labels = np.empty(0)
 
     mean_recommender = MeanRecommender()
-    mean_recommender._mu = 2.3
-    rmse = mean_recommender.evaluate(data, labels)
+    mean_recommender.predict = Mock()
+    true_prediction = np.ones(shape=labels.shape) * 2.5
+    mean_recommender.predict.return_value = true_prediction
 
-    assert rmse == 0
+    root_mean_square = mean_recommender.evaluate(data, labels)
+
+    assert root_mean_square == 0
 
 
-def test_performance():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 6, 7])
-
+def test_performance(data_and_labels):
+    """Checks that the mean recommender correctly calls the performance."""
     mean_recommender = MeanRecommender()
-    mean_recommender._mu = 2.3
-    rmse = mean_recommender.performance(data, labels)
+    mean_recommender.evaluate = Mock()
+    mean_recommender.evaluate.return_value = 0.7
 
-    assert rmse == np.sqrt(np.mean((mean_recommender._mu - labels) ** 2))
+    root_mean_square = mean_recommender.performance(*data_and_labels)
 
-
-def test_performance_no_data():
-    data = np.empty((0, 3))
-    labels = np.empty(0)
-
-    mean_recommender = MeanRecommender()
-    mean_recommender._mu = 2.3
-    rmse = mean_recommender.performance(data, labels)
-
-    assert rmse == 0
+    mean_recommender.evaluate.assert_called_once_with(*data_and_labels)
+    assert root_mean_square == 0.7
 
 
 def test_set_model_params():
-    params = 3.4
-
+    """Checks that the mean recommender model correctly sets the model's parameters."""
     mean_recommender = MeanRecommender()
-    mean_recommender.set_model_params(params)
 
-    assert mean_recommender._mu == params
+    mean_recommender.set_model_params(3.4)
+
+    assert mean_recommender.get_model_params() == 3.4
 
 
 def test_get_model_params():
+    """Checks that the mean recommender model correctly gets the model's parameters."""
     mean_recommender = MeanRecommender()
-    mean_recommender._mu = 3.5
+
     params = mean_recommender.get_model_params()
 
-    assert mean_recommender._mu == params
-
-
-def test_predict_wrong_data():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [3, 33, 7],
-                     [4, 13, 65],
-                     [2, 3, 15]])
-
-    mean_recommender = MeanRecommender()
-    with pytest.raises(AssertionError):
-        mean_recommender.predict(data)
-
-
-def test_evaluate_wrong_data():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [3, 33, 7],
-                     [4, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 6, 7])
-
-    mean_recommender = MeanRecommender()
-    with pytest.raises(AssertionError):
-        mean_recommender.evaluate(data, labels)
-
-
-def test_evaluate_wrong_data_labels():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 7])
-
-    mean_recommender = MeanRecommender()
-    with pytest.raises(AssertionError):
-        mean_recommender.evaluate(data, labels)
-
-
-def test_performance_wrong_data():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [3, 33, 7],
-                     [4, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 6, 7])
-
-    mean_recommender = MeanRecommender()
-    with pytest.raises(AssertionError):
-        mean_recommender.performance(data, labels)
-
-
-def test_performance_wrong_data_labels():
-    data = np.array([[2, 3, 51],
-                     [2, 34, 6],
-                     [2, 33, 7],
-                     [2, 13, 65],
-                     [2, 3, 15]])
-    labels = np.array([3, 2, 5, 7])
-
-    mean_recommender = MeanRecommender()
-    with pytest.raises(AssertionError):
-        mean_recommender.performance(data, labels)
+    assert params is None

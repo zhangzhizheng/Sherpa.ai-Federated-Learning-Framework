@@ -56,8 +56,10 @@ class ContentBasedRecommender(Recommender):
             labels: Array-like object containing the rating given by the client.
             **kwargs: Optional named parameters.
         """
-        self._mean_rating = np.mean(labels)
+        self._check_two_columns(data)
+        self._check_no_new_items(data, self._df_items)
         joined_data = self._join_dataframe_with_items_features(data)
+        self._mean_rating = np.mean(labels)
         self._profile = \
             joined_data.multiply(labels - self._mean_rating, axis=0).mean().values
 
@@ -88,8 +90,6 @@ class ContentBasedRecommender(Recommender):
         self._mean_rating, self._profile = params
 
     def _join_dataframe_with_items_features(self, data):
-        self._check_two_columns(data)
-        self._check_no_new_items(data, self._df_items)
         data = pd.DataFrame(data, columns=['userid', "item_id"])
         joined_data = data.join(self._df_items, on="item_id").\
             drop(["userid", "item_id"], axis=1)

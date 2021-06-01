@@ -31,7 +31,7 @@ class KMeansModel(TrainableModel):
         self._init = init
         self._n_features = n_features
         self._n_init = n_init
-        self._model._n_threads = None # compatibility: should be removed from scikit-learn
+        self._model._n_threads = None  # compatibility: should be removed from scikit-learn
 
         if isinstance(init, np.ndarray):
             self._model.cluster_centers_ = init
@@ -118,7 +118,11 @@ class KMeansModel(TrainableModel):
         return self._model.cluster_centers_
 
     def set_model_params(self, params):
-        """See base class."""
+        """Sets the model's parameters.
+
+        If an array of non-zeroes is given, this is assumed to represent
+        the new centroids, and thus the number of runs "n_init" is set to 1.
+        """
         if np.array_equal(params,
                           np.zeros((params.shape[0], params.shape[1]))):
             self.__init__(n_clusters=params.shape[0],

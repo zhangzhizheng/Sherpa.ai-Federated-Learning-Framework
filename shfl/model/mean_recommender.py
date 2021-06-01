@@ -8,8 +8,8 @@ class MeanRecommender(Recommender):
 
     Implements the class [Recommender](./#recommender).
 
-    Given a set of labels in the training set of each client,
-    computes the mean value to make predictions.
+    Given a set of labels (i.e. ratings) in the training set of each client,
+    it uses their mean value to make predictions.
     """
 
     def __init__(self):

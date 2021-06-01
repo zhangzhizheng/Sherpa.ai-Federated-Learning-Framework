@@ -124,11 +124,8 @@ class Recommender(TrainableModel):
             data: Data to train the model.
             labels: Target labels.
         """
-        rows_in_data = data.shape[0]
-        number_of_labels = len(labels)
-
-        if rows_in_data != number_of_labels:
+        if len(data) != len(labels):
             raise AssertionError(
                 "Data and labels do not have matching dimensions. "
                 "Current data has {} rows and there are "
-                "{} labels".format(rows_in_data, number_of_labels))
+                "{} labels".format(len(data), len(labels)))
