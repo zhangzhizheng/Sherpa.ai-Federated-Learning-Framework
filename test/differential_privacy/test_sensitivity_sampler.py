@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from shfl.private.query import Mean
-# from shfl.private.query import Query
 from shfl.differential_privacy.probability_distribution import NormalDistribution
 from shfl.differential_privacy import SensitivitySampler
 from shfl.differential_privacy import L1SensitivityNorm
@@ -85,42 +84,6 @@ def test_sensitivity_norm_list_of_arrays(sensitivity_norm):
     for sensitivity in mean_sensitivity:
         assert sensitivity.sum() < 2 * 1.5
 
-# TODO: need to check the ordering of the highest sensitivity for list of arrays
-# def test_sensitivity_norm_nested():
-#     """Checks that the sensitivity norm is computed correctly item-wise in a list of arrays.
-#
-#     The oracle returns a list of arrays. The query returns
-#     the item-wise average (still a list of arrays).
-#     So the sensitivity is expected to be correctly estimated
-#     for each item in the list.
-#     """
-#     def array_list(size):
-#         """Returns a list of arrays of specified length."""
-#         arrays = [np.random.rand(size, 3),
-#                   np.random.rand(size, 2),
-#                   np.random.rand(size, 4)]
-#
-#         return arrays
-#     oracle = type('NestedArrays', (object,), {'sample': array_list})
-#
-#     def item_average(data):
-#         """Returns the item-wise average of a list of arrays."""
-#         return [item.mean(axis=0) for item in data]
-#     query = type('ItemAverage', (object,), {'get': item_average})
-#
-#     sensitivity_norm = L1SensitivityNorm()
-#     sampler = SensitivitySampler()
-#     max_sensitivity, mean_sensitivity = \
-#         sampler.sample_sensitivity(query=query,
-#                                    sensitivity_norm=sensitivity_norm,
-#                                    oracle=oracle,
-#                                    n_data_size=4,
-#                                    m_sample_size=3,
-#                                    gamma=0.33)
-#     print("max_sensitivity", max_sensitivity)
-#     print("mean_sensitivity", mean_sensitivity)
-#     suca
-
 
 class SensitivitySamplerTest(SensitivitySampler):
     """Allows to access the private members of the parent class."""
@@ -128,21 +91,65 @@ class SensitivitySamplerTest(SensitivitySampler):
         """Calls the protected member of the parent class."""
         return self._concatenate(x_1, x_2)
 
+    def sort_sensitivity(self, sensitivity_sampled, k_highest):
+        """Calls the protected member of the parent class."""
+        return self._sort_sensitivity(*sensitivity_sampled, k_highest=k_highest)
+
 
 def test_multiple_dispatch_concatenate_dictionary_of_arrays():
     """Checks that two dictionaries are concatenated item by item."""
     dict_a = {1: np.random.rand(30, 40),
               2: np.random.rand(20, 50),
               3: np.random.rand(60, 80)}
-
     dict_b = {3: np.random.rand(1, 40),
               4: np.random.rand(1, 50),
               5: np.random.rand(1, 80)}
-
     sampler = SensitivitySamplerTest()
+
     concatenated_dict = sampler.concatenate(dict_a, dict_b)
+
     for i, j, k in zip(dict_a, dict_b, concatenated_dict):
         assert concatenated_dict[k].shape[0] == \
                dict_a[i].shape[0] + dict_b[j].shape[0]
         assert concatenated_dict[k].shape[1] == \
                dict_a[i].shape[1] == dict_b[j].shape[1]
+
+
+def test_sort_sensitivities_list_of_scalars():
+    """Checks that a list array of sensitivities is correctly sorted in increasing order."""
+    sensitivity_sample_size = 5
+    sampled_sensitivities = list(np.random.rand(sensitivity_sample_size))
+    sampler = SensitivitySamplerTest()
+
+    sensitivity_k_moment, sensitivity_mean = \
+        sampler.sort_sensitivity(sampled_sensitivities,
+                                 k_highest=sensitivity_sample_size)
+
+    np.testing.assert_array_equal(sensitivity_k_moment,
+                                  np.max(np.asarray(sampled_sensitivities)))
+    np.testing.assert_array_almost_equal_nulp(
+        sensitivity_mean, np.mean(np.asarray(sampled_sensitivities)), nulp=2)
+
+
+def test_sort_sensitivities_nested_list_of_arrays():
+    """Checks that a nested list of arrays of sensitivities is correctly sorted in increasing order.
+
+    In this case, the sorting is done component-wise on the arrays.
+    This is useful for instance when a layer-by-layer sensitivity
+    estimation in a neural network is desired."""
+    sensitivity_sample_size = 5
+    num_layers = 10
+    sampled_sensitivities = [np.random.rand(num_layers)
+                             for _ in range(sensitivity_sample_size)]
+    sampler = SensitivitySamplerTest()
+
+    sensitivity_k_moment, sensitivity_mean = \
+        sampler.sort_sensitivity(sampled_sensitivities,
+                                 k_highest=sensitivity_sample_size)
+
+    for i in range(sensitivity_sample_size):
+        layer_sensitivities = np.asarray([sample[i] for sample in sampled_sensitivities])
+        np.testing.assert_array_equal(sensitivity_k_moment[i],
+                                      np.max(np.asarray(layer_sensitivities)))
+        np.testing.assert_array_almost_equal_nulp(
+            sensitivity_mean[i], np.mean(np.asarray(layer_sensitivities)), nulp=2)

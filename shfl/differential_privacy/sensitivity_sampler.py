@@ -24,9 +24,12 @@ class SensitivitySampler:
         The same procedure can be applied to estimate the sensitivity
         of any model or function.
 
-    # References
+    # References:
         [Pain-free random differential privacy with
         sensitivity sampling](https://arxiv.org/pdf/1706.02562.pdf)
+
+        [diffpriv: An R Package for Easy Differential
+        Privacy](http://www.bipr.net/diffpriv/articles/diffpriv.pdf)
     """
 
     def __init__(self):
@@ -37,7 +40,9 @@ class SensitivitySampler:
                            m_sample_size=None, gamma=None):
         """Samples the sensitivity of a generic query.
 
-        Either `m_sample_size` or `gamma` must be provided.
+        Either `m_sample_size` or `gamma` must be provided. For example small
+        sample sizes values (few hundred) reflects limited sampling time.
+        On the other hand, small `gamma` (e.g., 0.05) prioritizes privacy.
 
         # Arguments:
             query: Function to apply on private data
@@ -45,10 +50,10 @@ class SensitivitySampler:
             sensitivity_norm: Function defining the norm to use
                 (see [Norm](../norm)).
             oracle: Probability distribution to sample from.
-            n_data_size: Integer representing the size of the data
-                to use in each sample.
-            m_sample_size: Integer representing the sample size.
-            gamma: Float representing the privacy confidence level.
+            n_data_size: The size of the private data set.
+            m_sample_size: The sensitivity sample size.
+            gamma: The desired privacy confidence level. The resulting
+                random differential privacy holds with probability at least 1-gamma.
 
         # Returns:
             sensitivity: Maximum sampled sensitivity.
@@ -85,7 +90,7 @@ class SensitivitySampler:
             n_data_size: Integer representing the size of the data
                 to use in each sample.
             m_sample_size: Integer representing the sample size.
-            k_highest: Element containing the highest sampled value.
+            k_highest: k order statistic index in {1,...,m_sample_size}.
 
         # Returns:
             sensitivity: Maximum sampled sensitivity.
@@ -164,25 +169,22 @@ class SensitivitySampler:
     def _sort_sensitivity(self, *sensitivity_sampled, k_highest):
         """Sorts arrays or lists of arrays.
         """
-        sensitivity_sorted = [np.sort(np.array(item), axis=self._sort_axis)
+        sensitivity_sorted = [self._sort_sensitivity(*item, k_highest=k_highest)
                               for item in zip(*sensitivity_sampled)]
-        sensitivity_max = [item[k_highest - 1]
-                           for item in sensitivity_sorted]
-        sensitivity_mean = [np.mean(item, axis=self._sort_axis)
-                            for item in sensitivity_sorted]
+        sensitivity_k_moment = [item[0] for item in sensitivity_sorted]
+        sensitivity_mean = [item[1] for item in sensitivity_sorted]
 
-        return sensitivity_max, sensitivity_mean
+        return sensitivity_k_moment, sensitivity_mean
 
     @dispatch(Variadic[np.ScalarType])
     def _sort_sensitivity(self, *sensitivity_sampled, k_highest):
         """Sorts scalars.
         """
-        sensitivity_sampled = [[item] for item in sensitivity_sampled]
-        [sensitivity_max], [sensitivity_mean] = \
-            self._sort_sensitivity(*sensitivity_sampled,
-                                   k_highest=k_highest)
+        sensitivity_sorted = np.sort(sensitivity_sampled)
+        sensitivity_k_moment = sensitivity_sorted[k_highest - 1]
+        sensitivity_mean = sensitivity_sorted.mean()
 
-        return sensitivity_max, sensitivity_mean
+        return sensitivity_k_moment, sensitivity_mean
 
     @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
     def _concatenate(self, x_1, x_2):

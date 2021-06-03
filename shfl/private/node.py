@@ -28,7 +28,7 @@ class DataNode:
         self._private_test_data = {}
         self._private_data_access_policies = {}
         self._model = None
-        self._model_params_access_policy = UnprotectedAccess()
+        self.configure_model_params_access(UnprotectedAccess())
         self._model_access_policy = None
 
     @property
