@@ -216,7 +216,7 @@ class ServerDataNode(FederatedDataNode):
     def __init__(self, federated_data, model, aggregator, data=None):
         super().__init__(federated_data_identifier=str(id(federated_data)))
         self._federated_data = federated_data
-        self.model = model
+        self.set_model(model)
         self._aggregator = aggregator
         self.set_private_data(data)
 
@@ -279,7 +279,7 @@ class VerticalServerDataNode(FederatedDataNode):
     def __init__(self, federated_data, model, aggregator, data=None):
         super().__init__(federated_data_identifier=str(id(federated_data)))
         self._federated_data = federated_data
-        self.model = model
+        self.set_model(model)
         self._aggregator = aggregator
         self.set_private_data(data)
 

@@ -27,7 +27,7 @@ class FederatedGovernment:
 
         self._federated_data = federated_data
         for data_node in self._federated_data:
-            data_node.model = model
+            data_node.set_model(model)
 
         if server_node is not None:
             self._server = server_node

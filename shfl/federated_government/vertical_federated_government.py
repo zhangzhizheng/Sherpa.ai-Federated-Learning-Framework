@@ -22,7 +22,7 @@ class VerticalFederatedGovernment:
 
         self._federated_data = federated_data
         for data_node, model_node in zip(self._federated_data, models):
-            data_node.model = model_node
+            data_node.set_model(model_node)
 
         self._server = server_node
 

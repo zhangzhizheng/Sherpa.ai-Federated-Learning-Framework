@@ -45,7 +45,7 @@ def test_query_model_params():
     data_node = DataNode()
     model_mock = Mock()
     model_mock.get_model_params.return_value = random_params
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
 
     model_params = data_node.query_model_params()
 
@@ -56,7 +56,7 @@ def test_query_model():
     """Checks that the node correctly queries its model."""
     data_node = DataNode()
     model_mock = Mock()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
     data_node.configure_model_access(UnprotectedAccess())
 
     model = data_node.query_model()
@@ -69,7 +69,7 @@ def test_query_model_access_not_configured():
     configuring the access."""
     data_node = DataNode()
     model_mock = Mock()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
     with pytest.raises(ValueError):
         data_node.query_model()
 
@@ -82,7 +82,7 @@ def test_train_model_wrong_data(data_and_labels):
     delattr(labeled_data, "_label")
     data_node = DataNode()
     model_mock = Mock()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
     data_node.set_private_data("invalid_data", labeled_data)
     with pytest.raises(ValueError):
         data_node.train_model("invalid_data")
@@ -100,7 +100,7 @@ def test_train_model_data(data_and_labels):
     labeled_data = LabeledData(*data_and_labels)
     data_node = DataNode()
     model_mock = Mock()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
     data_node.set_private_data("random_data", labeled_data)
 
     data_node.train_model("random_data")
@@ -113,7 +113,7 @@ def test_get_model():
     """Checks that the node's model is not returned."""
     model_mock = Mock()
     data_node = DataNode()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
 
     assert data_node.model is None
 
@@ -126,7 +126,7 @@ def test_predict(data_and_labels):
     instance must not be called."""
     model_mock = Mock()
     data_node = DataNode()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
 
     data_node.predict(data_and_labels[0])
 
@@ -143,7 +143,7 @@ def test_set_params():
     random_array = np.random.rand(30)
     model_mock = Mock()
     data_node = DataNode()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
 
     data_node.set_model_params(random_array)
 
@@ -159,7 +159,7 @@ def test_evaluate(data_and_labels):
     instance must not be called."""
     model_mock = Mock()
     data_node = DataNode()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
 
     data_node.evaluate(*data_and_labels)
 
@@ -175,7 +175,7 @@ def test_local_evaluate(data_and_labels):
     data_node.set_private_test_data(data_key, LabeledData(*data_and_labels))
 
     model_mock = Mock()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
     copy_mock.evaluate.return_value = 0.8
 
     evaluation = data_node.local_evaluate(data_key)
@@ -198,7 +198,7 @@ def test_performance(data_and_labels):
     """Checks that the node correctly calls the model's performance."""
     data_node = DataNode()
     model_mock = Mock()
-    data_node.model = model_mock
+    data_node.set_model(model_mock)
     copy_mock.performance.return_value = 0.8
 
     performance = data_node.performance(*data_and_labels)

@@ -39,15 +39,6 @@ class DataNode:
         print(type(self._model))
         print(self._model)
 
-    @model.setter
-    def model(self, model):
-        """Sets the model to use in the node.
-
-        # Arguments:
-            model: Instance of a class implementing ~TrainableModel.
-        """
-        self._model = copy.deepcopy(model)
-
     @property
     def private_data(self):
         """Allows to see train data for this node, but not to retrieve it.
@@ -65,6 +56,14 @@ class DataNode:
               "but the data remains in the node.")
         print(type(self._private_test_data))
         print(self._private_test_data)
+
+    def set_model(self, model):
+        """Sets the model to use in the node.
+
+        # Arguments:
+            model: Instance of a class implementing ~TrainableModel.
+        """
+        self._model = copy.deepcopy(model)
 
     def set_private_data(self, name, data):
         """Copies the data in private memory.
