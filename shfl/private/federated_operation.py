@@ -15,6 +15,10 @@ class FederatedData:
     available at "federated level", meaning that when invoking a node's
     method from this object, the method gets executed on all the member nodes.
 
+    # Arguments:
+        federated_data_nodes: Optional. List of FederateDataNode
+          (see: [FederatedDataNode](../private/federated_operation/#federateddatanode-class)
+
     # Example:
 
     ```python
@@ -41,8 +45,12 @@ class FederatedData:
     ```
     """
 
-    def __init__(self):
-        self._data_nodes = []
+    def __init__(self, federated_data_nodes=None):
+        if federated_data_nodes is None:
+            federated_data_nodes = []
+        self._data_nodes = federated_data_nodes
+
+        # Generate methods consisting of invoking the same method on every node
         node_methods_list = [func for func in dir(FederatedDataNode)
                              if callable(getattr(FederatedDataNode, func))
                              and not func.startswith("__")]
