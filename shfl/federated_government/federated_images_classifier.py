@@ -5,11 +5,10 @@ import tensorflow as tf
 from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
-from shfl.private.federated_operation import FederatedTransformation
 from shfl.model.deep_learning_model import DeepLearningModel
 from shfl.data_base.emnist import Emnist
 from shfl.data_base.fashion_mnist import FashionMnist
-from shfl.private.federated_operation import Normalize
+from shfl.private.utils import normalize_query
 
 
 class FederatedImagesClassifier(FederatedGovernment):
@@ -54,10 +53,11 @@ class FederatedImagesClassifier(FederatedGovernment):
                  self._test_data.shape[1],
                  self._test_data.shape[2], 1))
 
-            federated_data.apply_data_transformation(Reshape())
+            federated_data.apply_data_transformation(reshape_query)
             mean = np.mean(train_data.data)
             std = np.std(train_data.data)
-            federated_data.apply_data_transformation(Normalize(mean, std))
+            federated_data.apply_data_transformation(normalize_query,
+                                                     mean=mean, std=std)
 
             aggregator = FedAvgAggregator()
 
@@ -109,16 +109,13 @@ class FederatedImagesClassifier(FederatedGovernment):
                                  optimizer=optimizer, metrics=metrics)
 
 
-class Reshape(FederatedTransformation):
-    """Reshapes the data in the set of federated nodes.
-    """
-    def apply(self, data):
-        """See base class."""
-        data.data = np.reshape(
-            data.data,
-            (data.data.shape[0],
-             data.data.shape[1],
-             data.data.shape[2], 1))
+def reshape_query(data):
+    """Reshapes the data in the set of federated nodes."""
+    data.data = np.reshape(
+        data.data,
+        (data.data.shape[0],
+         data.data.shape[1],
+         data.data.shape[2], 1))
 
 
 class ImagesDataBases(Enum):

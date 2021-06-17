@@ -7,21 +7,10 @@ from shfl.private.federated_operation import FederatedData
 from shfl.private.federated_operation import FederatedDataNode
 from shfl.private.federated_operation import ServerDataNode
 from shfl.private.federated_operation import VerticalServerDataNode
-from shfl.private.federated_operation import FederatedTransformation
-from shfl.private.federated_operation import Normalize
 from shfl.private.federated_operation import federate_array
 from shfl.private.federated_operation import federate_list
 from shfl.private.data import UnprotectedAccess, LabeledData
-
-
-class TestTransformation(FederatedTransformation):
-    """Creates a data transformation class for testing."""
-    def apply(self, data):
-        """Sums a number to the input data."""
-        data += 1
-
-    def apply_second(self, data):
-        """Dummy public method necessary to pylint."""
+from shfl.private.utils import normalize_query
 
 
 @pytest.fixture(name="federated_array")
@@ -334,9 +323,12 @@ def test_vertical_server_wrong_samples_indices():
 def test_federate_transformation(federated_array):
     """Checks that the federated transformation is correctly applied on a set
     of federated data nodes."""
+    def transformation_query(data):
+        """Some data transformation."""
+        data += 1
     federated_data, input_array = federated_array
 
-    federated_data.apply_data_transformation(TestTransformation())
+    federated_data.apply_data_transformation(transformation_query)
 
     for i, data_node in enumerate(federated_data):
         assert data_node.query() == input_array[i] + 1
@@ -348,7 +340,7 @@ def test_federated_normalization(federated_data_multiple_nodes):
     standard_deviation = 0.2
     mean = 0.4
 
-    federated_data.apply_data_transformation(Normalize(mean=mean, std=standard_deviation))
+    federated_data.apply_data_transformation(normalize_query, mean=mean, std=standard_deviation)
 
     for i, data_node in enumerate(federated_data):
         normalized_data = (input_data[i] - mean) / standard_deviation

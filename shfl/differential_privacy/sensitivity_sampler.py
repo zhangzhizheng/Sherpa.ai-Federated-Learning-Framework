@@ -45,8 +45,7 @@ class SensitivitySampler:
         On the other hand, small `gamma` (e.g., 0.05) prioritizes privacy.
 
         # Arguments:
-            query: Function to apply on private data
-                (see class [Query](../../private/query)).
+            query: Function to apply on private data.
             sensitivity_norm: Function defining the norm to use
                 (see [Norm](../norm)).
             oracle: Probability distribution to sample from.
@@ -115,8 +114,7 @@ class SensitivitySampler:
         of the difference of the results.
 
         # Arguments:
-            query: Function to apply on private data
-                (see: [Query](../../private/query)).
+            query: Function to apply on private data.
             sensitivity_norm: Function to compute the sensitivity norm
                 (see: [Norm](../norm)).
             data_base_1: The database to be queried.
@@ -126,8 +124,8 @@ class SensitivitySampler:
             The norm of the difference of the queries.
         """
 
-        return sensitivity_norm.compute(query.get(data_base_1),
-                                        query.get(data_base_2))
+        return sensitivity_norm.compute(query(data_base_1),
+                                        query(data_base_2))
 
     @staticmethod
     def _get_optimal_values(m_sample_size, gamma):

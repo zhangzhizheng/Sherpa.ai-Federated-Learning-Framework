@@ -28,6 +28,6 @@ class FederatedAggregator(abc.ABC):
                 model's parameters.
 
         # Returns:
-            aggregated_weights: The aggregated model's parameters.
+            aggregated_params: The aggregated model's parameters.
                 Typically, this represents the collaborative (global) model.
         """

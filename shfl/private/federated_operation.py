@@ -160,11 +160,11 @@ class FederatedDataNode(DataNode):
         """
         super().train_model(self._federated_data_identifier, **kwargs)
 
-    def apply_data_transformation(self, federated_transformation):
+    def apply_data_transformation(self, federated_transformation, **kwargs):
         """See base class.
         """
         super().apply_data_transformation(self._federated_data_identifier,
-                                          federated_transformation)
+                                          federated_transformation, **kwargs)
 
     def evaluate(self, data, labels):
         """Evaluates the performance of the model.
@@ -396,44 +396,6 @@ class VerticalServerDataNode(FederatedDataNode):
         if not all(np.array_equal(sample_indices[0], item)
                    for item in sample_indices):
             raise AssertionError("Clients samples' indices do not match.")
-
-
-class FederatedTransformation(abc.ABC):
-    """Applies a federated transformation over the federated data.
-
-    Abstract method.
-    """
-
-    @abc.abstractmethod
-    def apply(self, data):
-        """Applies an arbitrary transformation on the node's private data.
-
-        This method must be implemented in order to define how
-        to transform the node's private data.
-
-        # Arguments:
-            data: The node's private data to be transformed.
-
-        # Example:
-            See implementation of class [Normalize](./#normalize-class).
-        """
-
-
-class Normalize(FederatedTransformation):
-    """Applies a normalization over a set of federated nodes.
-
-    Implements the class [FederatedTransformation](./#federatedtransformation-class).
-
-    # Arguments:
-        mean: Mean used for the normalization.
-        std: Standard deviation used for the normalization.
-    """
-    def __init__(self, mean, std):
-        self.__mean = mean
-        self.__std = std
-
-    def apply(self, data):
-        data.data = (data.data - self.__mean) / self.__std
 
 
 def federate_array(data, num_nodes):

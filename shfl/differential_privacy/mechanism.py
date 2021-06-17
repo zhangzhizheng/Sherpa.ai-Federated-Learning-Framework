@@ -5,9 +5,8 @@ import numpy as np
 import scipy
 from multipledispatch import dispatch
 
-
 from shfl.private.data import DPDataAccessDefinition
-from shfl.private.query import IdentityFunction
+from shfl.private.utils import unprotected_query
 
 
 class RandomizedResponseCoins(DPDataAccessDefinition):
@@ -59,7 +58,7 @@ class RandomizedResponseCoins(DPDataAccessDefinition):
     def epsilon_delta(self):
         return self._epsilon_delta
 
-    def apply(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         """Randomizes the input binary data.
 
         # Arguments:
@@ -152,7 +151,7 @@ class RandomizedResponseBinary(DPDataAccessDefinition):
     def epsilon_delta(self):
         return self._epsilon, 0
 
-    def apply(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         """Randomizes the input binary data.
 
         # Arguments:
@@ -238,9 +237,7 @@ class LaplaceMechanism(DPDataAccessDefinition):
            https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf)
     """
 
-    def __init__(self, sensitivity, epsilon, query=None):
-        if query is None:
-            query = IdentityFunction()
+    def __init__(self, sensitivity, epsilon, query=unprotected_query):
 
         self._check_epsilon_delta((epsilon, 0))
         self._sensitivity = sensitivity
@@ -264,7 +261,7 @@ class LaplaceMechanism(DPDataAccessDefinition):
             raise KeyError("The sensitivity does not contain "
                            "the key {}".format(i) + ".") from wrong_shape
 
-    def apply(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         """Applies Laplace noise to the input data.
 
         # Arguments:
@@ -274,7 +271,7 @@ class LaplaceMechanism(DPDataAccessDefinition):
             result: Array-type object of same shape as the input
                 containing the differentially-private randomized data.
         """
-        query_result = self._query.get(data)
+        query_result = self._query(data)
 
         return self._add_noise(query_result, self._sensitivity)
 
@@ -333,9 +330,7 @@ class GaussianMechanism(DPDataAccessDefinition):
            https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf)
     """
 
-    def __init__(self, sensitivity, epsilon_delta, query=None):
-        if query is None:
-            query = IdentityFunction()
+    def __init__(self, sensitivity, epsilon_delta, query=unprotected_query):
 
         self._check_epsilon_delta(epsilon_delta)
         if epsilon_delta[0] >= 1:
@@ -351,7 +346,7 @@ class GaussianMechanism(DPDataAccessDefinition):
     def epsilon_delta(self):
         return self._epsilon_delta
 
-    def apply(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         """Adds Gaussian noise to the input data.
 
         # Arguments:
@@ -361,7 +356,7 @@ class GaussianMechanism(DPDataAccessDefinition):
             result: Array-type object of same shape as the input
                 containing the differentially-private randomized data.
         """
-        query_result = np.asarray(self._query.get(data))
+        query_result = np.asarray(self._query(data))
         sensitivity = np.asarray(self._sensitivity)
         self._check_sensitivity_shape(sensitivity, query_result)
         std = sqrt(2 * np.log(1.25 / self._epsilon_delta[1])) * \
@@ -422,7 +417,7 @@ class ExponentialMechanism(DPDataAccessDefinition):
     def epsilon_delta(self):
         return self._epsilon, 0
 
-    def apply(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         """Adds Exponential noise to the input data.
 
         # Arguments:

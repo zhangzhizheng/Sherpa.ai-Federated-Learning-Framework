@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from shfl.private.query import Mean
+from shfl.private.utils import mean_query
 from shfl.differential_privacy.probability_distribution import NormalDistribution
 from shfl.differential_privacy import SensitivitySampler
 from shfl.differential_privacy import L1SensitivityNorm
@@ -13,7 +13,7 @@ def test_sample_sensitivity_gamma():
     distribution = NormalDistribution(0, 1)
 
     sampler = SensitivitySampler()
-    _, mean = sampler.sample_sensitivity(Mean(), L1SensitivityNorm(),
+    _, mean = sampler.sample_sensitivity(mean_query, L1SensitivityNorm(),
                                          distribution, n_data_size=100,
                                          gamma=0.33)
 
@@ -25,7 +25,7 @@ def test_sample_sensitivity_m_sample_size():
     distribution = NormalDistribution(0, 1)
 
     sampler = SensitivitySampler()
-    _, mean = sampler.sample_sensitivity(Mean(), L1SensitivityNorm(),
+    _, mean = sampler.sample_sensitivity(mean_query, L1SensitivityNorm(),
                                          distribution, n_data_size=100,
                                          m_sample_size=285)
 
@@ -37,7 +37,7 @@ def test_sample_sensitivity_gamma_m_sample_size():
     distribution = NormalDistribution(0, 1)
 
     sampler = SensitivitySampler()
-    _, mean = sampler.sample_sensitivity(Mean(), L1SensitivityNorm(),
+    _, mean = sampler.sample_sensitivity(mean_query, L1SensitivityNorm(),
                                          distribution, n_data_size=100,
                                          m_sample_size=285, gamma=0.33)
 
@@ -49,7 +49,7 @@ def test_l2_sensitivity_norm():
     distribution = NormalDistribution(0, 1)
 
     sampler = SensitivitySampler()
-    _, mean = sampler.sample_sensitivity(Mean(), L2SensitivityNorm(),
+    _, mean = sampler.sample_sensitivity(mean_query, L2SensitivityNorm(),
                                          distribution, n_data_size=100,
                                          m_sample_size=285, gamma=0.33)
 
@@ -64,13 +64,12 @@ def test_sensitivity_norm_list_of_arrays(sensitivity_norm):
     def reshape_to_list(data):
         """Reshapes the input data into a list of arrays."""
         return list(np.reshape(data, (20, 30, 40)))
-    query = type('ReshapeToList', (object,), {'get': reshape_to_list})
 
     distribution = NormalDistribution(0, 1.5)
     sampler = SensitivitySampler()
 
     max_sensitivity, mean_sensitivity = \
-        sampler.sample_sensitivity(query=query,
+        sampler.sample_sensitivity(query=reshape_to_list,
                                    sensitivity_norm=sensitivity_norm(),
                                    oracle=distribution,
                                    n_data_size=20 * 30 * 40,

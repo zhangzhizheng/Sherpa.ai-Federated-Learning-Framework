@@ -65,13 +65,38 @@ class DataAccessDefinition(abc.ABC):
         """
 
 
-class DPDataAccessDefinition(DataAccessDefinition):
+class DPDataAccessDefinition:
     """Interface defining a differentially private query
         to the node's private properties.
-
-    It implements the class
-    [DataAccessDefinition](./#dataaccessdefinition-class).
     """
+
+    @property
+    @abc.abstractmethod
+    def epsilon_delta(self):
+        """Every differentially private mechanism must implement this property.
+
+        Abstract method.
+
+        # Returns:
+            epsilon_delta: Privacy budget spent each time this
+                differentially private mechanism is used.
+        """
+
+    @abc.abstractmethod
+    def __call__(self, data, **kwargs):
+        """Applies an arbitrary query on the node's private property.
+
+        Abstract method.
+
+        It must be implemented in order to define how
+        to query a node's private property.
+
+        # Arguments:
+            data: Node's private data to be accessed.
+
+        # Returns:
+            result_data: Result from the query on the node's private data.
+        """
 
     @staticmethod
     def _check_epsilon_delta(epsilon_delta):
@@ -146,18 +171,6 @@ class DPDataAccessDefinition(DataAccessDefinition):
                                  str(sensitivity.shape) +
                                  " cannot broadcast to query result dimension " +
                                  str(query_result.shape) + ".")
-
-    @property
-    @abc.abstractmethod
-    def epsilon_delta(self):
-        """Every differentially private mechanism must implement this property.
-
-        Abstract method.
-
-        # Returns:
-            epsilon_delta: Privacy budget spent each time this
-                differentially private mechanism is used.
-        """
 
 
 class UnprotectedAccess(DataAccessDefinition):

@@ -12,7 +12,7 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
     # Arguments:
         epsilon_delta: Tuple or array of length 2 containing
             the epsilon-delta privacy budget for this data.
-        differentially_private_mechanism: Optional; The method to access data.
+        mechanism: Optional; The method to access data.
             If not set, it is mandatory to pass it in every query.
 
     # Properties:
@@ -36,15 +36,14 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
         self._epsilon_delta_access_history = []
         self._private_data_epsilon_delta_access_history = []
         if mechanism is not None:
-            _check_differentially_private_mechanism(
-                mechanism)
+            _check_mechanism(mechanism)
         self._mechanism = mechanism
 
     @property
     def epsilon_delta(self):
         return self._epsilon_delta
 
-    def apply(self, data, mechanism=None):
+    def __call__(self, data, mechanism=None):
         """Applies a differentially private mechanism
             if the privacy budget allows it.
 
@@ -52,17 +51,15 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
 
         # Arguments:
             data: Input data which to be accessed with differential privacy.
-            differentially_private_mechanism: The mechanism providing
-                differential privacy.
+            mechanism: The mechanism providing differential privacy.
 
         # Returns:
             result: Array-type object of same shape as the input
                 containing the differentially-private randomized data.
         """
-        differentially_private_mechanism_to_apply = \
-            self._get_data_access_definition(mechanism)
+        mechanism = self._get_data_access_definition(mechanism)
         self._private_data_epsilon_delta_access_history.append(
-            differentially_private_mechanism_to_apply.epsilon_delta)
+            mechanism.epsilon_delta)
 
         privacy_budget_exceeded = self.__basic_adaptive_comp_theorem()
         if 0 < self._epsilon_delta[1] < exp(-1):
@@ -72,7 +69,7 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
             self._private_data_epsilon_delta_access_history.pop()
             raise ExceededPrivacyBudgetError(epsilon_delta=self._epsilon_delta)
 
-        return differentially_private_mechanism_to_apply.apply(data)
+        return mechanism(data)
 
     def _get_data_access_definition(self, data_access_definition):
         """Checks and returns the provided differential privacy mechanism.
@@ -90,7 +87,7 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
             or the default one given in the constructor.
         """
         if data_access_definition is not None:
-            _check_differentially_private_mechanism(data_access_definition)
+            _check_mechanism(data_access_definition)
             return data_access_definition
         if self._mechanism is None:
             raise ValueError("The data access definition is not configured. "
@@ -140,7 +137,7 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
             delta_sum > (global_delta * 0.5)
 
 
-def _check_differentially_private_mechanism(data_access_mechanism):
+def _check_mechanism(data_access_mechanism):
     """Checks whether the data access mechanism provides differential privacy.
 
     # Arguments:

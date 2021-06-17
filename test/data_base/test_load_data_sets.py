@@ -8,7 +8,7 @@ from shfl.data_base.federated_emnist import FederatedEmnist
 from shfl.data_base.fashion_mnist import FashionMnist
 from shfl.data_base.iris import Iris
 from shfl.data_base.lfw import Lfw
-from shfl.data_base.purchase100 import Purchase100
+# from shfl.data_base.purchase100 import Purchase100
 
 
 @pytest.mark.parametrize("data_set",
@@ -19,8 +19,8 @@ from shfl.data_base.purchase100 import Purchase100
                           FederatedEmnist,
                           FashionMnist,
                           Iris,
-                          Lfw,
-                          Purchase100])
+                          Lfw])
+                          # Purchase100])
 def test_data_set_load(data_set):
     """Tests the dataset loading."""
     data = data_set()

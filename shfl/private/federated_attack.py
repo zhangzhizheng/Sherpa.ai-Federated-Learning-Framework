@@ -2,7 +2,7 @@ import abc
 import random
 import numpy as np
 
-from shfl.private.federated_operation import FederatedTransformation
+from shfl.private.utils import shuffle_node_query
 
 
 class FederatedDataAttack(abc.ABC):
@@ -70,14 +70,4 @@ class FederatedPoisoningDataAttack(FederatedDataAttack):
 
         for node, boolean in zip(federated_data, boolean_adversaries):
             if boolean:
-                node.apply_data_transformation(ShuffleNode())
-
-
-class ShuffleNode(FederatedTransformation):
-    """Shuffles the target labels in a node.
-
-    Implements the class
-    [FederatedTransformation](../federated_operation/#federatedtransformation-class).
-    """
-    def apply(self, data):
-        random.shuffle(data.label)
+                node.apply_data_transformation(shuffle_node_query)

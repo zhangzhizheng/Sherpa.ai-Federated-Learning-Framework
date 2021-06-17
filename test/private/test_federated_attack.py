@@ -2,7 +2,7 @@ import numpy as np
 
 from shfl.private.federated_operation import FederatedData
 from shfl.private.data import LabeledData
-from shfl.private.federated_attack import ShuffleNode
+from shfl.private.utils import shuffle_node_query
 from shfl.private.federated_attack import FederatedPoisoningDataAttack
 from shfl.private.data import UnprotectedAccess
 
@@ -12,7 +12,7 @@ def test_shuffle_node(data_and_labels):
     labeled_data = LabeledData(*data_and_labels)
     federated_data = FederatedData()
     federated_data.append_data_node(labeled_data)
-    federated_data.apply_data_transformation(ShuffleNode())
+    federated_data.apply_data_transformation(shuffle_node_query)
     federated_data.configure_data_access(UnprotectedAccess())
 
     assert (not np.array_equal(federated_data[0].query().label,

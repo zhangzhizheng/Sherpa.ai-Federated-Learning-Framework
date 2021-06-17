@@ -1,6 +1,6 @@
 import copy
 
-from shfl.private.data import UnprotectedAccess
+from shfl.private.utils import unprotected_query
 
 
 class DataNode:
@@ -28,8 +28,10 @@ class DataNode:
         self._private_test_data = {}
         self._private_data_access_policies = {}
         self._model = None
-        self.configure_model_params_access(UnprotectedAccess())
+        self._model_params_access_policy = None
         self._model_access_policy = None
+
+        self.configure_model_params_access(unprotected_query)
 
     @property
     def model(self):
@@ -174,7 +176,7 @@ class DataNode:
         """
         self._model_access_policy = copy.deepcopy(data_access_definition)
 
-    def apply_data_transformation(self, private_property, federated_transformation):
+    def apply_data_transformation(self, private_property, federated_transformation, **kwargs):
         """Applies a transformation over the private data.
 
         # Arguments:
@@ -182,7 +184,7 @@ class DataNode:
             federated_transformation: Transformation to apply
                 (see: [Federated Operation](../federated_operation)).
         """
-        federated_transformation.apply(self._private_data[private_property])
+        federated_transformation(self._private_data[private_property], **kwargs)
 
     def query(self, private_property, **kwargs):
         """Queries the private data.
@@ -202,7 +204,7 @@ class DataNode:
                              "querying the data.")
 
         data_access_policy = self._private_data_access_policies[private_property]
-        return data_access_policy.apply(self._private_data[private_property], **kwargs)
+        return data_access_policy(self._private_data[private_property], **kwargs)
 
     def query_model_params(self):
         """Queries model's parameters.
@@ -228,7 +230,7 @@ class DataNode:
             raise ValueError("By default, the model cannot be accessed. "
                              "You need to define a model access policy first.")
 
-        return self._model_access_policy.apply(self._model, **kwargs)
+        return self._model_access_policy(self._model, **kwargs)
 
     def set_model_params(self, model_params):
         """Sets the parameters of the model used in the node.

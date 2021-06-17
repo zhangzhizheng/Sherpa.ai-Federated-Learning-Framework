@@ -25,7 +25,7 @@ class Sampler(DPDataAccessDefinition):
     def __init__(self, dp_mechanism):
         self._dp_mechanism = dp_mechanism
 
-    def apply(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         """Samples the input data and applies the differential privacy mechanism.
 
         # Arguments:
@@ -36,7 +36,7 @@ class Sampler(DPDataAccessDefinition):
                 containing the differentially-private randomized data.
         """
         sampled_data = self.sample(data)
-        return self._dp_mechanism.apply(sampled_data)
+        return self._dp_mechanism(sampled_data)
 
     @property
     def epsilon_delta(self):

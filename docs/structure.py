@@ -42,17 +42,7 @@ PAGES = [
         'page': 'private/data.md',
         'classes': [
             private.data.LabeledData,
-            (private.data.DataAccessDefinition, ['apply']),
-            private.data.DPDataAccessDefinition,
-            private.data.UnprotectedAccess
-        ]
-    },
-    {
-        'page': 'private/query.md',
-        'classes': [
-            (private.query.Query, ["get"]),
-            private.query.IdentityFunction,
-            private.query.Mean
+            private.data.DPDataAccessDefinition
         ]
     },
     {
@@ -71,9 +61,7 @@ PAGES = [
                                                           "aggregate_weights"]),
             (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
                                                                   "evaluate_collaborative_model",
-                                                                  "aggregate_weights"]),
-            (private.federated_operation.FederatedTransformation, ["apply"]),
-            private.federated_operation.Normalize
+                                                                  "aggregate_weights"])
         ],
         'functions': [
             private.federated_operation.federate_array,
@@ -84,8 +72,7 @@ PAGES = [
         'page': 'private/federated_attack.md',
         'classes': [
             (private.federated_attack.FederatedDataAttack, ['apply_attack']),
-            private.federated_attack.FederatedPoisoningDataAttack,
-            private.federated_attack.ShuffleNode
+            private.federated_attack.FederatedPoisoningDataAttack
         ]
     },
     {
