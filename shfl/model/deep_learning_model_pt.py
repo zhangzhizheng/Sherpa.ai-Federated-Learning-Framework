@@ -1,8 +1,11 @@
+# Disable too many arguments and instances: needed for Pytorch train loop
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 from shfl.model.model import TrainableModel
+from .utils import _check_labels
 
 
 class DeepLearningModelPyTorch(TrainableModel):
@@ -23,11 +26,14 @@ class DeepLearningModelPyTorch(TrainableModel):
     # References:
         [PyTorch](https://pytorch.org/)
     """
+
+    _check_labels = _check_labels
+
     def __init__(self, model, loss, optimizer,
                  batch_size=32, epochs=1, metrics=None, device="cpu"):
         self._model = model
-        self._data_shape = self.get_model_params()[0].shape[1]
-        self._labels_shape = self.get_model_params()[-1].shape
+        self._in_out_sizes = (self.get_model_params()[0].shape[1],
+                              self.get_model_params()[-1].shape)
         self._loss = loss
         self._optimizer = optimizer
 
@@ -157,15 +163,8 @@ class DeepLearningModelPyTorch(TrainableModel):
                 ant.data = torch.from_numpy(post).float()
 
     def _check_data(self, data):
-        if data.shape[1] != self._data_shape:
+        if data.shape[1] != self._in_out_sizes[0]:
             raise AssertionError(
                 "Data need to have the same dimension described by the model " +
-                str(self._data_shape) + ". Current data have dimension " +
+                str(self._in_out_sizes[0]) + ". Current data have dimension " +
                 str(data.shape[1]) + ".")
-
-    def _check_labels(self, labels):
-        if labels.shape[1:] != self._labels_shape:
-            raise AssertionError(
-                "Labels need to have the same shape described by the model " +
-                str(self._labels_shape) + ". Current labels have shape " +
-                str(labels.shape[1:]) + ".")

@@ -72,8 +72,7 @@ class LabeledDatabase(DataBase):
 
     def __init__(self, data, labels, train_proportion=0.8, shuffle=True):
         super().__init__()
-        self._data = data
-        self._labels = labels
+        self._data_and_labels = (data, labels)
         self._train_proportion = train_proportion
         self._shuffle = shuffle
 
@@ -94,13 +93,12 @@ class LabeledDatabase(DataBase):
             and test data and labels.
         """
         if self._shuffle:
-            self._data, self._labels = \
-                shuffle_rows(self._data, self._labels)
+            self._data_and_labels = shuffle_rows(*self._data_and_labels)
 
         self._train_data, self._train_labels, \
             self._test_data, self._test_labels = \
-            split_train_test(self._data, self._labels,
-                             self._train_proportion)
+            split_train_test(*self._data_and_labels,
+                             train_proportion=self._train_proportion)
 
 
 def shuffle_rows(data, labels):
@@ -112,26 +110,16 @@ def shuffle_rows(data, labels):
         data: Array-like object containing data.
         labels: Array-like object containing target labels.
     """
+
+    check_array_like_data_type(data)
+    check_array_like_data_type(labels)
+
     randomize = np.arange(len(labels))
     np.random.shuffle(randomize)
+    shuffled_data = get_rows(data, randomize)
+    shuffled_labels = get_rows(labels, randomize)
 
-    print()
-
-    if isinstance(data, (pd.DataFrame, pd.Series)) and \
-            isinstance(labels, (pd.DataFrame, pd.Series)):
-        data = data.iloc[randomize]
-        labels = labels.iloc[randomize]
-
-    elif isinstance(data, np.ndarray) and \
-            isinstance(labels, np.ndarray):
-        data = data[randomize, ]
-        labels = labels[randomize]
-
-    else:
-        raise TypeError("Data and labels must be either "
-                        "pd.DataFrame/pd.Series or numpy arrays.")
-
-    return data, labels
+    return shuffled_data, shuffled_labels
 
 
 def split_train_test(data, labels, train_proportion=0.8):
@@ -162,76 +150,101 @@ def split_train_test(data, labels, train_proportion=0.8):
 
 
 def vertical_split(data, labels, indices_or_sections=2,
-                   equal_size=False, train_proportion=0.8,
-                   v_shuffle=True, h_shuffle=True):
-    """Splits a dataset vertically.
-
-    Splits a an array-like object along columns.
+                   train_proportion=0.8, v_shuffle=True):
+    """Splits a dataset along columns.
 
     # Arguments:
-        data: dataframe or numpy array
-        labels: series or array containing the target labels
-        n_chunks: integer denoting the desired number of vertical splits
-        indices_or_sections: int or 1-D array containing
+        data: Dataframe or numpy array.
+        labels: Series or array containing the target labels.
+        indices_or_sections: Optional; Int or 1-D array containing
             column indices (integers) at which to split
-            (see [numpy split](https://numpy.org/doc/stable/reference/generated/numpy.split.html)).
-            If requested split is not possible, an error is raised.
-        equal_size: Boolean for splitting in equal number of columns.
-            Only used if "indices_or_sections" is int.
-        train_percentage: float between 0 and 1 to indicate how much data
+            (see [`numpy.array_split`](https://numpy.org/doc/stable/\
+reference/generated/numpy.array_split.html)).
+        train_proportion: Optional; Float between 0 and 1 indicating how much data
             is dedicated to train (if 1 is provided, data is
-            assigned entirely to train)
+            assigned entirely to train).
         v_shuffle: Boolean for shuffling columns before the vertical split
-            (default True)
-        h_shuffle: Boolean for shuffling rows before the train/test split
-            (default True)
+            (default True).
 
     # Returns:
-        train_data: list whose items contain the train data
-            of each chunk
-        train_labels: train labels (it is the same for all train chunks)
-        test_data: list whose items contain the test data
-            of one single chunk
-        test_labels: test labels (it is the same for all test chunks)
+        train_data: List whose items contain the train data
+            of each chunk.
+        train_labels: Train labels (it is the same for all train chunks)
+        test_data: List whose items contain the test data
+            of one single chunk.
+        test_labels: Test labels (it is the same for all test chunks).
     """
 
-    # pylint: disable=too-many-arguments
-    # Seven is reasonable, although we might consider future refactoring.
+    check_array_like_data_type(data)
 
-    if isinstance(data, np.ndarray):
-        def get_slice(dataset, col_index):
-            return dataset[:, col_index]
-    elif isinstance(data, pd.DataFrame):
-        def get_slice(dataset, col_index):
-            return dataset.iloc[:, col_index]
-    else:
-        raise TypeError("Data must be either a pd.DataFrame or "
-                        "a numpy array.")
-
-    # Get column indices for split:
     n_features = data.shape[1]
     features = np.arange(n_features)
     if v_shuffle:
         np.random.shuffle(features)
-    if not hasattr(indices_or_sections, "__len__"):
-        if not equal_size:
-            indices_or_sections = np.sort(np.random.choice(
-                np.arange(1, n_features), indices_or_sections - 1,
-                replace=False))
-
-    if h_shuffle:
-        data, labels = shuffle_rows(data, labels)
 
     # Split train/test samples (horizontally on rows):
     train_data, train_labels, test_data, test_labels = \
         split_train_test(data, labels, train_proportion)
 
     # Split features (vertically on columns):
-    chunks_indices = np.split(features, indices_or_sections)
-    train_data = [get_slice(train_data, indices)
+    chunks_indices = np.array_split(features, indices_or_sections)
+    train_data = [get_columns(train_data, indices)
                   for indices in chunks_indices]
     if len(test_data) > 0:
-        test_data = [get_slice(test_data, indices)
+        test_data = [get_columns(test_data, indices)
                      for indices in chunks_indices]
 
     return train_data, train_labels, test_data, test_labels
+
+
+def get_rows(data, rows_indices):
+    """Gets the desired columns in data.
+
+    # Arguments:
+        data: Input data, an array-like object.
+        rows_indices: Array, the desired rows' indices.
+
+    # Return:
+        selected_rows: The desired columns of data.
+    """
+    selected_rows = None
+    if isinstance(data, np.ndarray):
+        selected_rows = data[rows_indices, ]
+    if isinstance(data, (pd.DataFrame, pd.Series)):
+        selected_rows = data.iloc[rows_indices]
+
+    return selected_rows
+
+
+def get_columns(data, column_indices):
+    """Gets the desired columns in data.
+
+    # Arguments:
+        data: Input data, an array-like object.
+        column_indices: Array, the desired columns' indices.
+
+    # Return:
+        selected_columns: The desired columns of data.
+    """
+    selected_columns = None
+    if isinstance(data, np.ndarray):
+        selected_columns = data[:, column_indices]
+    if isinstance(data, (pd.DataFrame, pd.Series)):
+        selected_columns = data.iloc[:, column_indices]
+
+    return selected_columns
+
+
+def check_array_like_data_type(data):
+    """Checks that the data is in one of the allowed types.
+
+    At the present, only array-like types are allowed.
+
+    # Arguments:
+        data: Data to be checked.
+    """
+
+    allowed_types = (np.ndarray, pd.DataFrame, pd.Series)
+    if type(data) not in allowed_types:
+        raise TypeError("Data must be either a pd.DataFrame or "
+                        "a numpy array.")

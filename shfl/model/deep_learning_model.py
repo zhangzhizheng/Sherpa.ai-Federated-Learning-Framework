@@ -1,8 +1,12 @@
+# Disable warning from tensorflow EarlyStopping: not our responsibility
+# Disable too many arguments: needed for this case
+
 import copy
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 
 from shfl.model.model import TrainableModel
+from .utils import _check_labels
 
 
 class DeepLearningModel(TrainableModel):
@@ -21,12 +25,14 @@ class DeepLearningModel(TrainableModel):
     # References:
         [TensorFlow](https://www.tensorflow.org/)
     """
+
+    _check_labels = _check_labels
+
     def __init__(self, model, loss, optimizer,
                  batch_size=None, epochs=1, metrics=None):
         self._model = model
-        self._data_shape = model.layers[0].get_input_shape_at(0)[1:]
-        self._labels_shape = model.layers[-1].get_output_shape_at(0)[1:]
-
+        self._in_out_sizes = (model.layers[0].get_input_shape_at(0)[1:],
+                              model.layers[-1].get_output_shape_at(0)[1:])
         self._batch_size = batch_size
         self._epochs = epochs
         self._loss = loss
@@ -112,18 +118,11 @@ class DeepLearningModel(TrainableModel):
     def _check_data(self, data):
         """Checks if the data dimension is correct.
         """
-        if data.shape[1:] != self._data_shape:
+        if data.shape[1:] != self._in_out_sizes[0]:
             raise AssertionError(
                 "Data need to have the same shape described by the model " +
-                str(self._data_shape) + " .Current data has shape " +
+                str(self._in_out_sizes[0]) + " .Current data has shape " +
                 str(data.shape[1:]) + ".")
-
-    def _check_labels(self, labels):
-        if labels.shape[1:] != self._labels_shape:
-            raise AssertionError(
-                "Labels need to have the same shape described by the model " +
-                str(self._labels_shape) + ". Current labels have shape " +
-                str(labels.shape[1:]) + ".")
 
     def __deepcopy__(self, memo):
         """Overwrites deepcopy method.

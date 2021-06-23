@@ -48,7 +48,7 @@ PAGES = [
     {
         'page': 'private/federated_operation.md',
         'classes': [
-            (private.federated_operation.FederatedData, ["append_data_node",
+            (private.federated_operation.NodesFederation, ["append_data_node",
                                                          "num_nodes"]),
             (private.federated_operation.FederatedDataNode, ['configure_data_access',
                                                              'set_private_data',
@@ -103,7 +103,8 @@ PAGES = [
         ],
         'functions': [
             data_base.data_base.shuffle_rows,
-            data_base.data_base.split_train_test
+            data_base.data_base.split_train_test,
+            data_base.data_base.vertical_split,
         ]
     },
     {
@@ -154,16 +155,16 @@ PAGES = [
     {
         'page': 'federated_aggregator.md',
         'classes': [
-            (federated_aggregator.federated_aggregator.FederatedAggregator, ["aggregate_weights"]),
+            (federated_aggregator.federated_aggregator.FederatedAggregator, ["__call__"]),
             federated_aggregator.fedavg_aggregator.FedAvgAggregator,
             federated_aggregator.fedsum_aggregator.FedSumAggregator,
-            federated_aggregator.weighted_fedavg_aggregator.WeightedFedAvgAggregator,
+            federated_aggregator.weighted_fedavg_aggregator.WeightedFedAggregator,
             (federated_aggregator.iowa_federated_aggregator.IowaFederatedAggregator, ['set_ponderation', 'q_function',
                                                                                       'get_ponderation_weights']),
             federated_aggregator.norm_clip_aggregators.NormClipAggregator,
             federated_aggregator.norm_clip_aggregators.CDPAggregator,
             federated_aggregator.norm_clip_aggregators.WeakDPAggregator,
-            federated_aggregator.cluster_fedavg_aggregator.ClusterFedAvgAggregator
+            federated_aggregator.cluster_fedavg_aggregator.cluster_fed_avg_aggregator
         ]
     },
     {
@@ -173,7 +174,6 @@ PAGES = [
                                                                              'run_rounds']),
             (federated_government.federated_images_classifier.FederatedImagesClassifier, ['run_rounds',
                                                                                           'model_builder']),
-            federated_government.federated_images_classifier.Reshape,
             federated_government.federated_images_classifier.ImagesDataBases,
             (federated_government.federated_linear_regression.FederatedLinearRegression, ['run_rounds']),
             federated_government.federated_linear_regression.LinearRegressionDataBases,
@@ -185,7 +185,7 @@ PAGES = [
     {
         'page': 'differential_privacy/mechanisms.md',
         'classes': [
-            (differential_privacy.mechanism.RandomizedResponseCoins, ["apply"]),
+            differential_privacy.mechanism.RandomizedResponseCoins,
             differential_privacy.mechanism.RandomizedResponseBinary,
             differential_privacy.mechanism.LaplaceMechanism,
             differential_privacy.mechanism.GaussianMechanism,

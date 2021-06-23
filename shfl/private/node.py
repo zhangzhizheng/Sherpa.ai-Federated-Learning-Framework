@@ -99,34 +99,32 @@ class DataNode:
 
         # Arguments:
             name: String identifying the private data.
-            data_access_definition: Policy that specifies how to access the data
-                (see: [DataAccessDefinition](../data/#dataaccessdefinition-class)).
+            data_access_definition: Function that specifies how to access the data.
 
         # Example:
-            In order to return raw private data, unprotected access must
-            be set (see [UnprotectedAccess](../data/#unprotectedaccess-class)):
+            In order to return raw private data, unprotected access must be set:
 
             ```{python}
             import numpy as np
 
-             from shfl.private.node import DataNode
-             from shfl.private.data import UnprotectedAccess
-             from shfl.private.data import LabeledData
+            from shfl.private.node import DataNode
+            from shfl.private.utils import unprotected_query
+            from shfl.private.data import LabeledData
 
-             data = np.array([[1,2,3], [4,5,6]])
-             labels = np.array([1,0,1])
+            data = np.array([[1,2,3], [4,5,6]])
+            labels = np.array([1,0,1])
 
-             node = DataNode()
-             node.set_private_data(name="private_data1", data=LabeledData(data, labels))
+            node = DataNode()
+            node.set_private_data(name="private_data1", data=LabeledData(data, labels))
 
-             # Raises "ValueError: Data access must be configured before querying the data.":
-             node.query("private_data1").data
+            # Raises "ValueError: Data access must be configured before querying the data.":
+            # node.query("private_data1").data
 
-             # After setting access type, returns private data and labels:
-             node.configure_data_access("private_data1", UnprotectedAccess())
-             node.query("private_data1").data
-             node.query("private_data1").label
-             ```
+            # After setting access type, returns private data and labels:
+            node.configure_data_access("private_data1", unprotected_query)
+            node.query("private_data1").data
+            node.query("private_data1").label
+            ```
         """
         self._private_data_access_policies[name] = copy.deepcopy(data_access_definition)
 
@@ -137,8 +135,8 @@ class DataNode:
         The access definition can be changed using this method.
 
         # Arguments:
-            data_access_definition: Policy that specifies how to access the model's parameters \
-            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class)).
+            data_access_definition: Function that specifies how to access
+                the model's parameters.
         """
         self._model_params_access_policy = copy.deepcopy(data_access_definition)
 
@@ -149,29 +147,29 @@ class DataNode:
         The access definition can be changed using this method.
 
         # Arguments:
-            data_access_definition: Policy that specifies how to access the model \
-            (see: [DataAccessDefinition](../data/#dataaccessdefinition-class)).
+            data_access_definition: Function that specifies how to access the model.
 
         # Example:
-            Let's suppose we want to access the method `get_meta_params` of the node's  model.
-            In this case we would define an access to the node's __model__
-            (Note that this time the private property is the node's model, which will be
+            Let's suppose we want to access the method `get_params` of the node's model
+            (in this case, a [linear regression model](../../model/supervised/#linearregressionmodel)).
+            Namely, we would define a function to access the node's __model__
+            (note that this time the private property is the node's model, which will be
             passed as argument):
 
             ```{Python}
             import numpy as np
 
             from shfl.private.node import DataNode
-            from shfl.private.data import DataAccessDefinition
+            from shfl.model.linear_regression_model import LinearRegressionModel
 
 
-            class QueryMetaParameters(DataAccessDefinition):
-                def apply(self, model, **kwargs):
-                    return model.get_meta_params(**kwargs)
+            def some_model_function(model, **kwargs):
+                return model._model.get_params(**kwargs)
 
             node = DataNode()
-            node.configure_model_access(QueryMetaParameters())
-            node.query_model()
+            node.set_model(LinearRegressionModel(n_features=3))
+            node.configure_model_access(some_model_function)
+            node.query_model(deep=False)
             ```
         """
         self._model_access_policy = copy.deepcopy(data_access_definition)
@@ -212,7 +210,7 @@ class DataNode:
         # Returns:
             params: Parameters defining the model.
         """
-        return self._model_params_access_policy.apply(self._model.get_model_params())
+        return self._model_params_access_policy(self._model.get_model_params())
 
     def query_model(self, **kwargs):
         """Queries the model.

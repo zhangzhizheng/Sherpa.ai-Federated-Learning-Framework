@@ -1,3 +1,5 @@
+# TODO: Need to refactor this whole code.
+# Read the article and comply with Pylint.
 import numpy as np
 
 from shfl.federated_government.federated_government import FederatedGovernment
@@ -15,7 +17,7 @@ class IowaFederatedGovernment(FederatedGovernment):
         model: Object representing a trainable model
             (see class [Model](../model)).
         federated_data: Object of class
-            [FederatedData](../private/federated_operation/#federateddata-class),
+            [NodesFederation](../private/federated_operation/#federateddata-class),
             the set of federated nodes.
         dynamic: Optional; Boolean indicating whether we use the dynamic
             or static version (default is True).

@@ -36,7 +36,7 @@ class DataDistribution(abc.ABC):
 
         # Returns:
             federated_data: Object of class
-                [FederatedData](../private/federated_operation/#federateddata-class),
+                [NodesFederation](../private/federated_operation/#federateddata-class),
                 the set of federated nodes containing the distributed train data.
             test_data: The centralized (global) test data.
             test_label: The centralized (global) target labels.

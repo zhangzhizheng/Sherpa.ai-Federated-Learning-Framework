@@ -84,8 +84,7 @@ def test_initialization(wrapper_arguments):
     wrapped_model = DeepLearningModelPyTorch(*wrapper_arguments)
 
     assert hasattr(wrapped_model, "_model")
-    assert hasattr(wrapped_model, "_data_shape")
-    assert hasattr(wrapped_model, "_labels_shape")
+    assert hasattr(wrapped_model, "_in_out_sizes")
     assert hasattr(wrapped_model, "_loss")
     assert hasattr(wrapped_model, "_optimizer")
     assert hasattr(wrapped_model, "_batch_size")

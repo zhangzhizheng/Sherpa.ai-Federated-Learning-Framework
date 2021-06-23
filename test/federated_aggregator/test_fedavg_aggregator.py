@@ -9,7 +9,7 @@ def test_aggregated_weights_list_of_arrays(params_definition, helpers):
     _, _, _, num_layers, layers_shapes, clients_params = params_definition
 
     aggregator = FedAvgAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_weights = aggregator(clients_params)
 
     true_aggregation = helpers.average_list_of_arrays(clients_params, layers_shapes)
 
@@ -26,7 +26,7 @@ def test_aggregated_weights_multidimensional_2d_array(params_definition, helpers
                       for _ in range(num_clients)]
 
     aggregator = FedAvgAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_weights = aggregator(clients_params)
 
     true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols))
 
@@ -43,7 +43,7 @@ def test_aggregated_weights_multidimensional_3d_array(params_definition, helpers
                       for _ in range(num_clients)]
 
     aggregator = FedAvgAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_weights = aggregator(clients_params)
 
     true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols, num_k))
 

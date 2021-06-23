@@ -1,13 +1,15 @@
+# TODO: Need to refactor this whole code.
+# Read the article and comply with Pylint.
 import numpy as np
 
-from shfl.federated_aggregator.weighted_fedavg_aggregator import WeightedFedAvgAggregator
+from shfl.federated_aggregator.weighted_fedavg_aggregator import WeightedFedAggregator
 
 
-class IowaFederatedAggregator(WeightedFedAvgAggregator):
+class IowaFederatedAggregator(WeightedFedAggregator):
     """Performs an IOWA weighted aggregation.
 
     It implements the class
-    [WeightedFedAvgAggregator](./#weightedfedavgaggregator-class).
+    [WeightedFedAggregator](./#weightedfedavgaggregator-class).
 
     # References:
         [Dynamic federated learning model for identifying
@@ -23,6 +25,7 @@ class IowaFederatedAggregator(WeightedFedAvgAggregator):
         self._k = 0
         self._performance = None
         self._dynamic = None
+        self._percentage = None
 
     def set_ponderation(self, performance, dynamic=True,
                         a=0, b=0.2, c=0.8, y_b=0.4, k=3/4):

@@ -13,7 +13,7 @@ class VerticalFederatedGovernment:
        models: List containing nodes' trainable models
         (see: [Model](../model))
        federated_data: Federated data to use.
-        (see: [FederatedData](../private/federated_operation/#federateddata-class))
+        (see: [NodesFederation](../private/federated_operation/#federateddata-class))
        server_node: Server node of class FederatedDataNode
         (see: [FederatedDataNode](../private/federated_operation/#federateddatanode-class))
     """

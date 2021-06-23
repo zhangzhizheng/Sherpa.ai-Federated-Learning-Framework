@@ -20,7 +20,7 @@ def test_aggregate_list_or_tuple_of_numpy_arrays(iterable_type,
                                             for shapes in layers_shapes))
 
     aggregator = FedSumAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_weights = aggregator(clients_params)
 
     true_aggregation = helpers.sum_list_of_arrays(clients_params, layers_shapes)
 
@@ -40,7 +40,7 @@ def test_aggregate_single_numpy_arrays(params_definition, helpers):
         clients_params.append(np.random.rand(num_rows, num_cols, num_k))
 
     aggregator = FedSumAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_weights = aggregator(clients_params)
 
     true_aggregation = helpers.sum_arrays(clients_params,
                                           (num_rows, num_cols, num_k))
@@ -62,7 +62,7 @@ def test_aggregate_single_scalar(params_definition):
         true_aggregation += clients_params[i_client]
 
     aggregator = FedSumAggregator()
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregated_weights = aggregator(clients_params)
     np.testing.assert_almost_equal(true_aggregation,
                                    aggregated_weights,
                                    decimal=8)

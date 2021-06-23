@@ -12,19 +12,23 @@ class FederatedGovernment:
         model: Object representing a trainable model
             (see class [Model](../model)).
         federated_data: Object of class
-            [FederatedData](../private/federated_operation/#federateddata-class),
+            [NodesFederation](../private/federated_operation/#nodesfederation-class),
             the set of federated nodes.
-        aggregator: The aggregator to use
+        aggregator: Optional; The aggregator to use
             (see class [FederatedAggregator](../federated_aggregator)).
+            If not specified as argument, the argument `server_node` must be provided.
         server_node: Optional; Object of class
             [FederatedDataNode](../private/federated_operation/#federateddatanode-class),
             the server node. Default is None, in which case a server node is
-            created.
+            created using the `model`, `federated_data` and `aggregator` provided.
     """
 
     def __init__(self, model, federated_data,
-                 aggregator, server_node=None):
+                 aggregator=None, server_node=None):
 
+        if aggregator is None and server_node is None:
+            raise AssertionError("Either the aggregator or the server node "
+                                 "must be provided.")
         self._federated_data = federated_data
         for data_node in self._federated_data:
             data_node.set_model(model)

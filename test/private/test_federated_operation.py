@@ -3,14 +3,14 @@ import pytest
 import numpy as np
 
 import shfl.private.federated_operation
-from shfl.private.federated_operation import FederatedData
+from shfl.private.federated_operation import NodesFederation
 from shfl.private.federated_operation import FederatedDataNode
 from shfl.private.federated_operation import ServerDataNode
 from shfl.private.federated_operation import VerticalServerDataNode
 from shfl.private.federated_operation import federate_array
 from shfl.private.federated_operation import federate_list
-from shfl.private.data import UnprotectedAccess, LabeledData
-from shfl.private.utils import normalize_query
+from shfl.private.data import LabeledData
+from shfl.private.utils import normalize_query, unprotected_query
 
 
 @pytest.fixture(name="federated_array")
@@ -19,7 +19,7 @@ def fixture_federated_array():
     num_data = 30
     input_array = np.random.rand(num_data)
     federated_data = federate_array(input_array, num_data)
-    federated_data.configure_data_access(UnprotectedAccess())
+    federated_data.configure_data_access(unprotected_query)
 
     return federated_data, input_array
 
@@ -28,10 +28,10 @@ def fixture_federated_array():
 def fixture_federated_data_single_node():
     """Returns a set of federated data nodes with only one node."""
     data_size = 10
-    federated_data = FederatedData()
+    federated_data = NodesFederation()
     input_data = np.random.rand(data_size)
     federated_data.append_data_node(input_data)
-    federated_data.configure_data_access(UnprotectedAccess())
+    federated_data.configure_data_access(unprotected_query)
 
     return federated_data, input_data
 
@@ -43,10 +43,10 @@ def fixture_federated_data():
     data_shape = (10, 5)
     input_data = np.random.rand(num_nodes, *data_shape)
     input_labels = np.random.randint(low=0, high=2, size=(num_nodes, data_shape[0]))
-    federated_data = FederatedData()
+    federated_data = NodesFederation()
     for data, labels in zip(input_data, input_labels):
         federated_data.append_data_node(LabeledData(data, labels))
-    federated_data.configure_data_access(UnprotectedAccess())
+    federated_data.configure_data_access(unprotected_query)
 
     return federated_data, input_data, input_labels
 
@@ -58,7 +58,7 @@ def fixture_horizontal_server_node():
     model = Mock()
     aggregator = Mock()
     server_node = ServerDataNode(federated_data, model, aggregator)
-    server_node.configure_data_access(UnprotectedAccess())
+    server_node.configure_data_access(unprotected_query)
 
     return server_node, federated_data, model, aggregator
 
@@ -76,7 +76,7 @@ def fixture_vertical_server_node():
     model = Mock()
     aggregator = Mock()
     server_node = VerticalServerDataNode(federated_data, model, aggregator)
-    server_node.configure_data_access(UnprotectedAccess())
+    server_node.configure_data_access(unprotected_query)
 
     return server_node, federated_data, model, aggregator, clients_embeddings
 
@@ -84,7 +84,7 @@ def fixture_vertical_server_node():
 def test_federated_data_initialization():
     """Checks that the set of federated nodes is correctly initialized.
     """
-    federated_data = FederatedData()
+    federated_data = NodesFederation()
 
     assert federated_data.num_nodes() == 0
 
@@ -198,14 +198,13 @@ def test_horizontal_server_aggregate_weights(horizontal_server_node):
     federated_data.query_model_params = Mock()
     clients_params = np.random.rand(10, 20)
     federated_data.query_model_params.return_value = clients_params
-    aggregator.aggregate_weights = Mock()
     aggregated_weights = np.random.rand(5, 20)
-    aggregator.aggregate_weights.return_value = aggregated_weights
+    aggregator.return_value = aggregated_weights
 
     server_node.aggregate_weights()
 
     federated_data.query_model_params.assert_called_once()
-    aggregator.aggregate_weights.assert_called_once_with(clients_params)
+    aggregator.assert_called_once_with(clients_params)
 
 
 def test_vertical_server_predict_collaborative_model(vertical_server_node):
@@ -285,7 +284,7 @@ def test_vertical_server_aggregate_weights():
     model = Mock()
     aggregator = Mock()
     true_aggregated_meta_params = np.random.rand(10, 2)
-    aggregator.aggregate_weights.return_value = true_aggregated_meta_params
+    aggregator.return_value = true_aggregated_meta_params
     num_nodes = 5
     samples_indices = np.random.randint(low=0, high=100, size=10)
     clients_meta_params = [(np.random.rand(10, 2), samples_indices)
@@ -371,7 +370,7 @@ def test_federate_array_size_private_data():
     array = np.random.rand(data_size)
 
     federated_array = federate_array(array, num_clients)
-    federated_array.configure_data_access(UnprotectedAccess())
+    federated_array.configure_data_access(unprotected_query)
 
     for data_node in federated_array:
         assert len(data_node.query()) == data_size / num_clients
@@ -398,7 +397,7 @@ def test_federate_list():
                           for _ in range(5)]
 
     federated_data = federate_list(distributed_data, distributed_labels)
-    federated_data.configure_data_access(UnprotectedAccess())
+    federated_data.configure_data_access(unprotected_query)
 
     for i, node in enumerate(federated_data):
         np.testing.assert_array_equal(node.query().data, distributed_data[i])
@@ -413,7 +412,7 @@ def test_federate_list_no_labels():
                         for _ in range(5)]
 
     federated_data = shfl.private.federated_operation.federate_list(distributed_data)
-    federated_data.configure_data_access(UnprotectedAccess())
+    federated_data.configure_data_access(unprotected_query)
 
     for i, node in enumerate(federated_data):
         np.testing.assert_array_equal(node.query().data,

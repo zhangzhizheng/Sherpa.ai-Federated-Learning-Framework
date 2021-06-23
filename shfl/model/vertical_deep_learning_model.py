@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 from shfl.model.deep_learning_model_pt import DeepLearningModelPyTorch
 
 
@@ -30,16 +31,10 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
             Concept and Applications](https://arxiv.org/abs/1902.04885)
     """
 
-    def __init__(self, model, loss, optimizer, batch_size=32,
-                 epochs=1, metrics=None, device="cpu"):
-
-        super().__init__(model, loss, optimizer, batch_size,
-                         epochs, metrics, device)
-
-        self._embeddings = None
-        self._embeddings_indices = None
-        self._batch_counter = 0
-        self._epoch_counter = 0
+    _embeddings = None
+    _embeddings_indices = None
+    _batch_counter = 0
+    _epoch_counter = 0
 
     def train(self, data, labels, **kwargs):
         """Trains the model.
@@ -121,13 +116,8 @@ class VerticalNeuralNetServer(DeepLearningModelPyTorch):
             Concept and Applications](https://arxiv.org/abs/1902.04885)
     """
 
-    def __init__(self, model, loss, optimizer, batch_size=32,
-                 epochs=1, metrics=None, device="cpu"):
-        super().__init__(model, loss, optimizer, batch_size,
-                         epochs, metrics, device)
-
-        self._embeddings_indices = None
-        self._grad_embeddings = None
+    _embeddings_indices = None
+    _grad_embeddings = None
 
     def train(self, data, labels, **kwargs):
         """Implementation of abstract method of class

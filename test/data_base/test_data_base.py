@@ -115,11 +115,9 @@ def test_shuffle_rows_wrong_inputs(data_and_labels_arrays):
     """Raises an exception if the data input are not in one of the allowed formats.
 
     Input data must be either an array-like object or a dataframe.
-    If the data are an array but the labels are a dataframe (or series),
-    an exception is raised.
     """
     data, labels = data_and_labels_arrays
-    labels = pd.Series(labels)
+    labels = list(labels)
 
     with pytest.raises(TypeError):
         shuffle_rows(data, labels)
@@ -176,29 +174,6 @@ def test_vertical_split_default_values(data_labels, request):
 @pytest.mark.parametrize("data_labels",
                          ["data_and_labels_arrays",
                           "data_and_labels_dataframes"])
-def test_vertical_split_different_columns(data_labels, request):
-    """Checks the vertical split of a centralized database.
-
-    Checks that different number of columns are assigned to the chunks.
-    """
-    data, labels = request.getfixturevalue(data_labels)
-
-    # Random split: different number of columns in different chunks
-    n_runs = 5
-    shapes_equal_train = []
-    shapes_equal_test = []
-    for _ in range(n_runs):
-        train_data, _, test_data, _ = \
-            vertical_split(data, labels)
-        shapes_equal_train.append(train_data[0].shape == train_data[1].shape)
-        shapes_equal_test.append(test_data[0].shape == test_data[1].shape)
-    assert not np.array(shapes_equal_train).all()
-    assert not np.array(shapes_equal_test).all()
-
-
-@pytest.mark.parametrize("data_labels",
-                         ["data_and_labels_arrays",
-                          "data_and_labels_dataframes"])
 def test_vertical_split_equal_number_columns(data_labels, request):
     """Checks the vertical split of a centralized database.
 
@@ -213,7 +188,7 @@ def test_vertical_split_equal_number_columns(data_labels, request):
     for _ in range(n_runs):
         train_data, _, test_data, _ = \
             vertical_split(
-                data, labels, indices_or_sections=3, equal_size=True)
+                data, labels, indices_or_sections=3)
         shapes_chunks = np.array([chunk.shape == train_data[0].shape
                                   for chunk in train_data])
         shapes_equal_train.append(shapes_chunks.all())
@@ -222,22 +197,6 @@ def test_vertical_split_equal_number_columns(data_labels, request):
         shapes_equal_test.append(shapes_chunks.all())
     assert np.array(shapes_equal_train).all()
     assert np.array(shapes_equal_test).all()
-
-
-@pytest.mark.parametrize("data_labels",
-                         ["data_and_labels_arrays",
-                          "data_and_labels_dataframes"])
-def test_vertical_split_unable_equal_number_columns(data_labels, request):
-    """Checks the vertical split of a centralized database.
-
-    It raises an error when the user request equal number of columns in each chunk,
-    but the integer division is not possible. For example, split 10 columns in
-    3 equally sized vertical chunks.
-    """
-    data, labels = request.getfixturevalue(data_labels)
-
-    with pytest.raises(ValueError):
-        vertical_split(data, labels, indices_or_sections=5, equal_size=True)
 
 
 @pytest.mark.parametrize("data_labels",
@@ -253,9 +212,9 @@ def test_vertical_split_no_vertical_shuffle(data_labels, request):
     train_proportion = 0.8
     test_size = round(len(data) * (1 - train_proportion))
 
-    # No vertical/horizontal shuffle:
+    # No vertical shuffle:
     train_data, train_labels, test_data, test_labels = \
-        vertical_split(data, labels, v_shuffle=False, h_shuffle=False)
+        vertical_split(data, labels, v_shuffle=False)
     if isinstance(data, np.ndarray):
         assert np.array_equal(np.concatenate(train_data, axis=1), data[:-test_size, :])
         assert np.array_equal(np.concatenate(test_data, axis=1), data[-test_size:, :])

@@ -41,8 +41,18 @@ def test_initialization(data_distribution, helpers):
     helpers.check_initialization(federated_government)
 
 
+def test_error_aggregator_and_server_node_not_provided(data_distribution):
+    """Checks that an error is raised if neither the aggregator nor
+        the server node are provided."""
+    federated_data, _, _ = data_distribution
+    model = Mock()
+
+    with pytest.raises(AssertionError):
+        FederatedGovernment(model, federated_data)
+
+
 @patch("shfl.private.federated_operation.ServerDataNode")
-@patch("shfl.private.federated_operation.FederatedData")
+@patch("shfl.private.federated_operation.NodesFederation")
 def test_run_rounds(federated_data, server_node, data_distribution):
     """Checks that the federated round is called correctly."""
     _, test_data, test_labels = data_distribution

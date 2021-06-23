@@ -5,7 +5,7 @@ import numpy as np
 
 from shfl.private.node import DataNode
 from shfl.private.data import LabeledData
-from shfl.private.data import UnprotectedAccess
+from shfl.private.utils import unprotected_query
 
 
 def test_private_data(data_and_labels):
@@ -29,7 +29,7 @@ def test_query_private_data(data_and_labels):
     is set to unprotected."""
     data_node = DataNode()
     data_node.set_private_data("random_data", data_and_labels)
-    data_node.configure_data_access("random_data", UnprotectedAccess())
+    data_node.configure_data_access("random_data", unprotected_query)
 
     output_data = data_node.query("random_data")
 
@@ -57,7 +57,7 @@ def test_query_model():
     data_node = DataNode()
     model_mock = Mock()
     data_node.set_model(model_mock)
-    data_node.configure_model_access(UnprotectedAccess())
+    data_node.configure_model_access(unprotected_query)
 
     model = data_node.query_model()
 

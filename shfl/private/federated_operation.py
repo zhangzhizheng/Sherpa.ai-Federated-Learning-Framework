@@ -1,4 +1,3 @@
-import abc
 import numpy as np
 
 from shfl.private.node import DataNode
@@ -6,7 +5,7 @@ from shfl.private.data import LabeledData
 from shfl.data_base.data_base import split_train_test
 
 
-class FederatedData:
+class NodesFederation:
     """Represents the set of federated nodes.
 
     This object contains the data nodes of the federated experiment.
@@ -16,15 +15,16 @@ class FederatedData:
     method from this object, the method gets executed on all the member nodes.
 
     # Arguments:
-        federated_data_nodes: Optional. List of FederateDataNode
-          (see: [FederatedDataNode](../private/federated_operation/#federateddatanode-class)
+        federated_data_nodes: Optional; List of
+            [FederatedDataNode](../private/federated_operation/#federateddatanode-class)
+            objects.
 
     # Example:
 
     ```python
         from shfl.data_base import Emnist
         from shfl.data_distribution import IidDataDistribution
-        from shfl.private.data import UnprotectedAccess
+        from shfl.private.utils import unprotected_query
 
 
         # Create federated data from a dataset:
@@ -35,12 +35,12 @@ class FederatedData:
             iid_distribution.get_federated_data(num_nodes=5, percent=10)
 
         # Data access definition at "node level" (only node 0):
-        federated_data[0].configure_data_access(UnprotectedAccess())
+        federated_data[0].configure_data_access(unprotected_query)
         print(federated_data[0].query())
         # print(federated_data[1].query())  # Raises an exception
 
         # Data access definition at "federate level" (all nodes at once):
-        federated_data.configure_data_access(UnprotectedAccess())
+        federated_data.configure_data_access(unprotected_query)
         print(federated_data.query())
     ```
     """
@@ -83,7 +83,7 @@ class FederatedData:
 
         Dynamically creates a loop ever all the set of federated nodes
         to call a node's method (see callable methods in class
-        [FederatedDataNode](./#federateddatanode-class)).
+        [FederatedDataNode](./#nodesfederationnode-class)).
 
         # Arguments:
             method: String corresponding to a node's method.
@@ -122,7 +122,7 @@ class FederatedDataNode(DataNode):
     As for an individual data node, the access to the private data must
     be configured with an access policy before querying it or an
     exception will be raised (see example in the class
-    [FederatedData](./#federateddata-class)).
+    [NodesFederation](./#nodesfederation-class)).
 
     # Arguments:
         federated_data_identifier: String identifying the set
@@ -213,7 +213,7 @@ class ServerDataNode(FederatedDataNode):
 
     # Arguments:
         federated_data: The clients (i.e. the set of federated nodes,
-            see class [FederatedData](./#federateddata-class)).
+            see class [NodesFederation](./#nodesfederation-class)).
         model: Object representing the collaborative model.
         aggregator: Object representing the aggregator to use (see class
             [FederatedAggregator](../../federated_aggregator/#federatedaggregator-class)).
@@ -255,7 +255,7 @@ class ServerDataNode(FederatedDataNode):
         """
 
         params = self._federated_data.query_model_params()
-        aggregated_params = self._aggregator.aggregate_weights(params)
+        aggregated_params = self._aggregator(params)
         self._model.set_model_params(aggregated_params)
 
 
@@ -276,7 +276,7 @@ class VerticalServerDataNode(FederatedDataNode):
 
     # Arguments:
         federated_data: The clients (i.e. the set of federated nodes,
-            see class [FederatedData](./#federateddata-class)).
+            see class [NodesFederation](./#nodesfederation-class)).
         model: Object representing the collaborative model.
         aggregator: Object representing the aggregator to use (see class
             [FederatedAggregator](../../federated_aggregator/#federatedaggregator-class)).
@@ -377,7 +377,7 @@ class VerticalServerDataNode(FederatedDataNode):
                   for param in range(len(client) - 1)]
         samples_indices = [item[-1] for item in clients_meta_params]
         self._check_indices_matching(samples_indices)
-        aggregated_meta_params = self._aggregator.aggregate_weights(params)
+        aggregated_meta_params = self._aggregator(params)
 
         return aggregated_meta_params, samples_indices[0]
 
@@ -409,11 +409,11 @@ def federate_array(data, num_nodes):
         num_nodes: Number of nodes for splitting.
 
     # Returns:
-        federated_data: Object of class [FederatedData](./#federateddata-class).
+        federated_data: Object of class [NodesFederation](./#nodesfederation-class).
     """
     split_size = len(data) / float(num_nodes)
     last = 0.0
-    federated_data = FederatedData()
+    federated_data = NodesFederation()
     while last < len(data):
         federated_data.append_data_node(data[int(last):int(last + split_size)])
         last = last + split_size
@@ -430,12 +430,66 @@ def federate_list(data, labels=None):
             target labels.
 
     # Returns:
-        federated_data: Object of class [FederatedData](./#federateddata-class).
+        federated_data: Object of class [NodesFederation](./#nodesfederation-class).
+
+    # Example 1:
+        A list of data can be easily converted to a set of federated data nodes:
+
+        ```{python}
+        import numpy as np
+
+        from shfl.private.federated_operation import federate_list
+        from shfl.private.utils import unprotected_query
+
+
+        nodes_data = [np.array([1, 3, 5]),
+                      np.array([[7, 6, 9],
+                                [4, 1.5, 5.3]])]
+        nodes_labels = ["some_label",
+                        [0, 1]]
+
+        federated_data = federate_list(nodes_data, nodes_labels)
+
+        # Visualize node data:
+        federated_data.configure_data_access(unprotected_query)
+
+        print(federated_data[0].query().data)
+        print(federated_data[0].query().label)
+
+        print(federated_data[1].query().data)
+        print(federated_data[1].query().label)
+        ```
+        
+    # Example 2:
+        Starting from a global Pandas dataframe, we can easily
+        generate a set of federated data nodes. We simply group by the
+        desired id:
+
+        ```{python}
+        import pandas as pd
+
+        from shfl.private.federated_operation import federate_list
+        from shfl.private.utils import unprotected_query
+
+
+        global_df = pd.DataFrame({
+            'Animal': ['Falcon', 'Falcon', 'Parrot', 'Parrot'],
+            'Max Speed': [380., 370., 24., 26.],
+            'Label': ['M', 'F', 'F', 'M']})
+
+        grouped_df = [df for _, df in global_df.groupby("Animal")]
+        federated_data = federate_list(grouped_df)
+
+        # Visualize node data:
+        federated_data.configure_data_access(unprotected_query)
+        print(federated_data[0].query().data)
+        print(federated_data[1].query().data)
+        ```
     """
     if labels is None:
         labels = [None] * len(data)
 
-    federated_data = FederatedData()
+    federated_data = NodesFederation()
     for node_data, node_labels in zip(data, labels):
         node_labeled_data = LabeledData(node_data, node_labels)
         federated_data.append_data_node(node_labeled_data)

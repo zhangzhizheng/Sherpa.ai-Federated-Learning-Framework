@@ -36,38 +36,16 @@ class LabeledData:
         self._label = label
 
 
-class DataAccessDefinition(abc.ABC):
-    """Defines the access to the node's private properties.
-
-    Depending on the algorithm, queries may have various purposes.
-    Typically, queries access node's private properties
-    such as node's private data, model, and model's parameters.
-    See usage examples in methods
-    [configure_data_access](../data_node/#configure_data_access) and
-    [configure_model_access](../data_node/#configure_model_access))
-    of the class [DataNode](../data_node/#datanode-class).
-    """
-
-    @abc.abstractmethod
-    def apply(self, data, **kwargs):
-        """Applies an arbitrary query on the node's private property.
-
-        Abstract method.
-
-        It must be implemented in order to define how
-        to query a node's private property.
-
-        # Arguments:
-            data: Node's private data to be accessed.
-
-        # Returns:
-            result_data: Result from the query on the node's private data.
-        """
-
-
 class DPDataAccessDefinition:
     """Interface defining a differentially private query
         to the node's private properties.
+
+    In order to define a differential privacy mechanism, this class has to
+    be implemented.
+
+    # Examples:
+        See the implementation of the
+        [available differential privacy mechanisms](../../differential_privacy/mechanisms/).
     """
 
     @property
@@ -171,10 +149,3 @@ class DPDataAccessDefinition:
                                  str(sensitivity.shape) +
                                  " cannot broadcast to query result dimension " +
                                  str(query_result.shape) + ".")
-
-
-class UnprotectedAccess(DataAccessDefinition):
-    """Returns plain data.
-    """
-    def apply(self, data, **kwargs):
-        return data

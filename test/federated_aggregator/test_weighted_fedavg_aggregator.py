@@ -1,6 +1,6 @@
 import numpy as np
 
-from shfl.federated_aggregator.weighted_fedavg_aggregator import WeightedFedAvgAggregator
+from shfl.federated_aggregator.weighted_fedavg_aggregator import WeightedFedAggregator
 
 
 def test_aggregate_weighted_list_of_arrays(params_definition, helpers):
@@ -12,8 +12,8 @@ def test_aggregate_weighted_list_of_arrays(params_definition, helpers):
 
     percentage = np.random.dirichlet(np.ones(num_clients), size=1)[0]
 
-    aggregator = WeightedFedAvgAggregator(percentage=percentage)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregator = WeightedFedAggregator()
+    aggregated_weights = aggregator(clients_params, percentage=percentage)
 
     own_ponderated_weights = [[np.zeros(shape=shape) for shape in layers_shapes]
                               for _ in range(num_clients)]
@@ -42,8 +42,8 @@ def test_weighted_aggregated_weights_tuple_of_arrays(params_definition, helpers)
                                     for shapes in layers_shapes))
 
     percentage = np.random.dirichlet(np.ones(num_clients), size=1)[0]
-    aggregator = WeightedFedAvgAggregator(percentage=percentage)
-    aggregated_weights = aggregator.aggregate_weights(clients_params)
+    aggregator = WeightedFedAggregator()
+    aggregated_weights = aggregator(clients_params, percentage=percentage)
 
     own_ponderated_weights = []
     for i_client in range(num_clients):

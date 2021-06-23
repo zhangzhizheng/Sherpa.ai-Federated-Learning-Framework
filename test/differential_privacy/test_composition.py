@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from shfl.private import DataNode
-from shfl.private.data import UnprotectedAccess
+from shfl.private.utils import unprotected_query
 from shfl.differential_privacy.composition import ExceededPrivacyBudgetError
 from shfl.differential_privacy.composition import AdaptiveDifferentialPrivacy
 from shfl.differential_privacy.mechanism import GaussianMechanism
@@ -34,7 +34,7 @@ def test_constructor_bad_params():
         AdaptiveDifferentialPrivacy(epsilon_delta=(1, -2))
 
     with pytest.raises(ValueError):
-        AdaptiveDifferentialPrivacy(epsilon_delta=(1, 1), mechanism=UnprotectedAccess())
+        AdaptiveDifferentialPrivacy(epsilon_delta=(1, 1), mechanism=unprotected_query)
 
 
 def test_configure_data_access_no_mechanism():

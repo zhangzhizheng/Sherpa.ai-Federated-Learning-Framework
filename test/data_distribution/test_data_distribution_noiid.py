@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from shfl.data_base.data_base import DataBase
 from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
-from shfl.private.data import UnprotectedAccess
+from shfl.private.utils import unprotected_query
 
 
 class DataBaseTest(DataBase):
@@ -92,7 +92,7 @@ def test_get_federated_data():
     federated_data, test_data, test_labels = \
         data_distribution.get_federated_data(num_nodes=num_nodes)
 
-    federated_data.configure_data_access(UnprotectedAccess())
+    federated_data.configure_data_access(unprotected_query)
     reference_federated_data = [node_data.query().data for node_data in federated_data]
     reference_federated_labels = [node_data.query().label for node_data in federated_data]
 

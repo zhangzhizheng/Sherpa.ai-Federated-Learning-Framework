@@ -55,7 +55,7 @@ def test_initialization(server_node, federated_data, node_models, helpers):
 
 
 @patch("shfl.private.federated_operation.VerticalServerDataNode")
-@patch("shfl.private.federated_operation.FederatedData")
+@patch("shfl.private.federated_operation.NodesFederation")
 def test_run_rounds(federated_data,
                     server_node,
                     node_models,

@@ -346,7 +346,7 @@ def test_laplace_list_of_arrays():
     data = [[np.random.rand(3, 2), np.random.rand(2, 3)]
             for _ in range(n_nodes)]
 
-    federated_list = shfl.private.federated_operation.FederatedData()
+    federated_list = shfl.private.federated_operation.NodesFederation()
     for node in range(n_nodes):
         federated_list.append_data_node(data[node])
 

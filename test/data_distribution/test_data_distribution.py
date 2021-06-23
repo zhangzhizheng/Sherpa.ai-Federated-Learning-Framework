@@ -2,7 +2,7 @@ import numpy as np
 
 from shfl.data_base.data_base import DataBase
 from shfl.data_distribution.data_distribution import DataDistribution
-from shfl.private.federated_operation import FederatedData
+from shfl.private.federated_operation import NodesFederation
 
 
 class DataDistributionTest(DataDistribution):
@@ -30,6 +30,6 @@ def test_data_distribution_private_data():
     federated_data, test_data, test_labels = data_distribution.get_federated_data()
 
     assert hasattr(data_distribution, "_database")
-    assert isinstance(federated_data, FederatedData)
+    assert isinstance(federated_data, NodesFederation)
     np.testing.assert_array_equal(test_data, test_data_ref)
     np.testing.assert_array_equal(test_labels, test_labels_ref)

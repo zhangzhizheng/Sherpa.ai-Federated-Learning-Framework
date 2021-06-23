@@ -17,7 +17,7 @@ class FederatedDataAttack(abc.ABC):
 
         # Arguments:
             federated_data: Object of class
-                [FederatedData](../federated_operation/#federateddata-class),
+                [NodesFederation](../federated_operation/#nodesfederation-class),
                 the set of federated nodes to attack.
 
         # Example:
@@ -29,7 +29,7 @@ class FederatedDataAttack(abc.ABC):
 class FederatedPoisoningDataAttack(FederatedDataAttack):
     """Simulates a poisoning data attack.
 
-    Implements the class [FederatedDataAttack](./#federateddataattack-class).
+    Implements the class [FederatedDataAttack](./#nodesfederationattack-class).
 
     This attack consists in shuffling the labels of some nodes, which are
     then considered as *adversarial*.
@@ -59,7 +59,7 @@ class FederatedPoisoningDataAttack(FederatedDataAttack):
 
         # Arguments:
             federated_data: Object of class
-                [FederatedData](../federated_operation/#federateddata-class),
+                [NodesFederation](../federated_operation/#nodesfederation-class),
                 the set of federated nodes to attack.
         """
         num_nodes = federated_data.num_nodes()

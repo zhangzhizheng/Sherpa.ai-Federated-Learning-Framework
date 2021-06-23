@@ -1,31 +1,29 @@
+# Using method overloading:
+# pylint: disable=function-redefined, too-few-public-methods
 import numpy as np
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
-from shfl.federated_aggregator.fedavg_aggregator import FedAvgAggregator
+from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
 
 
-class FedSumAggregator(FedAvgAggregator):
+class FedSumAggregator(FederatedAggregator):
     """Performs a sum of the clients' model's parameters.
 
     It implements the class
-    [FedAvgAggregator](./#fedavgaggregator-class).
+    [FederatedAggregator](./#federatedaggregator-class).
 
     # Arguments:
-        percentage: Optional; Proportion of the total data
-            that each client possesses. The default is None,
-            in which case it is assumed that all clients
-            possess a comparable amount of data.
-        axis: Optional; Axis or axes along which a sum is performed
+        axis: Optional; Axis or axes along which the sum is performed
             (default is 0; see options in [Numpy sum
             function](https://numpy.org/doc/stable/reference/generated/numpy.sum.html)).
     """
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def _aggregate(self, *params):
+    def aggregate(self, *params):
         """Sums arrays"""
         return np.sum(np.array(params), axis=self._axis)
 
     @dispatch(Variadic[list, tuple])
-    def _aggregate(self, *params):
-        return super()._aggregate(*params)
+    def aggregate(self, *params):
+        return super().aggregate(*params)

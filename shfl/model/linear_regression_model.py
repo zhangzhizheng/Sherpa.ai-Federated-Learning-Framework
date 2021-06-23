@@ -1,11 +1,16 @@
+from abc import ABC
+
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn import metrics
 
 from shfl.model.model import TrainableModel
+from .utils import get_model_params
+from .utils import set_model_params
+from .utils import _check_data
 
 
-class LinearRegressionModel(TrainableModel):
+class LinearRegressionModel(TrainableModel, ABC):
     """Wraps the scikit-learn linear regression model.
 
     Implements the class [TrainableModel](../#trainablemodel-class).
@@ -18,6 +23,10 @@ class LinearRegressionModel(TrainableModel):
         [sklearn.linear_model.LinearRegression](https://scikit-learn.org/
         stable/modules/generated/sklearn.linear_model.LinearRegression.html)
     """
+
+    get_model_params = get_model_params
+    set_model_params = set_model_params
+    _check_data = _check_data
 
     def __init__(self, n_features, n_targets=1):
         self._check_initialization(n_features)
@@ -106,28 +115,6 @@ class LinearRegressionModel(TrainableModel):
             metrics.mean_squared_error(labels, prediction))
 
         return negative_root_mean_squared_error
-
-    def get_model_params(self):
-        """See base class."""
-        return self._model.intercept_, self._model.coef_
-
-    def set_model_params(self, params):
-        """See base class."""
-        self._model.intercept_ = params[0]
-        self._model.coef_ = params[1]
-
-    def _check_data(self, data):
-        if data.ndim == 1:
-            if self._n_features != 1:
-                raise AssertionError(
-                    "Data need to have the same number of features "
-                    "described by the model " + str(self._n_features) +
-                    ". Current data have only 1 feature.")
-        elif data.shape[1] != self._n_features:
-            raise AssertionError(
-                "Data need to have the same number of features "
-                "described by the model " + str(self._n_features) +
-                ". Current data has " + str(data.shape[1]) + " features.")
 
     def _check_labels(self, labels):
         if labels.ndim == 1:

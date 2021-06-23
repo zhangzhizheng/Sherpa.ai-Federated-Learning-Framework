@@ -22,7 +22,7 @@ def test_norm_clip_aggregator_list_of_arrays(params_definition, helpers):
         num_layers, layers_shapes, clients_params = params_definition
 
     aggregator = NormClipAggregator(clip=100)
-    aggregated_params = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator(clients_params)
 
     true_aggregation = helpers.average_list_of_arrays(clients_params, layers_shapes)
 
@@ -40,7 +40,7 @@ def test_weak_dp_aggregator_list_of_arrays(params_definition, helpers):
 
     np.random.seed(seed)
     aggregator = WeakDPAggregator(clip=clip)
-    aggregated_params = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator(clients_params)
 
     true_aggregation = helpers.sum_list_of_arrays(clients_params, layers_shapes)
     np.random.seed(seed)
@@ -67,7 +67,7 @@ def test_norm_clip_aggregator_multidimensional_2d(params_definition, helpers):
         clients_params.append(np.random.rand(num_rows, num_cols))
 
     aggregator = NormClipAggregator(clip=clip)
-    aggregated_params = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator(clients_params)
 
     true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols))
 
@@ -79,7 +79,7 @@ def test_weak_dp_aggregator_multidimensional_2d(params_definition, helpers):
     """Checks that the weak differential privacy aggregator correctly
     aggregates clients' parameters for 2D arrays."""
     num_clients, num_rows, num_cols, \
-        _, _ , _= params_definition
+        _, _, _ = params_definition
     clip = 100
 
     clients_params = []
@@ -88,7 +88,7 @@ def test_weak_dp_aggregator_multidimensional_2d(params_definition, helpers):
 
     np.random.seed(0)
     aggregator = WeakDPAggregator(clip=clip)
-    aggregated_params = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator(clients_params)
 
     true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols))
 
@@ -117,7 +117,7 @@ def test_norm_clip_aggregator_multidimensional_3d(params_definition, helpers):
                                              num_k))
 
     aggregator = NormClipAggregator(clip=clip)
-    aggregated_params = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator(clients_params)
 
     true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols, num_k))
 
@@ -139,7 +139,7 @@ def test_weak_dp_aggregator_multidimensional_3d(params_definition, helpers):
 
     np.random.seed(0)
     aggregator = WeakDPAggregator(clip=clip)
-    aggregated_params = aggregator.aggregate_weights(clients_params)
+    aggregated_params = aggregator(clients_params)
 
     true_aggregation = helpers.average_arrays(clients_params, (num_rows, num_cols, num_k))
 

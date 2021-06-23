@@ -3,7 +3,7 @@ import numpy as np
 
 from shfl.federated_government.federated_government import FederatedGovernment
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
-from shfl.federated_aggregator.cluster_fedavg_aggregator import ClusterFedAvgAggregator
+from shfl.federated_aggregator.cluster_fedavg_aggregator import cluster_fed_avg_aggregator
 from shfl.model.kmeans_model import KMeansModel
 from shfl.data_base.iris import Iris
 
@@ -48,7 +48,7 @@ class FederatedClustering(FederatedGovernment):
                     num_nodes=num_nodes,
                     percent=percent)
 
-            aggregator = ClusterFedAvgAggregator()
+            aggregator = cluster_fed_avg_aggregator
 
             super().__init__(model, federated_data, aggregator)
 

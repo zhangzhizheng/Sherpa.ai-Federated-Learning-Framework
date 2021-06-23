@@ -59,8 +59,7 @@ def test_initialization(wrapper_arguments):
                                           loss=loss,
                                           metrics=metrics)
     assert hasattr(wrapped_model, "_model")
-    assert hasattr(wrapped_model, "_data_shape")
-    assert hasattr(wrapped_model, "_labels_shape")
+    assert hasattr(wrapped_model, "_in_out_sizes")
     assert hasattr(wrapped_model, "_batch_size")
     assert hasattr(wrapped_model, "_epochs")
     assert hasattr(wrapped_model, "_loss")
