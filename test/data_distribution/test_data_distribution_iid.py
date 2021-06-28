@@ -56,7 +56,7 @@ def test_make_data_federated_array_without_replacement(federated_data_info):
 
     federated_data, federated_label = \
         data_distribution.make_data_federated(train_data, train_label,
-                                              percent=percent, num_nodes=num_nodes, weights=weights)
+                                              percent, num_nodes, weights)
 
     centralized_data = np.concatenate(federated_data)
     centralized_label = np.concatenate(federated_label)
@@ -85,8 +85,8 @@ def test_make_data_federated_array_with_replacement(federated_data_info):
 
     federated_data, federated_label = \
         data_distribution.make_data_federated(train_data, train_label,
-                                              percent=percent, num_nodes=num_nodes,
-                                              weights=weights, sampling="with_replacement")
+                                              percent, num_nodes, weights,
+                                              sampling="with_replacement")
 
     centralized_data = np.concatenate(federated_data)
     centralized_label = np.concatenate(federated_label)
@@ -115,7 +115,7 @@ def test_make_data_federated_pandas_without_replacement(federated_data_info):
 
     federated_data, federated_label = \
         data_distribution.make_data_federated(train_data, train_label,
-                                              percent=percent, num_nodes=num_nodes, weights=weights)
+                                              percent, num_nodes, weights)
 
     centralized_data = pd.concat(federated_data)
     centralized_labels = pd.concat(federated_label)
@@ -143,7 +143,7 @@ def test_make_data_federated_pandas_with_replacement(federated_data_info):
 
     federated_data, federated_label = \
         data_distribution.make_data_federated(train_data, train_label,
-                                              percent=percent, num_nodes=num_nodes, weights=weights,
+                                              percent, num_nodes, weights,
                                               sampling="with_replacement")
     centralized_data = pd.concat(federated_data)
     centralized_labels = pd.concat(federated_label)
@@ -169,7 +169,7 @@ def test_make_data_federated_wrong_weights(federated_data_info):
     wrong_weights = np.array([0.5, 0.5, 0.5])
     federated_data, federated_label = \
         data_distribution.make_data_federated(train_data, train_label,
-                                              percent=percent, num_nodes=num_nodes, weights=wrong_weights)
+                                              percent, num_nodes, wrong_weights)
 
     centralized_data = np.concatenate(federated_data)
     centralized_labels = np.concatenate(federated_label)

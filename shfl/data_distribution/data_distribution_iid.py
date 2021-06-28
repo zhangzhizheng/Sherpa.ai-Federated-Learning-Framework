@@ -1,10 +1,10 @@
 import numpy as np
 
 from shfl.data_base.data_base import shuffle_rows
-from shfl.data_distribution.data_distribution import DataDistribution
+from shfl.data_distribution.data_distribution_sampling import SamplingDataDistribution
 
 
-class IidDataDistribution(DataDistribution):
+class IidDataDistribution(SamplingDataDistribution):
     """Creates a set of federated nodes from a centralized database.
 
     Implements the class
@@ -14,7 +14,9 @@ class IidDataDistribution(DataDistribution):
     data will have the same distribution as the centralized data.
     """
 
-    def make_data_federated(self, data, labels, **kwargs):
+    def make_data_federated(self, data, labels, percent=100, num_nodes=1,
+                            weights=None, sampling="without_replacement",
+                            **kwargs):
         """Creates the data partition for each client.
 
         The data and labels may be either Numpy arrays or
@@ -32,16 +34,14 @@ class IidDataDistribution(DataDistribution):
                 in which case all weights are set to be equal).
             sampling: Optional; Sample with or without replacement
                 (default is "without_replacement").
+            **kwargs: Optional named arguments. These can be passed
+                when invoking the class method
+                [get_federated_data](./#get_federated_data).
 
         # Returns:
             federated_data: List containing the data for each client.
             federated_label: List containing the target labels for each client.
         """
-        percent = kwargs.get("percent", 100)
-        num_nodes = kwargs.get("num_nodes", 1)
-        weights = kwargs.get("weights", None)
-        sampling = kwargs.get("sampling", "without_replacement")
-
         if weights is None:
             weights = np.full(num_nodes, 1/num_nodes)
 
