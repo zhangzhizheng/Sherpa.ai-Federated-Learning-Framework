@@ -3,11 +3,11 @@ import pandas as pd
 import pytest
 import tensorflow as tf
 
-from shfl.data_base.data_base import DataBase
+from shfl.data_base.data_base import LabeledDatabase
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 
 
-class DataBaseArrayTest(DataBase):
+class DataBaseArrayTest(LabeledDatabase):
     """Creates an array-like database with train and test sets of random values."""
     def load_data(self):
         self._train_data = np.random.rand(200).reshape([40, 5])
@@ -18,7 +18,7 @@ class DataBaseArrayTest(DataBase):
             np.random.randint(0, 10, 40))
 
 
-class DataBasePandasTest(DataBase):
+class DataBasePandasTest(LabeledDatabase):
     """Creates a Pandas database with train, test and validation sets of random values."""
     def load_data(self):
         self._train_data = pd.DataFrame(np.random.rand(200).reshape([40, 5]))

@@ -1,3 +1,5 @@
+# Disable too many arguments: needed in this case
+# pylint: disable=too-many-arguments
 import numpy as np
 
 from shfl.data_base.data_base import shuffle_rows
@@ -15,8 +17,7 @@ class IidDataDistribution(SamplingDataDistribution):
     """
 
     def make_data_federated(self, data, labels, percent=100, num_nodes=1,
-                            weights=None, sampling="without_replacement",
-                            **kwargs):
+                            weights=None, sampling="without_replacement"):
         """Creates the data partition for each client.
 
         The data and labels may be either Numpy arrays or
@@ -36,10 +37,10 @@ class IidDataDistribution(SamplingDataDistribution):
                 (default is "without_replacement").
             **kwargs: Optional named arguments. These can be passed
                 when invoking the class method
-                [get_federated_data](./#get_federated_data).
+                [get_nodes_federation](./#get_nodes_federation).
 
         # Returns:
-            federated_data: List containing the data for each client.
+            nodes_federation: List containing the data for each client.
             federated_label: List containing the target labels for each client.
         """
         if weights is None:

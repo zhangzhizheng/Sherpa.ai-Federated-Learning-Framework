@@ -26,8 +26,60 @@ class DataBase(abc.ABC):
     def __init__(self):
         self._train_data = []
         self._test_data = []
+        self._data = None
+
+    @property
+    def train(self):
+        """Returns train data and associated target labels."""
+        return self._train_data
+
+    @property
+    def test(self):
+        """Returns test data and associated target labels."""
+        return self._test_data
+
+    @property
+    def data(self):
+        """Returns all data as train data, train labels,
+        test data, test labels.
+        """
+        return self._train_data, self._test_data
+
+    @abc.abstractmethod
+    def load_data(self, **kwargs):
+        """Loads the train and test data.
+
+        # Returns:
+            data: 2-Tuple as (train data, test data).
+        """
+
+    def split_data(self, train_proportion=0.8, shuffle=True):
+        """Splits the data."""
+
+        if self._data is None:
+            self.load_data()
+
+        if shuffle:
+            self._data, = shuffle_rows(self._data)
+
+        self._train_data, self._test_data = \
+            split_train_test(self._data, train_proportion=train_proportion)
+
+
+class LabeledDatabase(DataBase):
+    """Creates a generic labeled database from input data and labels.
+
+    Implements the class [DataBase](./#database-class).
+
+    # Arguments:
+        data: Optional; Array-like object containing the features.
+        labels: Optional; Array-like object containing the target labels.
+    """
+    def __init__(self):
+        super().__init__()
         self._train_labels = []
         self._test_labels = []
+        self._labels = None
 
     @property
     def train(self):
@@ -48,86 +100,84 @@ class DataBase(abc.ABC):
             self._test_data, self._test_labels
 
     @abc.abstractmethod
-    def load_data(self):
-        """Specifies data location and operations at loading.
+    def load_data(self, **kwargs):
+        """Loads the train and test data.
 
-        Abstract method.
+        # Returns:
+            data: 4-Tuple as (train data, train labels, test data, test labels).
         """
 
+    def split_data(self, train_proportion=0.8, shuffle=True):
+        """Splits the data.
 
-class LabeledDatabase(DataBase):
-    """Creates a generic labeled database from input data and labels.
-
-    Implements the class [DataBase](./#database-class).
-
-    # Arguments:
-        data: Array-like object containing the features.
-        labels: Array-like object containing the target labels.
+        # Arguments:
         train_proportion: Optional; Float between 0 and 1 proportional to the
             amount of data to dedicate to train. If 1 is provided, all data is
             assigned to train (default is 0.8).
         shuffle: Optional; Boolean for shuffling rows before the
             train/test split (default is True).
-    """
-
-    def __init__(self, data, labels, train_proportion=0.8, shuffle=True):
-        super().__init__()
-        self._data_and_labels = (data, labels)
-        self._train_proportion = train_proportion
-        self._shuffle = shuffle
-
-    def load_data(self):
-        """Loads the data (once) and returns the train/test partitions.
-
-        # Returns
-            data: 4-Tuple as (train data, train labels, test data, test labels).
         """
 
-        if not self._train_data:
-            self._load_data()
-
-        return self.data
-
-    def _load_data(self):
-        """Populates private attributes train data and labels,
-            and test data and labels.
-        """
-        if self._shuffle:
-            self._data_and_labels = shuffle_rows(*self._data_and_labels)
+        if shuffle:
+            self._data, self._labels = shuffle_rows(self._data, self._labels)
 
         self._train_data, self._train_labels, \
             self._test_data, self._test_labels = \
-            split_train_test(*self._data_and_labels,
-                             train_proportion=self._train_proportion)
+            split_train_test(self._data, self._labels,
+                             train_proportion=train_proportion)
 
 
-def shuffle_rows(data, labels):
+class WrapLabeledDatabase(LabeledDatabase):
+    """Wraps labeled data in a database."""
+    def load_data(self, data, labels, train_proportion=0.8, shuffle=True):
+        """Loads the train and test data.
+
+        # Arguments:
+        train_proportion: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
+        shuffle: Optional; Boolean for shuffling rows before the
+            train/test split (default is True).
+
+        # Returns:
+            data: 4-Tuple as (train data, train labels, test data, test labels).
+        """
+
+        self._data = data
+        self._labels = labels
+
+        self.split_data(train_proportion, shuffle)
+
+        return self.data
+
+
+def shuffle_rows(*array_like_objects):
     """Shuffles rows on inputs simultaneously.
 
     It supports either Pandas DataFrame/Series or Numpy arrays.
 
     # Arguments:
-        data: Array-like object containing data.
-        labels: Array-like object containing target labels.
+        *array_like_objects: Array-like objects containing data.
     """
 
-    check_array_like_data_type(data)
-    check_array_like_data_type(labels)
+    for item in array_like_objects:
+        check_array_like_data_type(item)
 
-    randomize = np.arange(len(labels))
+    check_all_same_length(array_like_objects)
+
+    randomize = np.arange(len(array_like_objects[0]))
     np.random.shuffle(randomize)
-    shuffled_data = get_rows(data, randomize)
-    shuffled_labels = get_rows(labels, randomize)
+    shuffled_data = tuple(get_rows(item, randomize)
+                          for item in array_like_objects)
 
-    return shuffled_data, shuffled_labels
+    return shuffled_data
 
 
-def split_train_test(data, labels, train_proportion=0.8):
+def split_train_test(*array_like_objects, train_proportion=0.8):
     """Splits data and labels into train and test sets.
 
     # Arguments:
-        data: Array-like object containing the data to split.
-        labels: Array-like object containing target labels.
+        array_like_objects: Array-like objects containing the data to split.
         train_proportion: Optional; Float between 0 and 1 proportional to the
             amount of data to dedicate to train. If 1 is provided, all data is
             assigned to train (default is 0.8).
@@ -138,15 +188,14 @@ def split_train_test(data, labels, train_proportion=0.8):
         test_data: Array-like object.
         test_labels: Array-like object.
     """
-    train_size = round(len(data) * train_proportion)
+    check_all_same_length(array_like_objects)
 
-    train_data = data[:train_size]
-    train_labels = labels[:train_size]
+    train_size = round(len(array_like_objects[0]) * train_proportion)
 
-    test_data = data[train_size:]
-    test_labels = labels[train_size:]
+    train_data = [item[:train_size] for item in array_like_objects]
+    test_data = [item[train_size:] for item in array_like_objects]
 
-    return train_data, train_labels, test_data, test_labels
+    return (*train_data, *test_data)
 
 
 def vertical_split(data, labels, indices_or_sections=2,
@@ -184,7 +233,7 @@ reference/generated/numpy.array_split.html)).
 
     # Split train/test samples (horizontally on rows):
     train_data, train_labels, test_data, test_labels = \
-        split_train_test(data, labels, train_proportion)
+        split_train_test(data, labels, train_proportion=train_proportion)
 
     # Split features (vertically on columns):
     chunks_indices = np.array_split(features, indices_or_sections)
@@ -248,3 +297,10 @@ def check_array_like_data_type(data):
     if type(data) not in allowed_types:
         raise TypeError("Data must be either a pd.DataFrame or "
                         "a numpy array.")
+
+
+def check_all_same_length(objects):
+    """Checks that the objects have the same length."""
+    if not all(len(item) == len(objects[0])
+               for item in objects):
+        raise AssertionError("Lengths of objects do not match.")

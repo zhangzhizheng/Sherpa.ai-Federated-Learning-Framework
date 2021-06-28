@@ -49,7 +49,7 @@ PAGES = [
         'page': 'private/federated_operation.md',
         'classes': [
             (private.federated_operation.NodesFederation, ["append_data_node",
-                                                         "num_nodes"]),
+                                                           "num_nodes"]),
             (private.federated_operation.FederatedDataNode, ['configure_data_access',
                                                              'set_private_data',
                                                              'set_private_test_data',
@@ -71,8 +71,7 @@ PAGES = [
     {
         'page': 'private/federated_attack.md',
         'classes': [
-            (private.federated_attack.FederatedDataAttack, ['apply_attack']),
-            private.federated_attack.FederatedPoisoningDataAttack
+            (private.federated_attack.FederatedPoisoningDataAttack, ['__call__'])
         ]
     },
     {
@@ -110,13 +109,12 @@ PAGES = [
     {
         'page': 'data_distribution.md',
         'classes': [
-            (data_distribution.data_distribution.DataDistribution, ["get_federated_data",
+            (data_distribution.data_distribution.DataDistribution, ["get_nodes_federation",
                                                                     "make_data_federated"]),
             (data_distribution.data_distribution_iid.IidDataDistribution, ["make_data_federated"]),
             data_distribution.data_distribution_sampling.SamplingDataDistribution,
             (data_distribution.data_distribution_non_iid.NonIidDataDistribution, ["make_data_federated",
                                                                                   "_choose_labels"]),
-            (data_distribution.data_distribution_explicit.ExplicitDataDistribution, ["make_data_federated"]),
 
         ]
     },
@@ -170,8 +168,10 @@ PAGES = [
     {
         'page': 'federated_government.md',
         'classes': [
-            (federated_government.federated_government.FederatedGovernment, ['evaluate_clients',
-                                                                             'run_rounds']),
+            (federated_government.federated_government.FederatedGovernment, ['run_rounds',
+                                                                             'evaluate_clients']),
+            (federated_government.vertical_federated_government.VerticalFederatedGovernment, ['run_rounds',
+                                                                                              'evaluate_collaborative_model']),
             (federated_government.federated_images_classifier.FederatedImagesClassifier, ['run_rounds',
                                                                                           'model_builder']),
             federated_government.federated_images_classifier.ImagesDataBases,

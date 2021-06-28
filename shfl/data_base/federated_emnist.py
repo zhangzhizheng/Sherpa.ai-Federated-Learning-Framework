@@ -1,15 +1,17 @@
 from enum import Enum
 import numpy as np
+# Tensorflow warning
+# pylint: disable=no-name-in-module
 from tensorflow.python.keras.utils.data_utils import get_file
 from scipy.io import loadmat
 
-from shfl.data_base.data_base import DataBase
+from shfl.data_base.data_base import LabeledDatabase
 
 
-class FederatedEmnist(DataBase):
+class FederatedEmnist(LabeledDatabase):
     """Loads the EMNIST federated dataset.
 
-    Implements base class [DataBase](./#database-class).
+    Implements base class [LabeledDatabase](./#labeleddatabase-class).
 
     # Arguments:
         split: String specifying the split of the original EMNIST dataset
@@ -23,8 +25,13 @@ class FederatedEmnist(DataBase):
         super().__init__()
         self._type = split
 
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
     def load_data(self):
+        """Loads the train and test data.
 
+        The data is originally already split into train and test.
+        """
         file_hash_ = Md5Hash[self._type].value
 
         path_dataset = get_file(

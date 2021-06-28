@@ -22,7 +22,7 @@ class DataDistribution(abc.ABC):
     def __init__(self, database):
         self._database = database
 
-    def get_federated_data(self, **kwargs):
+    def get_nodes_federation(self, **kwargs):
         """Gets the set of federated nodes.
 
         Assigns to each node the corresponding data partition as
@@ -35,7 +35,7 @@ class DataDistribution(abc.ABC):
                 [make_data_federated](./#make_data_federated).
 
         # Returns:
-            federated_data: Object of class
+            nodes_federation: Object of class
                 [NodesFederation](../private/federated_operation/#federateddata-class),
                 the set of federated nodes containing the distributed train data.
             test_data: The centralized (global) test data.
@@ -67,10 +67,10 @@ class DataDistribution(abc.ABC):
             labels: The target labels.
             **kwargs: Optional named arguments. These can be passed
                 when invoking the class method
-                [get_federated_data](./#get_federated_data).
+                [get_nodes_federation](./#get_nodes_federation).
 
         # Returns:
-            federated_data: A list-like object containing the data
+            nodes_federation: A list-like object containing the data
                 for each client.
             federated_label: A list-like object containing the target labels
                 for each client.

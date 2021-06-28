@@ -22,7 +22,7 @@ class Helpers:
     @staticmethod
     def check_initialization(federated_government):
         """Checks the initialization of high-level federated learning objects."""
-        assert hasattr(federated_government, "_federated_data")
+        assert hasattr(federated_government, "_nodes_federation")
         assert hasattr(federated_government, "_server")
 
     @staticmethod

@@ -11,33 +11,32 @@ class FederatedGovernment:
     # Arguments:
         model: Object representing a trainable model
             (see class [Model](../model)).
-        federated_data: Object of class
+        nodes_federation: Object of class
             [NodesFederation](../private/federated_operation/#nodesfederation-class),
             the set of federated nodes.
         aggregator: Optional; The aggregator to use
             (see class [FederatedAggregator](../federated_aggregator)).
             If not specified as argument, the argument `server_node` must be provided.
         server_node: Optional; Object of class
-            [FederatedDataNode](../private/federated_operation/#federateddatanode-class),
+            [ServerDataNode](../private/federated_operation/#serverdatanode-class),
             the server node. Default is None, in which case a server node is
-            created using the `model`, `federated_data` and `aggregator` provided.
+            created using the `model`, `nodes_federation` and `aggregator` provided.
     """
 
-    def __init__(self, model, federated_data,
-                 aggregator=None, server_node=None):
+    def __init__(self, model, nodes_federation, aggregator=None, server_node=None):
 
         if aggregator is None and server_node is None:
             raise AssertionError("Either the aggregator or the server node "
                                  "must be provided.")
-        self._federated_data = federated_data
-        for data_node in self._federated_data:
+        self._nodes_federation = nodes_federation
+        for data_node in self._nodes_federation:
             data_node.set_model(model)
 
         if server_node is not None:
             self._server = server_node
         else:
             self._server = ServerDataNode(
-                federated_data,
+                nodes_federation,
                 model,
                 aggregator)
 
@@ -57,7 +56,7 @@ class FederatedGovernment:
 
         for i in range(0, n_rounds):
 
-            self._federated_data.train_model()
+            self._nodes_federation.train_model()
 
             if i % eval_freq == 0:
                 print("Round " + str(i))
@@ -79,7 +78,7 @@ class FederatedGovernment:
             labels: The global target labels.
         """
 
-        for data_node in self._federated_data:
+        for data_node in self._nodes_federation:
             evaluation, local_evaluation = \
                 data_node.evaluate(data, labels)
 

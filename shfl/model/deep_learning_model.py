@@ -1,12 +1,13 @@
 # Disable warning from tensorflow EarlyStopping: not our responsibility
 # Disable too many arguments: needed for this case
+# pylint: disable=too-many-arguments
 
 import copy
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 
 from shfl.model.model import TrainableModel
-from .utils import _check_labels
+from .utils import check_labels_size
 
 
 class DeepLearningModel(TrainableModel):
@@ -25,8 +26,6 @@ class DeepLearningModel(TrainableModel):
     # References:
         [TensorFlow](https://www.tensorflow.org/)
     """
-
-    _check_labels = _check_labels
 
     def __init__(self, model, loss, optimizer,
                  batch_size=None, epochs=1, metrics=None):
@@ -52,7 +51,7 @@ class DeepLearningModel(TrainableModel):
             **kwargs: Optional named parameters.
         """
         self._check_data(data)
-        self._check_labels(labels)
+        check_labels_size(self._in_out_sizes, labels)
 
         early_stopping = EarlyStopping(monitor='val_loss', patience=5,
                                        verbose=0, mode='min')
@@ -86,7 +85,7 @@ class DeepLearningModel(TrainableModel):
             metrics: Metrics for the evaluation.
         """
         self._check_data(data)
-        self._check_labels(labels)
+        check_labels_size(self._in_out_sizes, labels)
 
         return self._model.evaluate(data, labels, verbose=0)
 
@@ -103,7 +102,7 @@ class DeepLearningModel(TrainableModel):
             metrics: Most representative metrics for the evaluation.
         """
         self._check_data(data)
-        self._check_labels(labels)
+        check_labels_size(self._in_out_sizes, labels)
 
         return self._model.evaluate(data, labels, verbose=0)[0]
 

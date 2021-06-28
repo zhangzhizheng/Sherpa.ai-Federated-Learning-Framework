@@ -2,13 +2,13 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from shfl.data_base.data_base import DataBase
+from shfl.data_base.data_base import LabeledDatabase
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 from shfl.federated_aggregator.iowa_federated_aggregator import IowaFederatedAggregator
 from shfl.federated_government.iowa_federated_government import IowaFederatedGovernment
 
 
-class DataBaseTest(DataBase):
+class DataBaseTest(LabeledDatabase):
     def __init__(self):
         super(DataBaseTest, self).__init__()
 
@@ -27,7 +27,7 @@ def test_iowa_federated_government():
 
     num_nodes = 3
     federated_data, test_data, test_labels = \
-        db.get_federated_data(num_nodes=num_nodes)
+        db.get_nodes_federation(num_nodes=num_nodes)
 
     a = 0
     b = 1
@@ -41,7 +41,7 @@ def test_iowa_federated_government():
 
     assert isinstance(iowa_fg._server._aggregator, IowaFederatedAggregator)
     assert isinstance(iowa_fg._server._model, type(model_builder))
-    assert np.array_equal(iowa_fg._federated_data, federated_data)
+    assert np.array_equal(iowa_fg._nodes_federation, federated_data)
     assert iowa_fg._a == a
     assert iowa_fg._b == b
     assert iowa_fg._c == c
@@ -58,20 +58,20 @@ def test_performance_clients():
 
     num_nodes = 3
     federated_data, test_data, test_labels = \
-        db.get_federated_data(num_nodes=num_nodes)
+        db.get_nodes_federation(num_nodes=num_nodes)
 
     iowa_fg = IowaFederatedGovernment(model_builder, federated_data)
-    for i, data_node in enumerate(iowa_fg._federated_data):
+    for i, data_node in enumerate(iowa_fg._nodes_federation):
         data_node.performance = Mock()
         data_node.performance.return_value = i
-    res = np.arange(iowa_fg._federated_data.num_nodes())
+    res = np.arange(iowa_fg._nodes_federation.num_nodes())
 
     data_val = np.random.rand(25).reshape((5, 5))
     labels_val = np.random.randint(0, 2, 5)
     performance = iowa_fg.performance_clients(data_val, labels_val)
 
     assert np.array_equal(performance, res)
-    for data_node in iowa_fg._federated_data:
+    for data_node in iowa_fg._nodes_federation:
         data_node.performance.assert_called_once_with(data_val, labels_val)
 
 
@@ -84,14 +84,14 @@ def test_run_rounds():
 
     num_nodes = 3
     federated_data, test_data, test_label = \
-        db.get_federated_data(num_nodes=num_nodes)
+        db.get_nodes_federation(num_nodes=num_nodes)
 
     iowa_fg = IowaFederatedGovernment(model_builder, federated_data)
 
     n = 1
 
     iowa_fg._server.deploy_collaborative_model = Mock()
-    iowa_fg._federated_data.train_model = Mock()
+    iowa_fg._nodes_federation.train_model = Mock()
     iowa_fg.evaluate_clients = Mock()
     iowa_fg.performance_clients = Mock()
     iowa_fg.performance_clients.return_value = 0
@@ -110,7 +110,7 @@ def test_run_rounds():
     test_label = test_label[int(0.15 * len(test_label)):]
 
     iowa_fg._server.deploy_collaborative_model.assert_called_once()
-    iowa_fg._federated_data.train_model.assert_called_once()
+    iowa_fg._nodes_federation.train_model.assert_called_once()
     iowa_fg.evaluate_clients.assert_called_once()
     assert len(iowa_fg.evaluate_clients.call_args[0]) == 2
     np.testing.assert_array_equal(

@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 from shfl.model.model import TrainableModel
-from .utils import _check_labels
+from .utils import  check_labels_size
 
 
 class DeepLearningModelPyTorch(TrainableModel):
@@ -26,8 +26,6 @@ class DeepLearningModelPyTorch(TrainableModel):
     # References:
         [PyTorch](https://pytorch.org/)
     """
-
-    _check_labels = _check_labels
 
     def __init__(self, model, loss, optimizer,
                  batch_size=32, epochs=1, metrics=None, device="cpu"):
@@ -51,7 +49,7 @@ class DeepLearningModelPyTorch(TrainableModel):
             **kwargs: Optional named parameters.
         """
         self._check_data(data)
-        self._check_labels(labels)
+        check_labels_size(self._in_out_sizes, labels)
 
         dataset = TensorDataset(torch.from_numpy(data),
                                 torch.from_numpy(labels))
@@ -116,7 +114,7 @@ class DeepLearningModelPyTorch(TrainableModel):
         """
 
         self._check_data(data)
-        self._check_labels(labels)
+        check_labels_size(self._in_out_sizes, labels)
 
         with torch.no_grad():
             all_y_pred = self.predict(data)

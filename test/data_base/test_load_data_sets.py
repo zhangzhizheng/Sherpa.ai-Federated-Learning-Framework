@@ -24,8 +24,7 @@ from shfl.data_base.lfw import Lfw
 def test_data_set_load(data_set):
     """Tests the dataset loading."""
     data = data_set()
-    data.load_data()
-    train_data, train_labels, test_data, test_labels = data.data
+    train_data, train_labels, test_data, test_labels = data.load_data()
 
     assert len(train_data) > 0
     assert len(test_data) > 0

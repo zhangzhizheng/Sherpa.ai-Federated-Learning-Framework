@@ -8,5 +8,4 @@ from shfl.private.federated_operation import NodesFederation
 from shfl.private.federated_operation import FederatedDataNode
 from shfl.private.node import DataNode
 from shfl.private.reproducibility import Reproducibility
-from shfl.private.federated_attack import FederatedDataAttack
 from shfl.private.federated_attack import FederatedPoisoningDataAttack

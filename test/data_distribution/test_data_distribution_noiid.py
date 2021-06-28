@@ -2,12 +2,12 @@ import random
 import numpy as np
 import tensorflow as tf
 
-from shfl.data_base.data_base import DataBase
+from shfl.data_base.data_base import LabeledDatabase
 from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
 from shfl.private.utils import unprotected_query
 
 
-class DataBaseTest(DataBase):
+class DataBaseTest(LabeledDatabase):
     """Can array-like database with train and test sets of random values."""
     def load_data(self):
         self._train_data = np.random.rand(500).reshape([100, 5])
@@ -90,7 +90,7 @@ def test_get_federated_data():
     # Percent and weight is checked in idd and no_idd test.
     num_nodes = 4
     federated_data, test_data, test_labels = \
-        data_distribution.get_federated_data(num_nodes=num_nodes)
+        data_distribution.get_nodes_federation(num_nodes=num_nodes)
 
     federated_data.configure_data_access(unprotected_query)
     reference_federated_data = [node_data.query().data for node_data in federated_data]

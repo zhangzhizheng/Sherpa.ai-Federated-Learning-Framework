@@ -1,3 +1,5 @@
+# Disable too many arguments and differ from **kwargs: needed in this case
+# pylint: disable=too-many-arguments, arguments-differ
 import abc
 
 from shfl.data_distribution.data_distribution import DataDistribution
@@ -12,8 +14,7 @@ class SamplingDataDistribution(DataDistribution):
 
     @abc.abstractmethod
     def make_data_federated(self, data, labels, percent=100, num_nodes=1,
-                            weights=None, sampling="without_sampling",
-                            **kwargs):
+                            weights=None, sampling="without_sampling"):
         """Creates the data partition for each client.
 
         # Arguments:
@@ -30,9 +31,9 @@ class SamplingDataDistribution(DataDistribution):
                 (default is "without_replacement").
             **kwargs: Optional named arguments. These can be passed
                 when invoking the class method
-                [get_federated_data](./#get_federated_data).
+                [get_nodes_federation](./#get_nodes_federation).
 
         # Returns:
-            federated_data: List containing the data for each client.
+            nodes_federation: List containing the data for each client.
             federated_label: List containing the target labels for each client.
         """

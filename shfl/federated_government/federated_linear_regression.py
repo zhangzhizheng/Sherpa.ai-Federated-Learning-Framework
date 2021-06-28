@@ -42,8 +42,8 @@ class FederatedLinearRegression(FederatedGovernment):
 
             distribution = IidDataDistribution(data_base)
             federated_data, self._test_data, self._test_labels = \
-                distribution.get_federated_data(num_nodes=num_nodes,
-                                                percent=percent)
+                distribution.get_nodes_federation(num_nodes=num_nodes,
+                                                  percent=percent)
             aggregator = FedAvgAggregator()
 
             super().__init__(model, federated_data, aggregator)

@@ -5,11 +5,13 @@ from sklearn.linear_model import LinearRegression
 from sklearn import metrics
 
 from shfl.model.model import TrainableModel
-from .utils import get_model_params
-from .utils import set_model_params
-from .utils import _check_data
+from .utils import check_initialization_regression
+from .utils import check_data_features
+from .utils import check_target_size
 
 
+# Similar with other linear models in sklearn, it can be repeated:
+# pylint: disable-msg=R0801
 class LinearRegressionModel(TrainableModel, ABC):
     """Wraps the scikit-learn linear regression model.
 
@@ -24,13 +26,9 @@ class LinearRegressionModel(TrainableModel, ABC):
         stable/modules/generated/sklearn.linear_model.LinearRegression.html)
     """
 
-    get_model_params = get_model_params
-    set_model_params = set_model_params
-    _check_data = _check_data
-
     def __init__(self, n_features, n_targets=1):
-        self._check_initialization(n_features)
-        self._check_initialization(n_targets)
+        check_initialization_regression(n_features)
+        check_initialization_regression(n_targets)
         self._model = LinearRegression()
         self._n_features = n_features
         self._n_targets = n_targets
@@ -47,8 +45,8 @@ class LinearRegressionModel(TrainableModel, ABC):
                 or (n_samples, n_targets) containing the target labels.
             **kwargs: Optional named parameters.
         """
-        self._check_data(data)
-        self._check_labels(labels)
+        check_data_features(self._n_features, data)
+        check_target_size(self._n_targets, labels)
 
         self._model.fit(data, labels)
 
@@ -62,7 +60,7 @@ class LinearRegressionModel(TrainableModel, ABC):
         # Returns:
             prediction: Model's prediction using the input data.
         """
-        self._check_data(data)
+        check_data_features(self._n_features, data)
 
         prediction = self._model.predict(data)
 
@@ -85,7 +83,7 @@ class LinearRegressionModel(TrainableModel, ABC):
             stable/modules/generated/sklearn.metrics.r2_score.html).
         """
 
-        self._check_labels(labels)
+        check_target_size(self._n_targets, labels)
 
         prediction = self.predict(data)
         root_mean_squared_error = np.sqrt(
@@ -107,8 +105,8 @@ class LinearRegressionModel(TrainableModel, ABC):
         # Returns:
             negative_rmse: Negative root mean square error.
         """
-        self._check_data(data)
-        self._check_labels(labels)
+        check_data_features(self._n_features, data)
+        check_target_size(self._n_targets, labels)
 
         prediction = self.predict(data)
         negative_root_mean_squared_error = - np.sqrt(
@@ -116,35 +114,11 @@ class LinearRegressionModel(TrainableModel, ABC):
 
         return negative_root_mean_squared_error
 
-    def _check_labels(self, labels):
-        if labels.ndim == 1:
-            if self._n_targets != 1:
-                raise AssertionError(
-                    "Labels need to have the same number of targets "
-                    "described by the model " + str(self._n_targets) +
-                    ". Current labels have only 1 target.")
-        elif labels.shape[1] != self._n_targets:
-            raise AssertionError(
-                "Labels need to have the same number of targets "
-                "described by the model " + str(self._n_targets) +
-                ". Current labels have " + str(labels.shape[1]) +
-                " targets.")
+    def get_model_params(self):
+        """Gets the linear model's parameters."""
+        return self._model.intercept_, self._model.coef_
 
-    @staticmethod
-    def _check_initialization(n_dimensions):
-        """Checks whether the model's initialization is correct.
-
-        The number of features and targets must be an integer
-        equal or greater to one.
-
-        # Arguments:
-            n_rounds: Number of features or targets.
-        """
-        if not isinstance(n_dimensions, int):
-            raise AssertionError(
-                "n_features and n_targets must be a positive integer number. "
-                "Provided value " + str(n_dimensions) + ".")
-        if n_dimensions < 1:
-            raise AssertionError(
-                "n_features and n_targets must be equal or greater that 1. "
-                "Provided value " + str(n_dimensions) + ".")
+    def set_model_params(self, params):
+        """Sets the linear model's parameters."""
+        self._model.intercept_ = params[0]
+        self._model.coef_ = params[1]

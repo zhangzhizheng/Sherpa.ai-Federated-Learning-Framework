@@ -21,34 +21,34 @@ def fixture_vertically_split_database(global_vars):
         vertical_split(data, labels, indices_or_sections=global_vars["n_nodes"])
 
     labels_nodes = [train_labels for _ in range(global_vars["n_nodes"])]
-    federated_data = federate_list(train_data, labels_nodes)
+    nodes_federation = federate_list(train_data, labels_nodes)
 
-    return federated_data, test_data, test_labels
+    return nodes_federation, test_data, test_labels
 
 
 @pytest.fixture(name="node_models")
 def fixture_node_models(vertically_split_database):
     """Returns the set of models to be assigned to client nodes."""
-    federated_data, _, _ = vertically_split_database
-    models = [Mock() for _ in range(federated_data.num_nodes())]
+    nodes_federation, _, _ = vertically_split_database
+    models = [Mock() for _ in range(nodes_federation.num_nodes())]
 
     return models
 
 
-@pytest.fixture(name="federated_data")
-def fixture_federated_data(vertically_split_database):
+@pytest.fixture(name="nodes_federation")
+def fixture_nodes_federation(vertically_split_database):
     """Returns the set of federated client nodes."""
-    federated_data, _, _ = vertically_split_database
+    nodes_federation, _, _ = vertically_split_database
 
-    return federated_data
+    return nodes_federation
 
 
 @patch("shfl.private.federated_operation.VerticalServerDataNode")
-def test_initialization(server_node, federated_data, node_models, helpers):
+def test_initialization(server_node, nodes_federation, node_models, helpers):
     """Checks that the vertical federated government is correctly initialized."""
     federated_government = VerticalFederatedGovernment(
         models=node_models,
-        federated_data=federated_data,
+        nodes_federation=nodes_federation,
         server_node=server_node)
 
     helpers.check_initialization(federated_government)
@@ -56,7 +56,7 @@ def test_initialization(server_node, federated_data, node_models, helpers):
 
 @patch("shfl.private.federated_operation.VerticalServerDataNode")
 @patch("shfl.private.federated_operation.NodesFederation")
-def test_run_rounds(federated_data,
+def test_run_rounds(nodes_federation,
                     server_node,
                     node_models,
                     vertically_split_database,
@@ -79,7 +79,7 @@ def test_run_rounds(federated_data,
 
     federated_government = VerticalFederatedGovernment(
         models=node_models,
-        federated_data=federated_data,
+        nodes_federation=nodes_federation,
         server_node=server_node)
 
     _, test_data, test_labels = vertically_split_database
@@ -90,7 +90,7 @@ def test_run_rounds(federated_data,
     train_model_calls = [call(), call(meta_params=server_meta_params)]
     test_evaluate_collaborative_model_calls = [call(), call(test_data, test_labels)]
 
-    federated_data.train_model.assert_has_calls(train_model_calls)
+    nodes_federation.train_model.assert_has_calls(train_model_calls)
     server_node.aggregate_weights.assert_called_once()
     server_node.train_model.assert_called_once()
     server_node.query_model.assert_called_once()

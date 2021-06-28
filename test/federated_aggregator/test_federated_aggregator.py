@@ -9,7 +9,7 @@ class FederatedAggregatorTest(FederatedAggregator):
         return self._axis
 
     def aggregate_weights(self, clients_params):
-        pass
+        """Dummy function."""
 
 
 def test_federated_aggregator_private_data():

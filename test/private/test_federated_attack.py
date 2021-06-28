@@ -34,7 +34,7 @@ def test_federated_poisoning_attack(data_and_labels):
 
     percentage = 10
     simple_attack = FederatedPoisoningDataAttack(percentage=percentage)
-    simple_attack.apply_attack(federated_data=federated_data)
+    simple_attack(nodes_federation=federated_data)
 
     adversaries_indices = simple_attack.adversaries
 

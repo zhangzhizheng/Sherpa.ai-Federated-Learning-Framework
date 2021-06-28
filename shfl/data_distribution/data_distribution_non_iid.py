@@ -1,3 +1,5 @@
+# Disable too many arguments and locals: needed in this case
+# pylint: disable=too-many-arguments, too-many-locals
 import random
 import numpy as np
 import tensorflow as tf
@@ -20,8 +22,7 @@ class NonIidDataDistribution(SamplingDataDistribution):
     """
 
     def make_data_federated(self, data, labels, percent=100, num_nodes=1,
-                            weights=None, sampling="with_replacement",
-                            **kwargs):
+                            weights=None, sampling="with_replacement"):
         """See base class.
         """
 

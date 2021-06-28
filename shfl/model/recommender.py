@@ -2,6 +2,8 @@ import abc
 import numpy as np
 
 from shfl.model.model import TrainableModel
+from .utils import check_data_recommender
+from .utils import check_data_labels_recommender
 
 
 class Recommender(TrainableModel):
@@ -28,8 +30,8 @@ class Recommender(TrainableModel):
             labels: The target labels.
             **kwargs: Optional named parameters.
         """
-        self._check_data(data)
-        self._check_data_labels(data, labels)
+        check_data_recommender(data)
+        check_data_labels_recommender(data, labels)
         self._client_identifier = data[0, 0]
         self.train_recommender(data, labels, **kwargs)
 
@@ -48,7 +50,7 @@ class Recommender(TrainableModel):
         # Returns:
             predictions: Model's prediction using the input data.
         """
-        self._check_data(data)
+        check_data_recommender(data)
         return self.predict_recommender(data)
 
     @abc.abstractmethod
@@ -66,8 +68,7 @@ class Recommender(TrainableModel):
         # Returns:
             metrics: Metrics for the evaluation.
         """
-        self._check_data(data)
-        self._check_data_labels(data, labels)
+        check_data_labels_recommender(data, labels)
 
         predictions = self.predict(data)
         if predictions.size == 0:
@@ -99,33 +100,3 @@ class Recommender(TrainableModel):
         """
 
         return self.evaluate(data, labels)
-
-    @staticmethod
-    def _check_data(data):
-        """Checks whether the data belongs to a single user.
-
-        # Arguments:
-            data: Array-like object containing the data.
-        """
-        number_of_clients = len(np.unique(data[:, 0]))
-
-        if number_of_clients > 1:
-            raise AssertionError(
-                "Data need to correspond to a single user. "
-                "Current data includes "
-                "{} clients.".format(number_of_clients))
-
-    @staticmethod
-    def _check_data_labels(data, labels):
-        """Checks whether the data and the labels
-        have matching dimensions.
-
-        # Arguments:
-            data: Data to train the model.
-            labels: Target labels.
-        """
-        if len(data) != len(labels):
-            raise AssertionError(
-                "Data and labels do not have matching dimensions. "
-                "Current data has {} rows and there are "
-                "{} labels".format(len(data), len(labels)))

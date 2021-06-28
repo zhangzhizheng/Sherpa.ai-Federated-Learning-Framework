@@ -1,5 +1,5 @@
-import numpy as np
 import random
+import numpy as np
 
 
 def mean_query(data):

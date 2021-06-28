@@ -151,7 +151,8 @@ class DataNode:
 
         # Example:
             Let's suppose we want to access the method `get_params` of the node's model
-            (in this case, a [linear regression model](../../model/supervised/#linearregressionmodel)).
+            (in this case, a
+            [linear regression model](../../model/supervised/#linearregressionmodel)).
             Namely, we would define a function to access the node's __model__
             (note that this time the private property is the node's model, which will be
             passed as argument):

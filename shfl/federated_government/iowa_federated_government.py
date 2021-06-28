@@ -16,7 +16,7 @@ class IowaFederatedGovernment(FederatedGovernment):
     # Arguments:
         model: Object representing a trainable model
             (see class [Model](../model)).
-        federated_data: Object of class
+        nodes_federation: Object of class
             [NodesFederation](../private/federated_operation/#federateddata-class),
             the set of federated nodes.
         dynamic: Optional; Boolean indicating whether we use the dynamic
@@ -54,7 +54,7 @@ class IowaFederatedGovernment(FederatedGovernment):
             client_performance: Performance for each client.
         """
         client_performance = []
-        for data_node in self._federated_data:
+        for data_node in self._nodes_federation:
             local_performance = data_node.performance(data_val, label_val)
             client_performance.append(local_performance)
 
@@ -79,7 +79,7 @@ class IowaFederatedGovernment(FederatedGovernment):
         for i in range(0, n_rounds):
             print("Accuracy round " + str(i))
             self._server.deploy_collaborative_model()
-            self._federated_data.train_model()
+            self._nodes_federation.train_model()
             self.evaluate_clients(test_data, test_label)
             client_performance = self.performance_clients(
                 validation_data, validation_label)

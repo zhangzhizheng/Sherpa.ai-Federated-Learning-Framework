@@ -3,9 +3,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 
 from shfl.model.model import TrainableModel
-from .utils import get_model_params
-from .utils import set_model_params
-from .utils import _check_data
+from .utils import check_initialization_classification
+from .utils import check_data_features
 
 
 class LinearClassifierModel(TrainableModel):
@@ -32,14 +31,10 @@ class LinearClassifierModel(TrainableModel):
         generated/sklearn.svm.SVC.html)
     """
 
-    get_model_params = get_model_params
-    set_model_params = set_model_params
-    _check_data = _check_data
-
     def __init__(self, n_features, classes, model=None):
         if model is None:
             model = LogisticRegression(solver='lbfgs', multi_class='auto')
-        self._check_initialization(n_features, classes)
+        check_initialization_classification(n_features, classes)
         self._model = model
         self._n_features = n_features
         classes = np.sort(np.asarray(classes))
@@ -61,7 +56,7 @@ class LinearClassifierModel(TrainableModel):
             **kwargs: Optional named parameters.
         """
 
-        self._check_data(data)
+        check_data_features(self._n_features, data)
         self._check_labels_train(labels)
         self._model.fit(data, labels)
 
@@ -75,7 +70,7 @@ class LinearClassifierModel(TrainableModel):
         # Returns:
             prediction: Model's prediction using the input data.
         """
-        self._check_data(data)
+        check_data_features(self._n_features, data)
 
         return self._model.predict(data)
 
@@ -118,14 +113,22 @@ class LinearClassifierModel(TrainableModel):
             balanced_accuracy: [Balanced accuracy score](https://scikit-learn.org/
             stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html).
         """
-
-        self._check_data(data)
         self._check_labels_predict(labels)
 
         prediction = self.predict(data)
         balanced_accuracy = metrics.balanced_accuracy_score(labels, prediction)
 
         return balanced_accuracy
+
+    def get_model_params(self):
+        """Gets the linear model's parameters."""
+        return self._model.intercept_, self._model.coef_
+
+    # Similar with other linear models in sklearn, it can be repeated:
+    def set_model_params(self, params):
+        """Sets the linear model's parameters."""
+        self._model.intercept_ = params[0]
+        self._model.coef_ = params[1]
 
     def _check_labels_train(self, labels):
         """Checks whether the classes to train are correct.
@@ -152,34 +155,3 @@ class LinearClassifierModel(TrainableModel):
                 "When predicting, labels need to be a subset of the classes "
                 "described by the model " + str(self._model.classes_) +
                 ". Labels in the given data are " + str(classes) + ".")
-
-    @staticmethod
-    def _check_initialization(n_features, classes):
-        """Checks whether the model's initialization is correct.
-
-        The number of features must be an integer equal or greater to one,
-        and there must be at least two classes.
-
-        # Arguments:
-            n_features: Number of features.
-            classes: Array-like object containing target classes.
-        """
-        if not isinstance(n_features, int):
-            raise AssertionError(
-                "n_features must be a positive integer number. Provided " +
-                str(n_features) + " features.")
-        if n_features < 0:
-            raise AssertionError(
-                "It must verify that n_features > 0. Provided value " +
-                str(n_features) + ".")
-        if len(classes) < 2:
-            raise AssertionError(
-                "It must verify that the number of classes > 1. Provided " +
-                str(len(classes)) + " classes.")
-        if len(np.unique(classes)) != len(classes):
-            classes = list(classes)
-            duplicated_classes = [i_class for i_class in classes
-                                  if classes.count(i_class) > 1]
-            raise AssertionError(
-                "No duplicated classes allowed. Class(es) duplicated: " +
-                str(duplicated_classes) + ".")

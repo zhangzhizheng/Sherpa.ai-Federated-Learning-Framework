@@ -7,3 +7,4 @@ from shfl.federated_government.federated_images_classifier import FederatedImage
 from shfl.federated_government.federated_clustering import FederatedClustering
 from shfl.federated_government.federated_linear_regression import FederatedLinearRegression
 from shfl.federated_government.iowa_federated_government import IowaFederatedGovernment
+from shfl.federated_government.vertical_federated_government import VerticalFederatedGovernment

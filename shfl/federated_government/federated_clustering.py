@@ -44,7 +44,7 @@ class FederatedClustering(FederatedGovernment):
                                 n_features=n_features)
 
             federated_data, self._test_data, self._test_labels = \
-                data_distribution(data_base).get_federated_data(
+                data_distribution(data_base).get_nodes_federation(
                     num_nodes=num_nodes,
                     percent=percent)
 

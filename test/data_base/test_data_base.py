@@ -9,6 +9,21 @@ from shfl.data_base.data_base import split_train_test
 from shfl.data_base.data_base import vertical_split
 
 
+class LabeledDatabaseTest(LabeledDatabase):
+    """Creates a test class for a random data base."""
+
+    def __init__(self, data, labels):
+        super().__init__()
+        self._data = data
+        self._labels = labels
+
+    def load_data(self, train_proportion=0.8, shuffle=True):
+        """Loads the train and test data."""
+        self.split_data(train_proportion, shuffle)
+
+        return self.data
+
+
 @pytest.fixture(name="data_and_labels_arrays")
 def fixture_data_and_labels_arrays():
     """Returns data and labels arrays containing random values."""
@@ -42,7 +57,8 @@ def test_split_train_test(data_labels, request):
 
     train_data, train_labels, \
         test_data, test_labels = \
-        shfl.data_base.data_base.split_train_test(data, labels, train_proportion)
+        shfl.data_base.data_base.split_train_test(data, labels,
+                                                  train_proportion=train_proportion)
 
     if isinstance(data, np.ndarray):
         assert np.array_equal(train_data, data[:train_size])
@@ -129,7 +145,7 @@ def test_shuffle_rows_wrong_inputs(data_and_labels_arrays):
 def test_labeled_database(data_labels, request):
     """Checks the creation of a labeled database."""
     data, labels = request.getfixturevalue(data_labels)
-    database = LabeledDatabase(data, labels)
+    database = LabeledDatabaseTest(data, labels)
     train_data, train_labels, test_data, test_labels = database.load_data()
 
     assert train_data is not None
@@ -142,6 +158,19 @@ def test_labeled_database(data_labels, request):
     # Disable false positive: both array and dataframe have "shape" member
     # pylint: disable=maybe-no-member
     assert train_data.shape[1] == test_data.shape[1] == data.shape[1]
+
+
+@pytest.mark.parametrize("data_labels",
+                         ["data_and_labels_arrays",
+                          "data_and_labels_dataframes"])
+def test_labeled_database_no_shuffle(data_labels, request):
+    """Checks the creation of a labeled database with no shuffle."""
+    data, labels = request.getfixturevalue(data_labels)
+    database = LabeledDatabaseTest(data, labels)
+    train_data, train_labels, test_data, test_labels = database.load_data(shuffle=False)
+
+    np.testing.assert_array_equal(np.concatenate((train_data, test_data)), data)
+    np.testing.assert_array_equal(np.concatenate((train_labels, test_labels)), labels)
 
 
 @pytest.mark.parametrize("data_labels",
