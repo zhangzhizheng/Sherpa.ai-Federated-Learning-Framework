@@ -3,24 +3,16 @@ import pytest
 import numpy as np
 
 from shfl.federated_government.federated_government import FederatedGovernment
-from shfl.data_base.data_base import LabeledDatabase
+from shfl.data_base.data_base import WrapLabeledDatabase
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
-
-
-class DataBaseTest(LabeledDatabase):
-    """Creates a test class for a random data base."""
-
-    def load_data(self):
-        self._train_data = np.random.rand(200).reshape([40, 5])
-        self._test_data = np.random.rand(200).reshape([40, 5])
-        self._train_labels = np.random.randint(0, 10, 40)
-        self._test_labels = np.random.randint(0, 10, 40)
 
 
 @pytest.fixture(name="data_distribution")
 def fixture_nodes_federation(global_vars):
     """Returns the federated data, test data and label."""
-    database = DataBaseTest()
+    data = np.random.rand(100, 5)
+    labels = np.random.randint(0, 2, size=(100, 3))
+    database = WrapLabeledDatabase(data, labels)
     database.load_data()
     data_distribution = IidDataDistribution(database)
 

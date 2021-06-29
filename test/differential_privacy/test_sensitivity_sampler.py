@@ -56,14 +56,15 @@ def test_l2_sensitivity_norm():
     assert np.abs(mean - 0) < 0.5
 
 
+@pytest.mark.parametrize("data_structure", [list, tuple])
 @pytest.mark.parametrize("sensitivity_norm", [L1SensitivityNorm,
                                               L2SensitivityNorm])
-def test_sensitivity_norm_list_of_arrays(sensitivity_norm):
+def test_sensitivity_norm_list_of_arrays(sensitivity_norm, data_structure):
     """Checks that the sensitivity norm is computed on each item of a list of arrays."""
 
     def reshape_to_list(data):
         """Reshapes the input data into a list of arrays."""
-        return list(np.reshape(data, (20, 30, 40)))
+        return data_structure(np.reshape(data, (20, 30, 40)))
 
     distribution = NormalDistribution(0, 1.5)
     sampler = SensitivitySampler()

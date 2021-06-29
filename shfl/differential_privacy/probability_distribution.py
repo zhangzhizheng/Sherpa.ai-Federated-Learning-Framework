@@ -1,3 +1,5 @@
+# In this case, only one method is needed
+# pylint: disable=too-few-public-methods
 import abc
 import numpy as np
 

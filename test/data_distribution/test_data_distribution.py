@@ -2,6 +2,7 @@ import numpy as np
 
 from shfl.data_distribution.data_distribution import DataDistribution
 from shfl.private.federated_operation import NodesFederation
+from shfl.data_base.data_base import WrapLabeledDatabase
 
 
 class DataDistributionTest(DataDistribution):
@@ -10,10 +11,10 @@ class DataDistributionTest(DataDistribution):
         return list(data), list(labels)
 
 
-def test_data_distribution_private_data(data_and_labels_arrays, labeled_data_base):
+def test_data_distribution_private_data(data_and_labels_arrays):
     """Checks that a database is correctly encapsulated in a data distribution."""
     data, labels = data_and_labels_arrays
-    data_base = labeled_data_base(data, labels)
+    data_base = WrapLabeledDatabase(data, labels)
     _, _, test_data_ref, test_labels_ref = data_base.load_data()
 
     data_distribution = DataDistributionTest(data_base)

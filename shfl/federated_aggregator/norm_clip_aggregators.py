@@ -26,7 +26,7 @@ class NormClipAggregator(FedAvgAggregator):
         self._data_shape_list = []
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregates arrays."""
         array_params = np.array(params)
         for i, values in enumerate(array_params):
@@ -36,11 +36,11 @@ class NormClipAggregator(FedAvgAggregator):
         return np.mean(array_params, axis=0)
 
     @dispatch(Variadic[list])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregates (nested) lists of arrays."""
         serialized_params = np.array([self._serialize(client)
                                       for client in params])
-        serialized_aggregation = self.aggregate(*serialized_params)
+        serialized_aggregation = self._aggregate(*serialized_params)
         aggregated_weights = self._deserialize(serialized_aggregation)
 
         return aggregated_weights
@@ -107,14 +107,14 @@ class CDPAggregator(NormClipAggregator):
         self._noise_mult = noise_mult
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregation of arrays.
 
         The gaussian noise is calibrated to
         `noise_mult*clip/number_of_clients`
         """
         clients_params = np.array(params)
-        mean = super().aggregate(*params)
+        mean = super()._aggregate(*params)
         noise = np.random.normal(
             loc=0.0,
             scale=self._noise_mult * self._clip / len(clients_params),
@@ -122,13 +122,13 @@ class CDPAggregator(NormClipAggregator):
         return mean + noise
 
     @dispatch(Variadic[list])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregation of (nested) lists of arrays.
 
         The gaussian noise is calibrated to
         `noise_mult*clip/number_of_clients`
         """
-        return super().aggregate(*params)
+        return super()._aggregate(*params)
 
 
 class WeakDPAggregator(CDPAggregator):
@@ -150,11 +150,11 @@ class WeakDPAggregator(CDPAggregator):
         super().__init__(clip=clip, noise_mult=noise_mult)
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregates arrays."""
-        return super().aggregate(*params)
+        return super()._aggregate(*params)
 
     @dispatch(Variadic[list])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregates (nested) lists of arrays."""
-        return super().aggregate(*params)
+        return super()._aggregate(*params)

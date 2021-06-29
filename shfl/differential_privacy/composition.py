@@ -43,6 +43,8 @@ class AdaptiveDifferentialPrivacy(DPDataAccessDefinition):
     def epsilon_delta(self):
         return self._epsilon_delta
 
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
     def __call__(self, data, mechanism=None):
         """Applies a differentially private mechanism
             if the privacy budget allows it.

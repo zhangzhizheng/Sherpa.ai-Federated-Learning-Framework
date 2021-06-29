@@ -56,9 +56,6 @@ class DataBase(abc.ABC):
     def split_data(self, train_proportion=0.8, shuffle=True):
         """Splits the data."""
 
-        if self._data is None:
-            self.load_data()
-
         if shuffle:
             self._data, = shuffle_rows(self._data)
 
@@ -128,8 +125,21 @@ class LabeledDatabase(DataBase):
 
 
 class WrapLabeledDatabase(LabeledDatabase):
-    """Wraps labeled data in a database."""
-    def load_data(self, data, labels, train_proportion=0.8, shuffle=True):
+    """Wraps labeled data in a database.
+
+    # Arguments:
+        data: Array-like object containing the data.
+        labels: Array-like object containing the target labels.
+    """
+
+    def __init__(self, data, labels):
+        super().__init__()
+        self._data = data
+        self._labels = labels
+
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
+    def load_data(self, train_proportion=0.8, shuffle=True):
         """Loads the train and test data.
 
         # Arguments:
@@ -142,9 +152,6 @@ class WrapLabeledDatabase(LabeledDatabase):
         # Returns:
             data: 4-Tuple as (train data, train labels, test data, test labels).
         """
-
-        self._data = data
-        self._labels = labels
 
         self.split_data(train_proportion, shuffle)
 

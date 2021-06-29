@@ -1,5 +1,5 @@
 # Using method overloading:
-# pylint: disable=function-redefined, too-few-public-methods
+# pylint: disable=too-few-public-methods
 import numpy as np
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
@@ -24,10 +24,10 @@ class FedAvgAggregator(FederatedAggregator):
     """
 
     @dispatch(Variadic[np.ndarray, np.ScalarType])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Averages arrays."""
         return np.mean(np.array(params), axis=self._axis)
 
     @dispatch(Variadic[list, tuple])
-    def aggregate(self, *params):
-        return super().aggregate(*params)
+    def _aggregate(self, *params):
+        return super()._aggregate(*params)

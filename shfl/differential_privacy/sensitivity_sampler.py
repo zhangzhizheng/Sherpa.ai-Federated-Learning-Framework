@@ -1,3 +1,5 @@
+# Using method overloading: only one public method needed
+# pylint: disable=too-few-public-methods
 import copy
 import math
 import numpy as np
@@ -36,6 +38,8 @@ class SensitivitySampler:
         self._sort_axis = 0
         self._concatenate_axis = 0
 
+    # Must use all arguments in this case
+    # pylint: disable=too-many-arguments
     def sample_sensitivity(self, query, sensitivity_norm, oracle, n_data_size,
                            m_sample_size=None, gamma=None):
         """Samples the sensitivity of a generic query.
@@ -163,7 +167,7 @@ class SensitivitySampler:
 
         return optimal_values
 
-    @dispatch(Variadic[(np.ndarray, list)])
+    @dispatch(Variadic[(np.ndarray, list, tuple)])
     def _sort_sensitivity(self, *sensitivity_sampled, k_highest):
         """Sorts arrays or lists of arrays.
         """
@@ -178,7 +182,7 @@ class SensitivitySampler:
     def _sort_sensitivity(self, *sensitivity_sampled, k_highest):
         """Sorts scalars.
         """
-        sensitivity_sorted = np.sort(sensitivity_sampled)
+        sensitivity_sorted = np.sort(sensitivity_sampled, axis=self._sort_axis)
         sensitivity_k_moment = sensitivity_sorted[k_highest - 1]
         sensitivity_mean = sensitivity_sorted.mean()
 

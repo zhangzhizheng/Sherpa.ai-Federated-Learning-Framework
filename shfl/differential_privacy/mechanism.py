@@ -295,6 +295,16 @@ class LaplaceMechanism(DPDataAccessDefinition):
             output[i] = self._add_noise(obj[i], sensitivity_tmp)
         return output
 
+    @dispatch(tuple, (dict, list, np.ndarray, np.ScalarType))
+    def _add_noise(self, obj, sensitivity):
+        """Adds Laplace noise to a (nested) list or a dictionary of arrays."""
+        as_list_obj = list(obj)
+        output = copy.deepcopy(as_list_obj)
+        for i in self._seq_iter(obj):
+            sensitivity_tmp = self._pick_sensitivity(sensitivity, i)
+            output[i] = self._add_noise(obj[i], sensitivity_tmp)
+        return tuple(output)
+
 
 class GaussianMechanism(DPDataAccessDefinition):
     """Implements the Gaussian mechanism for differential privacy.
@@ -404,6 +414,8 @@ class ExponentialMechanism(DPDataAccessDefinition):
            https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf)
     """
 
+    # All arguments needed in this case
+    # pylint: disable=too-many-arguments
     def __init__(self, utility_function, response_range,
                  delta_u, epsilon, size=1):
         self._check_epsilon_delta((epsilon, 0))

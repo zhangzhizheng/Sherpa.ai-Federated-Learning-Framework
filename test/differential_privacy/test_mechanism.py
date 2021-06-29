@@ -339,11 +339,12 @@ def test_laplace_scalar():
     assert np.abs(scalar - result) < 100
 
 
-def test_laplace_list_of_arrays():
+@pytest.mark.parametrize("data_structure", [list, tuple])
+def test_laplace_list_of_arrays(data_structure):
     """Checks that the laplace mechanism properly changes the values
     of data arrays in a set of federated nodes."""
     n_nodes = 15
-    data = [[np.random.rand(3, 2), np.random.rand(2, 3)]
+    data = [data_structure((np.random.rand(3, 2), np.random.rand(2, 3)))
             for _ in range(n_nodes)]
 
     federated_list = shfl.private.federated_operation.NodesFederation()
@@ -698,13 +699,13 @@ def test_laplace_sensitivity_wrong_input():
     with pytest.raises(IndexError):
         node.query("data_list")
 
-    # Query result is wrong data structure: so far, tuples are not allowed
-    data_tuple = (1, 2, 3, 4, 5)
+    # Query result is wrong data structure:
+    wrong_data_structure = type('obj', (object,), {'data': [1, 2, 3]})
     sensitivity = 2
     node = DataNode()
-    node.set_private_data("data_tuple", data_tuple)
-    node.configure_data_access("data_tuple",
+    node.set_private_data("data", wrong_data_structure)
+    node.configure_data_access("data",
                                LaplaceMechanism(sensitivity=sensitivity,
                                                 epsilon=epsilon))
     with pytest.raises(NotImplementedError):
-        node.query("data_tuple")
+        node.query("data")

@@ -1,3 +1,5 @@
+# In this case, only one method is needed
+# pylint: disable=too-few-public-methods
 import abc
 import numpy as np
 from multipledispatch import dispatch
@@ -21,6 +23,7 @@ class SensitivityNorm(abc.ABC):
     def __init__(self, axis=None):
         self._axis = axis
 
+    @abc.abstractmethod
     def compute(self, x_1, x_2):
         """Computes the norm of the difference between two inputs.
 
@@ -30,6 +33,20 @@ class SensitivityNorm(abc.ABC):
             x_1: Response from a specific query over database 1.
             x_2: Response from a specific query over database 2.
         """
+
+    @dispatch(list, list)
+    def _norm(self, x_1, x_2):
+        """L1 norm of the difference between (nested) lists of arrays."""
+        norm = [self.compute(xi_1, xi_2)
+                for xi_1, xi_2 in zip(x_1, x_2)]
+        return norm
+
+    @dispatch(tuple, tuple)
+    def _norm(self, x_1, x_2):
+        """L1 norm of the difference between (nested) tuples of arrays."""
+        norm = tuple(self.compute(xi_1, xi_2)
+                     for xi_1, xi_2 in zip(x_1, x_2))
+        return norm
 
 
 class L1SensitivityNorm(SensitivityNorm):
@@ -41,20 +58,17 @@ class L1SensitivityNorm(SensitivityNorm):
     def compute(self, x_1, x_2):
         """See base class.
         """
-        return self._compute(x_1, x_2)
+        return self._norm(x_1, x_2)
 
     @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
-    def _compute(self, x_1, x_2):
+    def _norm(self, x_1, x_2):
         """L1 norm of the difference between arrays."""
         norm = np.sum(np.abs(x_1 - x_2), axis=self._axis)
         return norm
 
-    @dispatch(list, list)
-    def _compute(self, x_1, x_2):
-        """L1 norm of the difference between (nested) lists of arrays."""
-        norm = [self.compute(xi_1, xi_2)
-                for xi_1, xi_2 in zip(x_1, x_2)]
-        return norm
+    @dispatch((list, tuple), (list, tuple))
+    def _norm(self, x_1, x_2):
+        return super()._norm(x_1, x_2)
 
 
 class L2SensitivityNorm(SensitivityNorm):
@@ -66,17 +80,13 @@ class L2SensitivityNorm(SensitivityNorm):
     def compute(self, x_1, x_2):
         """See base class.
         """
-        return self._compute(x_1, x_2)
+        return self._norm(x_1, x_2)
 
     @dispatch((np.ScalarType, np.ndarray), (np.ScalarType, np.ndarray))
-    def _compute(self, x_1, x_2):
-        """"L2 norm of the difference between arrays."""
-        norm = np.sqrt(np.sum((x_1 - x_2)**2, axis=self._axis))
-        return norm
+    def _norm(self, x_1, x_2):
+        """L2 norm of difference between arrays"""
+        return np.sqrt(np.sum((x_1 - x_2) ** 2, axis=self._axis))
 
-    @dispatch(list, list)
-    def _compute(self, x_1, x_2):
-        """"L2 norm of the difference between (nested) lists of arrays."""
-        norm = [self.compute(xi_1, xi_2)
-                for xi_1, xi_2 in zip(x_1, x_2)]
-        return norm
+    @dispatch((list, tuple), (list, tuple))
+    def _norm(self, x_1, x_2):
+        return super()._norm(x_1, x_2)

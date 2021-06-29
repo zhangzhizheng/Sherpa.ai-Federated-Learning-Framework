@@ -210,7 +210,7 @@ class ServerDataNode(FederatedDataNode):
     (i.e. the set of federated nodes).
     In the horizontal federated learning setting, typical queries
     are to deploy (update) the collaborative model over
-    the client nodes, and to aggregate the clients' models
+    the client nodes, and to _aggregate the clients' models
     into the collaborative one, held by the server.
 
     # Arguments:

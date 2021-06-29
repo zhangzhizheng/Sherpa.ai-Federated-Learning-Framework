@@ -1,6 +1,6 @@
-# Disable warning from tensorflow EarlyStopping: not our responsibility
+# Disable warning from tensorflow callbacks: not our responsibility
 # Disable too many arguments: needed for this case
-# pylint: disable=too-many-arguments
+# pylint: disable=no-name-in-module, too-many-arguments
 
 import copy
 from tensorflow.keras.callbacks import EarlyStopping

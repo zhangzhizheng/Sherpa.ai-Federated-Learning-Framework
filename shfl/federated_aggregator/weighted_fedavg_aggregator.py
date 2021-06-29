@@ -1,5 +1,5 @@
-# Using method overloading:
-# pylint: disable=function-redefined, no-self-use
+# In this case, only one method is needed
+# pylint: disable=too-few-public-methods
 import numpy as np
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
@@ -45,12 +45,14 @@ class WeightedFedAggregator(FedSumAggregator):
              for i_client, i_weight
              in zip(clients_params, percentage)]
 
-        return self.aggregate(*weighted_params)
+        return self._aggregate(*weighted_params)
 
     @dispatch(Variadic[list, tuple, np.ndarray, np.ScalarType])
-    def aggregate(self, *params):
-        return super().aggregate(*params)
+    def _aggregate(self, *params):
+        return super()._aggregate(*params)
 
+    # Since using method overloading, "self" is needed for coherence
+    # pylint: disable=no-self-use
     @dispatch((np.ndarray, np.ScalarType), np.ScalarType)
     def _weight_params(self, params, weight):
         """Applies the weights to arrays."""

@@ -1,5 +1,5 @@
-# Using method overloading:
-# pylint: disable=function-redefined
+# Using method overloading: only one public method needed
+# pylint: disable=too-few-public-methods
 from multipledispatch import dispatch
 from multipledispatch.variadic import Variadic
 
@@ -10,7 +10,7 @@ class FederatedAggregator:
     The aggregators instances must be callable, so the method `__call__`
     is implemented.
     Overloaded functions for aggregating (nested) lists and tuples
-    are here provided. Instead, the method to aggregate array-like
+    are here provided. Instead, the method to _aggregate array-like
     objects must be implemented.
 
     # Arguments:
@@ -32,18 +32,18 @@ class FederatedAggregator:
         # Returns:
             aggregated_params: The aggregated clients' parameters.
         """
-        return self.aggregate(*clients_params)
+        return self._aggregate(*clients_params)
 
     @dispatch(Variadic[list])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregates (nested) lists of arrays."""
-        aggregated_weights = [self.aggregate(*params)
+        aggregated_weights = [self._aggregate(*params)
                               for params in zip(*params)]
         return aggregated_weights
 
     @dispatch(Variadic[tuple])
-    def aggregate(self, *params):
+    def _aggregate(self, *params):
         """Aggregates (nested) tuples of arrays."""
-        aggregated_weights = tuple(self.aggregate(*params)
+        aggregated_weights = tuple(self._aggregate(*params)
                                    for params in zip(*params))
         return aggregated_weights
