@@ -1,30 +1,30 @@
-from shfl.federated_aggregator.federated_aggregator import FederatedAggregator
 import numpy as np
 from sklearn.cluster import KMeans
 
 
-class ClusterFedAvgAggregator(FederatedAggregator):
-    """
-    Implementation of Cluster Average Federated Aggregator.
-    It adds another k-means to find the minimum distance of cluster centroids coming from each node.
+def cluster_fed_avg_aggregator(clients_params):
+    """Performs a cluster aggregation.
 
-    It implements [Federated Aggregator](../federated_aggregator/#federatedaggregator-class)
-    """
+    It performs a k_highest-means round to find the minimum distance
+    of cluster centroids coming from each node.
 
-    def aggregate_weights(self, clients_params):
-        """
-        Implementation of abstract method of class [AggregateWeightsFunction](../federated_aggregator/#federatedaggregator-class)
-        # Arguments:
-            clients_params: list of multi-dimensional (numeric) arrays. Each entry in the list contains the \
-             model's parameters of one client.
+    # Arguments:
+        clients_params: List where each item contains one client's parameters.
+            One client's parameters can be a (nested) list or tuples of
+            array-like objects.
 
         # Returns:
-            aggregated_weights: aggregator weights representing the global learning model
-        """
-        clients_params_array = np.concatenate(clients_params)
+            aggregated_params: The aggregated clients' parameters.
 
-        n_clusters = clients_params[0].shape[0]
-        model_aggregator = KMeans(n_clusters=n_clusters, init='k-means++')
-        model_aggregator.fit(clients_params_array)
-        aggregated_weights = np.array(model_aggregator.cluster_centers_)
-        return aggregated_weights
+    # References:
+        [sklearn.cluster.KMeans](https://scikit-learn.org/stable/
+        modules/generated/sklearn.cluster.KMeans.html)
+    """
+    clients_params_array = np.concatenate(clients_params)
+
+    n_clusters = clients_params[0].shape[0]
+    model_aggregator = KMeans(n_clusters=n_clusters, init='k-means++')
+    model_aggregator.fit(clients_params_array)
+    aggregated_weights = np.array(model_aggregator.cluster_centers_)
+
+    return aggregated_weights

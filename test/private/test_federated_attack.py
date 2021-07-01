@@ -1,48 +1,46 @@
 import numpy as np
+import random
 
-from shfl.private.federated_operation import FederatedData
+from shfl.private.federated_operation import NodesFederation
 from shfl.private.data import LabeledData
-from shfl.private.federated_attack import ShuffleNode
 from shfl.private.federated_attack import FederatedPoisoningDataAttack
-from shfl.private.data import UnprotectedAccess
+from shfl.private.utils import unprotected_query
 
 
-def test_shuffle_node():
-    data = np.random.rand(50).reshape([10, 5])
-    label = np.random.randint(0, 10, 10)
-    labeled_data = LabeledData(data, label)
+def test_shuffle_node(data_and_labels):
+    """Checks that the labels in a node are correctly shuffled."""
+    labeled_data = LabeledData(*data_and_labels)
+    federated_data = NodesFederation()
+    federated_data.append_data_node(labeled_data)
+    federated_data.apply_data_transformation(lambda data: random.shuffle(data.label))
+    federated_data.configure_data_access(unprotected_query)
 
-    federated_data = FederatedData()
-    federated_data.add_data_node(labeled_data)
-    for node in federated_data:
-        node.apply_data_transformation(ShuffleNode())
-
-    federated_data.configure_data_access(UnprotectedAccess())
-    assert (not np.array_equal(federated_data[0].query().label, label))
+    assert (not np.array_equal(federated_data[0].query().label,
+                               data_and_labels[1]))
 
 
-def test_federated_poisoning_attack():
+def test_federated_poisoning_attack(data_and_labels):
+    """Checks that the labels in a set of federated nodes are correctly shuffled."""
     num_nodes = 10
-    federated_data = FederatedData()
+    federated_data = NodesFederation()
 
     list_labels = []
-    for i in range(num_nodes):
-        data = np.random.rand(50).reshape([10, 5])
-        label = np.random.randint(0, 10, 10)
+    for _ in range(num_nodes):
+        data = np.random.rand(*data_and_labels[0].shape)
+        label = np.random.randint(0, 10, size=data_and_labels[1].shape)
         list_labels.append(label)
         labeled_data = LabeledData(data, label)
-        federated_data.add_data_node(labeled_data)
+        federated_data.append_data_node(labeled_data)
 
     percentage = 10
     simple_attack = FederatedPoisoningDataAttack(percentage=percentage)
-    simple_attack.apply_attack(federated_data=federated_data)
+    simple_attack(nodes_federation=federated_data)
 
-    adversaries_idx = simple_attack.adversaries
+    adversaries_indices = simple_attack.adversaries
 
-    federated_data.configure_data_access(UnprotectedAccess())
-    for node, idx in zip(federated_data, range(num_nodes)):
-        if idx in adversaries_idx:
-            assert not np.array_equal(node.query().label, list_labels[idx])
+    federated_data.configure_data_access(unprotected_query)
+    for node, index in zip(federated_data, range(num_nodes)):
+        if index in adversaries_indices:
+            assert not np.array_equal(node.query().label, list_labels[index])
         else:
-            assert np.array_equal(node.query().label, list_labels[idx])
-
+            assert np.array_equal(node.query().label, list_labels[index])

@@ -11,3 +11,5 @@ from shfl.model.recommender import Recommender
 from shfl.model.mean_recommender import MeanRecommender
 from shfl.model.content_based_recommender import ContentBasedRecommender
 from shfl.model.deep_learning_model_pt import DeepLearningModelPyTorch
+from shfl.model.vertical_deep_learning_model import VerticalNeuralNetClientModel
+from shfl.model.vertical_deep_learning_model import VerticalNeuralNetServerModel

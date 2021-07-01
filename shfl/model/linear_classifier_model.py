@@ -1,25 +1,40 @@
-from shfl.model.model import TrainableModel
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 
+from shfl.model.model import TrainableModel
+from .utils import check_initialization_classification
+from .utils import check_data_features
+
 
 class LinearClassifierModel(TrainableModel):
-    """
-    This class offers support for scikit-learn linear classification models. By default, LogisticRegression is used. 
-    It implements [TrainableModel](../Model/#trainablemodel-class)
+    """Wraps scikit-learn linear classification models.
+
+    Implements the class [TrainableModel](../#trainablemodel-class).
 
     # Arguments:
-        n_features: integer number of features (independent variables).
-        classes: array of classes to predict. At least 2 classes must be provided.
-        model: Optional. Sklearn Linear Model instance to use. If it is not provided, a LogisticRegression instance
-            will be used. It has been tested with LogisticRegression and LinearSVC instances but it should work for
-            every linear model defined by intercept_ and coef_ attributes.
+        n_features: Number of features.
+        classes: Array-like object containing the classes to predict.
+            At least 2 classes must be provided.
+        model: Optional; Sklearn Linear Model instance to use.
+            It has been tested with Logistic Regression and
+            Linear C-Support Vector Classification models,
+            but it should work for every linear model defined by
+            intercept_ and coef_ attributes (by default, a Logistic Regression
+            model is used).
+
+    # References:
+        [sklearn.linear_model.LogisticRegression](https://scikit-learn.org/
+        stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
+
+        [sklearn.svm.SVC](https://scikit-learn.org/stable/modules/
+        generated/sklearn.svm.SVC.html)
     """
+
     def __init__(self, n_features, classes, model=None):
         if model is None:
             model = LogisticRegression(solver='lbfgs', multi_class='auto')
-        self._check_initialization(n_features, classes)
+        check_initialization_classification(n_features, classes)
         self._model = model
         self._n_features = n_features
         classes = np.sort(np.asarray(classes))
@@ -27,135 +42,116 @@ class LinearClassifierModel(TrainableModel):
         n_classes = len(classes)
         if n_classes == 2:
             n_classes = 1
-        self.set_model_params([np.zeros(n_classes), np.zeros((n_classes, n_features))])
-        
-    def train(self, data, labels):
-        """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
+        self.set_model_params([np.zeros(n_classes),
+                               np.zeros((n_classes, n_features))])
 
-        # Arguments
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target classes, array-like of shape (n_samples,) 
+    def train(self, data, labels, **kwargs):
+        """Trains the model.
+
+        # Arguments:
+            data: Array-like object of shape (n_samples, n_features)
+                containing the data to train the model.
+            labels: Array-like object of shape (n_samples,)
+                or (n_samples, n_classes) containing the target labels.
+            **kwargs: Optional named parameters.
         """
-        self._check_data(data)
+
+        check_data_features(self._n_features, data)
         self._check_labels_train(labels)
-        
         self._model.fit(data, labels)
 
     def predict(self, data):
-        """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
+        """Makes a prediction on input data.
 
-        Arguments:
-            data: Data, array-like of shape (n_samples, n_features)
+        # Arguments:
+            data: Array-like object of shape (n_samples, n_features)
+                containing the input data on which to make the prediction.
+
+        # Returns:
+            prediction: Model's prediction using the input data.
         """
-        
+        check_data_features(self._n_features, data)
+
         return self._model.predict(data)
-    
+
     def evaluate(self, data, labels):
+        """Evaluates the performance of the model.
+
+        # Arguments:
+            data: Array-like object of shape (n_samples, n_features)
+                containing the input data on which to make the evaluation.
+            labels: Array-like object of shape (n_samples,) or
+                (n_samples, n_classes) containing the target labels.
+
+        # Returns:
+            balanced_accuracy: [Balanced accuracy score](https://scikit-learn.org/
+            stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html).
+
+            cohen_kappa: [Cohen's kappa score](https://scikit-learn.org/
+            stable/modules/generated/sklearn.metrics.cohen_kappa_score.html).
         """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
-        Metrics for evaluating model's performance.
-        
-        Arguments:
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target classes, array-like of shape (n_samples,) 
-        """
-        self._check_data(data)
+
         self._check_labels_predict(labels)
-        
+
         prediction = self.predict(data)
-        bas = metrics.balanced_accuracy_score(labels, prediction)
-        cks = metrics.cohen_kappa_score(labels, prediction)
-        
-        return bas, cks
-    
+        balanced_accuracy = metrics.balanced_accuracy_score(labels, prediction)
+        cohen_kappa = metrics.cohen_kappa_score(labels, prediction)
+
+        return balanced_accuracy, cohen_kappa
+
     def performance(self, data, labels):
+        """Evaluates the performance of the model using
+            the most representative metrics.
+
+        # Arguments:
+            data: Array-like object of shape (n_samples, n_features)
+                containing the input data on which to make the evaluation.
+            labels: Array-like object of shape (n_samples,) or
+                (n_samples, n_classes) containing the target labels.
+
+        # Returns:
+            balanced_accuracy: [Balanced accuracy score](https://scikit-learn.org/
+            stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html).
         """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
-        
-        Arguments:
-            data: Data, array-like of shape (n_samples, n_features)
-            labels: Target classes, array-like of shape (n_samples,) 
-        """
-        self._check_data(data)
         self._check_labels_predict(labels)
-        
+
         prediction = self.predict(data)
-        bas = metrics.balanced_accuracy_score(labels, prediction)
-        
-        return bas
+        balanced_accuracy = metrics.balanced_accuracy_score(labels, prediction)
+
+        return balanced_accuracy
 
     def get_model_params(self):
-        """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
-        """
-        
-        return [self._model.intercept_, self._model.coef_]
+        """Gets the linear model's parameters."""
+        return self._model.intercept_, self._model.coef_
 
+    # Similar with other linear models in sklearn, it can be repeated:
     def set_model_params(self, params):
-        """
-        Implementation of abstract method of class [TrainableModel](../Model/#trainablemodel-class)
-        """
-        
+        """Sets the linear model's parameters."""
         self._model.intercept_ = params[0]
         self._model.coef_ = params[1]
 
-    def _check_data(self, data):
-        """
-        Method that checks whether the data dimension is correct.
-        """
-        if data.ndim == 1:
-            if self._n_features != 1:
-                raise AssertionError("Data need to have the same number of features described by the model, " + str(self._n_features)
-                                     + ". Current data have only 1 feature.")
-        elif data.shape[1] != self._n_features:
-            raise AssertionError("Data need to have the same number of features described by the model, " + str(self._n_features) +
-                                 ". Current data has " + str(data.shape[1]) + " features.")
-
     def _check_labels_train(self, labels):
-        """
-        Method that checks whether the classes are correct. 
-        When training, the classes in client's data must be the same as the input ones.
-        
-        # Arguments:
-            labels: array with classes
+        """Checks whether the classes to train are correct.
+
+        When training, the classes in client's data must be the same
+        as the input ones.
         """
         classes = np.unique(np.asarray(labels))
         if not np.array_equal(self._model.classes_, classes):
-            raise AssertionError("When training, labels need to have the same classes described by the model, "
-                                 + str(self._model.classes_) + ". Labels of this node are " + str(classes) + " .")
-            
+            raise AssertionError(
+                "When training, labels need to have the same classes "
+                "described by the model " + str(self._model.classes_) +
+                ". Labels of this node are " + str(classes) + ".")
+
     def _check_labels_predict(self, labels):
-        """
-        Method that checks whether the classes are correct. 
-        When predicting, the classes in data must be a subset of the trained ones.
-        
-        # Arguments:
-            labels: array with classes
+        """Checks whether the classes to predict are correct.
+
+        When predicting, the classes in data must be a subset
+        of the trained ones.
         """
         classes = np.unique(np.asarray(labels))
         if not set(classes) <= set(self._model.classes_):
-            raise AssertionError("When predicting, labels need to be a subset of the classes described by the model, " + str(self._model.classes_)
-                                 + ". Labels in the given data are " + str(classes) + " .")
-    
-    @staticmethod
-    def _check_initialization(n_features, classes):
-        """
-        Method that checks if model's initialization is correct. 
-        The number of features must be an integer equal or greater to one, and there must be at least two classes.
-
-        # Arguments:
-            n_features: number of features
-            classes: array of classes to predict
-        """
-        if not isinstance(n_features, int):
-            raise AssertionError("n_features must be a positive integer number. Provided " + str(n_features) + " features.")
-        if n_features < 0:
-            raise AssertionError("It must verify that n_features > 0. Provided value " + str(n_features) + ".")
-        if len(classes) < 2:
-            raise AssertionError("It must verify that the number of classes > 1. Provided " + str(len(classes)) + " classes.")
-        if len(np.unique(classes)) != len(classes):
-            classes = list(classes)
-            duplicated_classes = [i_class for i_class in classes if classes.count(i_class) > 1]
-            raise AssertionError("No duplicated classes allowed. Class(es) duplicated: " + str(duplicated_classes) )
+            raise AssertionError(
+                "When predicting, labels need to be a subset of the classes "
+                "described by the model " + str(self._model.classes_) +
+                ". Labels in the given data are " + str(classes) + ".")

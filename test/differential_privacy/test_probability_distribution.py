@@ -5,6 +5,7 @@ from shfl.differential_privacy.probability_distribution import GaussianMixture
 
 
 def test_normal_distribution():
+    """Checks that the sampling from the normal distribution is correct."""
     data_size = 1000
     array = NormalDistribution(175, 7).sample(data_size)
 
@@ -13,17 +14,19 @@ def test_normal_distribution():
 
 
 def test_gaussian_mixture():
-    data_size = 1000
+    """Checks that the sampling from the mixture of two gaussian distributions
+    is correct."""
+    sample_size = 1000
 
-    mu_M = 178
-    mu_F = 162
-    sigma_M = 7
-    sigma_F = 7
-    norm_params = np.array([[mu_M, sigma_M],
-                            [mu_F, sigma_F]])
+    mu_first = 178
+    mu_second = 162
+    sigma_first = 7
+    sigma_second = 7
+    params = np.array([[mu_first, sigma_first],
+                      [mu_second, sigma_second]])
 
     weights = np.ones(2) / 2.0
-    array = GaussianMixture(norm_params, weights).sample(data_size)
+    array = GaussianMixture(params, weights).sample(sample_size)
 
-    assert len(array) == 1000
+    assert len(array) == sample_size
     assert np.abs(np.mean(array) - 170) < 5

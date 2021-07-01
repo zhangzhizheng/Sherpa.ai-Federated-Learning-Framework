@@ -1,34 +1,26 @@
 import numpy as np
 
-from shfl.data_base.data_base import DataBase
 from shfl.data_distribution.data_distribution import DataDistribution
+from shfl.private.federated_operation import NodesFederation
+from shfl.data_base.data_base import WrapLabeledDatabase
 
 
-class TestDataDistribution(DataDistribution):
-    def __init__(self, database):
-        super(TestDataDistribution, self).__init__(database)
-
-    def make_data_federated(self, data, labels, num_nodes, percent, weights):
-        pass
+class DataDistributionTest(DataDistribution):
+    """Creates a dummy distribution among federated clients."""
+    def make_data_federated(self, data, labels, **kwargs):
+        return list(data), list(labels)
 
 
-class TestDataBase(DataBase):
-    def __init__(self):
-        super(TestDataBase, self).__init__()
+def test_data_distribution_private_data(data_and_labels_arrays):
+    """Checks that a database is correctly encapsulated in a data distribution."""
+    data, labels = data_and_labels_arrays
+    data_base = WrapLabeledDatabase(data, labels)
+    _, _, test_data_ref, test_labels_ref = data_base.load_data()
 
-    def load_data(self):
-        self._train_data = np.random.rand(50).reshape([10, 5])
-        self._test_data = np.random.rand(50).reshape([10, 5])
-        self._validation_data = np.random.rand(50).reshape([10, 5])
-        self._train_labels = np.random.randint(0, 10, 10)
-        self._test_labels = np.random.randint(0, 10, 10)
-        self._validation_labels = np.random.randint(0, 10, 10)
+    data_distribution = DataDistributionTest(data_base)
+    federated_data, test_data, test_labels = data_distribution.get_nodes_federation()
 
-
-def test_data_distribution_private_data():
-    data = TestDataBase()
-    data.load_data()
-
-    dt = TestDataDistribution(data)
-
-    assert data == dt._database
+    assert hasattr(data_distribution, "_database")
+    assert isinstance(federated_data, NodesFederation)
+    np.testing.assert_array_equal(test_data, test_data_ref)
+    np.testing.assert_array_equal(test_labels, test_labels_ref)

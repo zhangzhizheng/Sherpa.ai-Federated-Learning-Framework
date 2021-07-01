@@ -1,85 +1,72 @@
-from shfl.federated_government.federated_government import FederatedGovernment
-from shfl.data_distribution.data_distribution_iid import IidDataDistribution
-from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
-from shfl.federated_aggregator.cluster_fedavg_aggregator import ClusterFedAvgAggregator
-from shfl.model.kmeans_model import KMeansModel
-from shfl.data_base.iris import Iris
-
 from enum import Enum
 import numpy as np
 
-
-class ClusteringDataBases(Enum):
-    """
-    Enumeration of possible databases for clustering.
-    """
-    IRIS = Iris
+from shfl.federated_government.federated_government import FederatedGovernment
+from shfl.data_distribution.data_distribution_iid import IidDataDistribution
+from shfl.federated_aggregator.cluster_fedavg_aggregator import cluster_fed_avg_aggregator
+from shfl.model.kmeans_model import KMeansModel
+from shfl.data_base.iris import Iris
 
 
 class FederatedClustering(FederatedGovernment):
-    """
-    Class used to represent a high-level federated clustering using k-means
-    (see: [FederatedGoverment](../federated_government/#federatedgovernment-class)).
+    """Runs a federated clustering with minimal user input.
+
+    It overrides the class [FederatedGovernment](./#federatedgovernment-class).
+
+    Runs a clustering federated learning experiment
+    with predefined values. This way, it suffices to just specify
+    which dataset to use.
 
     # Arguments:
-        data_base_name_key: key of the enumeration of valid data bases (see: [ClusteringDataBases](./#clusteringdatabases-class))
-        iid: boolean which specifies if the distribution if IID (True) or non-IID (False) (True by default)
-        num_nodes: number of clients.
-        percent: percentage of the database to distribute among nodes.
+        data_base_name_key: Key of a valid data base (see possibilities
+            in class [ClusteringDataBases](./#clusteringdatabases-class)).
+        data_distribution: Optional; Reference to the object defining the data sampling.
+            Options are
+            [IidDataDistribution](../data_distribution/#iiddatadistribution-class) (default)
+            and [NonIidDataDistribution](../data_distribution/#noniiddatadistribution-class).
+        num_nodes: Optional; number of client nodes (default is 20).
+        percent: Optional; Percentage of the database to distribute
+            among nodes (by default set to 100, in which case
+            all the available data is used).
     """
 
-    def __init__(self, data_base_name_key, iid=True, num_nodes=20, percent=100):
+    def __init__(self, data_base_name_key,
+                 data_distribution=IidDataDistribution,
+                 num_nodes=20, percent=100):
         if data_base_name_key in ClusteringDataBases.__members__.keys():
-            module = ClusteringDataBases.__members__[data_base_name_key].value
-            data_base = module()
-            train_data, train_labels, test_data, test_labels = data_base.load_data()
+            data_base = ClusteringDataBases[data_base_name_key].value()
+            data_base.load_data()
+            train_data, train_labels = data_base.train
 
-            self._num_clusters = len(np.unique(train_labels))
-            self._num_features = train_data.shape[1]
+            n_clusters = len(np.unique(train_labels))
+            n_features = train_data.shape[1]
+            model = KMeansModel(n_clusters=n_clusters,
+                                n_features=n_features)
 
-            if iid:
-                distribution = IidDataDistribution(data_base)
-            else:
-                distribution = NonIidDataDistribution(data_base)
+            federated_data, self._test_data, self._test_labels = \
+                data_distribution(data_base).get_nodes_federation(
+                    num_nodes=num_nodes,
+                    percent=percent)
 
-            federated_data, self._test_data, self._test_labels = distribution.get_federated_data(num_nodes=num_nodes,
-                                                                                                 percent=percent)
+            aggregator = cluster_fed_avg_aggregator
 
-            aggregator = ClusterFedAvgAggregator()
-
-            super().__init__(self.model_builder, federated_data, aggregator)
+            super().__init__(model, federated_data, aggregator)
 
         else:
-            print("The data base name is not included. Try with: " + str(", ".join([e.name for e in ClusteringDataBases])))
-            self._test_data = None
+            raise ValueError(
+                "The data base " + data_base_name_key +
+                " is not included. Try with: " +
+                str(", ".join([e.name for e in ClusteringDataBases])))
 
-    def run_rounds(self, n=5):
+    def run_rounds(self, n_rounds=5, **kwargs):
+        """See base class.
         """
-        Overriding of the method of run_rounds of [FederatedGovernment](../federated_government/#federatedgovernment-class)).
+        super().run_rounds(n_rounds, self._test_data, self._test_labels, **kwargs)
 
-        Run one more round beginning in the actual state testing in test data and federated_local_test.
 
-        # Arguments:
-            n: Number of rounds (2 by default)
-        """
-        if self._test_data is not None:
-            for i in range(0, n):
-                print("Accuracy round " + str(i))
-                self.deploy_central_model()
-                self.train_all_clients()
-                self.evaluate_clients(self._test_data, self._test_labels)
-                self.aggregate_weights()
-                self.evaluate_global_model(self._test_data, self._test_labels)
-                print("\n\n")
-        else:
-            print("Federated images classifier is not properly initialised")
+class ClusteringDataBases(Enum):
+    """Enumerates the available databases for clustering.
 
-    def model_builder(self):
-        """
-        Build a KMeans model with the class params.
-
-        # Returns:
-            model: KMeans model.
-        """
-        model = KMeansModel(n_clusters=self._num_clusters, n_features=self._num_features)
-        return model
+    Options are: `"IRIS"`.
+    """
+    IRIS = Iris

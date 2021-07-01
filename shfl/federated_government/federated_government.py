@@ -1,100 +1,87 @@
+from shfl.private.federated_operation import ServerDataNode
+
+
 class FederatedGovernment:
-    """
-    Class used to represent the central class FederatedGoverment.
+    """Defines the horizontal federated learning algorithm.
+
+    Coordinates the sequence of operations to be performed
+    by the server and the clients nodes.
+    This class can be overridden to define new custom federated algorithms.
 
     # Arguments:
-       model_builder: Function that return a trainable model (see: [Model](../model))
-       federated_data: Federated data to use. (see: [FederatedData](../private/federated_operation/#federateddata-class))
-       aggregator: Federated aggregator function (see: [Federated Aggregator](../federated_aggregator))
-       model_param_access: Policy to access model's parameters, by default non-protected (see: [DataAccessDefinition](../private/data/#dataaccessdefinition-class))
-
-    # Properties:
-        global_model: Return the global model.
+        model: Object representing a trainable model
+            (see class [Model](../model)).
+        nodes_federation: Object of class
+            [NodesFederation](../private/federated_operation/#nodesfederation-class),
+            the set of federated nodes.
+        aggregator: Optional; The aggregator to use
+            (see class [FederatedAggregator](../federated_aggregator)).
+            If not specified as argument, the argument `server_node` must be provided.
+        server_node: Optional; Object of class
+            [ServerDataNode](../private/federated_operation/#serverdatanode-class),
+            the server node. Default is None, in which case a server node is
+            created using the `model`, `nodes_federation` and `aggregator` provided.
     """
 
-    def __init__(self, model_builder, federated_data, aggregator, model_params_access=None):
-        self._federated_data = federated_data
-        self._model = model_builder()
-        self._aggregator = aggregator
-        for data_node in federated_data:
-            data_node.model = self._model
-            if model_params_access is not None:
-                data_node.configure_model_params_access(model_params_access)
+    def __init__(self, model, nodes_federation, aggregator=None, server_node=None):
 
-    @property
-    def global_model(self):
-        return self._model
+        if aggregator is None and server_node is None:
+            raise AssertionError("Either the aggregator or the server node "
+                                 "must be provided.")
+        self._nodes_federation = nodes_federation
+        for data_node in self._nodes_federation:
+            data_node.set_model(model)
 
-    def evaluate_global_model(self, data_test, label_test):
-        """
-        Evaluation of the performance of the global model.
+        if server_node is not None:
+            self._server = server_node
+        else:
+            self._server = ServerDataNode(
+                nodes_federation,
+                model,
+                aggregator)
 
-        # Arguments:
-            test_data: test dataset
-            test_label: corresponding labels to test dataset
-        """
-        evaluation = self._model.evaluate(data_test, label_test)
-        print("Global model test performance : " + str(evaluation))
+    def run_rounds(self, n_rounds, test_data, test_label, eval_freq=1):
+        """Runs the federated learning rounds.
 
-    def deploy_central_model(self):
-        """
-        Deployment of the global learning model to each client (node) in the simulation.
-        """
-        for data_node in self._federated_data:
-            data_node.set_model_params(self._model.get_model_params())
-
-    def evaluate_clients(self, data_test, label_test):
-        """
-        Evaluation of local learning models over global test dataset.
+        It starts in the actual state, testing on global test data
+        and, if present, on local test data too.
 
         # Arguments:
-            test_data: test dataset
-            test_label: corresponding labels to test dataset
+            n_rounds: The number of federated learning rounds to perform.
+            test_data: The global test data for evaluation in between rounds.
+            test_label: The global test target labels for evaluation
+                in between rounds.
+            eval_freq: The frequency for evaluation on global test data.
         """
-        for data_node in self._federated_data:
-            # Predict local model in test
-            evaluation, local_evaluation = data_node.evaluate(data_test, label_test)
-            if local_evaluation is not None:
-                print("Performance client " + str(data_node) + ": Global test: " + str(evaluation)
-                     + ", Local test: " + str(local_evaluation))
-            else:
-                print("Test performance client " + str(data_node) + ": " + str(evaluation))
 
-    def train_all_clients(self):
-        """
-        Train all the clients
-        """
-        for data_node in self._federated_data:
-            data_node.train_model()
+        for i in range(0, n_rounds):
 
-    def aggregate_weights(self):
-        """
-        Aggregate weights from all data nodes in the server model
-        """
-        weights = []
-        for data_node in self._federated_data:
-            weights.append(data_node.query_model_params())
+            self._nodes_federation.train_model()
 
-        aggregated_weights = self._aggregator.aggregate_weights(weights)
+            if i % eval_freq == 0:
+                print("Round " + str(i))
+                self.evaluate_clients(test_data, test_label)
 
-        # Update server weights
-        self._model.set_model_params(aggregated_weights)
+            self._server.aggregate_weights()
+            self._server.deploy_collaborative_model()
 
-    def run_rounds(self, n, test_data, test_label):
-        """
-        Run one more round beginning in the actual state testing in test data and federated_local_test.
+            if i % eval_freq == 0:
+                self._server.evaluate_collaborative_model(
+                    test_data, test_label)
+                print("\n")
+
+    def evaluate_clients(self, data, labels):
+        """Evaluates the clients' models using a global dataset.
 
         # Arguments:
-            n: Number of rounds
-            test_data: Test data for evaluation between rounds
-            test_label: Test label for evaluation between rounds
-
+            data: The global test data.
+            labels: The global target labels.
         """
-        for i in range(0, n):
-            print("Accuracy round " + str(i))
-            self.deploy_central_model()
-            self.train_all_clients()
-            self.evaluate_clients(test_data, test_label)
-            self.aggregate_weights()
-            self.evaluate_global_model(test_data, test_label)
-            print("\n\n")
+
+        for data_node in self._nodes_federation:
+            evaluation, local_evaluation = \
+                data_node.evaluate(data, labels)
+
+            print("Performance client " + str(data_node) +
+                  ": Global test: " + str(evaluation)
+                  + ", Local test: " + str(local_evaluation))

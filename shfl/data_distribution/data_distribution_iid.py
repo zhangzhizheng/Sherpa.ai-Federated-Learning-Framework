@@ -1,3 +1,5 @@
+# Disable too many arguments: needed in this case
+# pylint: disable=too-many-arguments
 import numpy as np
 
 from shfl.data_base.data_base import shuffle_rows
@@ -5,32 +7,45 @@ from shfl.data_distribution.data_distribution_sampling import SamplingDataDistri
 
 
 class IidDataDistribution(SamplingDataDistribution):
-    """
-    Implementation of an independent and identically distributed data distribution using \
-        [Data Distribution](../data_distribution/#datadistribution-class)
+    """Creates a set of federated nodes from a centralized database.
+
+    Implements the class
+    [SamplingDataDistribution](../data_distribution/#samplingdatadistribution-class).
+
+    An independent and identically distribution is used, thus each client's
+    data will have the same distribution as the centralized data.
     """
 
-    def make_data_federated(self, data, labels, percent, num_nodes=1, weights=None, sampling="without_replacement"):
-        """
-        Method that makes data and labels argument federated in an iid scenario.
-        The data and labels may be numpy arrays or pandas dataframe/series.
+    def make_data_federated(self, data, labels, percent=100, num_nodes=1,
+                            weights=None, sampling="without_replacement"):
+        """Creates the data partition for each client.
+
+        The data and labels may be either Numpy arrays or
+        Pandas dataframe/series.
 
         # Arguments:
-            data: Data to federate
-            labels: Labels to federate
-            num_nodes: Number of nodes to create
-            percent: Percent of the data (between 0 and 100) to be distributed
-            weights: Array of weights for weighted distribution (default is None)
-            sampling: methodology between with or without sampling (default "without_sampling")
+            data: Array-like object containing the train data
+                to be distributed among a set of federated nodes.
+            labels: Array-like object containing the target labels.
+            percent: Optional; Percent of the data to be distributed
+                (default is 100).
+            num_nodes: Optional; Number of nodes to create (default is 1).
+            weights: Optional; Array of length `num_nodes` containing the
+                distribution weight for each node (default is None,
+                in which case all weights are set to be equal).
+            sampling: Optional; Sample with or without replacement
+                (default is "without_replacement").
+            **kwargs: Optional named arguments. These can be passed
+                when invoking the class method
+                [get_nodes_federation](./#get_nodes_federation).
 
         # Returns:
-            federated_data: A list containing the data for each client
-            federated_label: A list containing the labels for each client
+            nodes_federation: List containing the data for each client.
+            federated_label: List containing the target labels for each client.
         """
         if weights is None:
             weights = np.full(num_nodes, 1/num_nodes)
 
-        # Shuffle data
         data, labels = shuffle_rows(data, labels)
 
         # Select percent
@@ -42,26 +57,28 @@ class IidDataDistribution(SamplingDataDistribution):
 
         if sampling == "without_replacement":
             if sum(weights) > 1:
-                weights = np.array([float(i)/sum(weights) for i in weights])
+                weights = [float(i)/sum(weights) for i in weights]
 
             sum_used = 0
             percentage_used = 0
 
             for client in range(0, num_nodes):
-                federated_data.append(data[sum_used:int((percentage_used + weights[client]) * len(data))])
-                federated_label.append(labels[sum_used:int((percentage_used + weights[client]) * len(labels))])
+                federated_data.append(
+                    data[sum_used:int((percentage_used + weights[client]) *
+                                      len(data))])
+                federated_label.append(
+                    labels[sum_used:int((percentage_used + weights[client]) *
+                                        len(labels))])
 
                 sum_used = int((percentage_used + weights[client]) * len(data))
                 percentage_used += weights[client]
         else:
             for client in range(0, num_nodes):
-                federated_data.append(data[:int((weights[client]) * len(data))])
-                federated_label.append(labels[:int((weights[client]) * len(labels))])
+                federated_data.append(
+                    data[:int((weights[client]) * len(data))])
+                federated_label.append(
+                    labels[:int((weights[client]) * len(labels))])
 
                 data, labels = shuffle_rows(data, labels)
-
-        if isinstance(data, np.ndarray) and isinstance(labels, np.ndarray):
-            federated_data = np.array(federated_data)
-            federated_label = np.array(federated_label)
 
         return federated_data, federated_label

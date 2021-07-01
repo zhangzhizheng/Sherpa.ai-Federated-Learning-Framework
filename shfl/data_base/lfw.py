@@ -1,31 +1,38 @@
-from sklearn.datasets import fetch_lfw_people
-from shfl.data_base import data_base as db
+import sklearn.datasets
+# Tensorflow warning
+# pylint: disable=no-name-in-module
 from tensorflow.keras.utils import to_categorical
 
+from shfl.data_base.data_base import LabeledDatabase
 
-class Lfw(db.DataBase):
+
+class Lfw(LabeledDatabase):
+    """Loads the LFW dataset.
+
+    Implements base class [LabeledDatabase](./#labeleddatabase-class).
+
+    # References:
+        [Labeled Faces in the Wild dataset](https://scikit-learn.org/stable/
+            datasets/index.html#labeled-faces-in-the-wild-dataset)
     """
-    This database loads the \
-    [Labeled faces in the wild dataset](https://scikit-learn.org/stable/datasets/index.html#labeled-faces-in-the-wild-dataset)
-    from sklearn, mainly for face recognition task.
-    """
 
-    def load_data(self):
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
+    def load_data(self, train_proportion=0.8, shuffle=True):
+        """Loads the train and test data.
+
+        # Arguments:
+        train_proportion: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
+        shuffle: Optional; Boolean for shuffling rows before the
+            train/test split (default is True).
         """
-        Load data from lfw package
+        if self._data is None or self._labels is None:
+            all_data = sklearn.datasets.fetch_lfw_people(color=True)
+            self._data = all_data["images"]
+            self._labels = to_categorical(all_data["target"])
 
-        # Returns
-            all_data : train data, train labels, test data and test labels
-        """
-        all_data = fetch_lfw_people(color=True)
-        data = all_data["images"]
-        labels = to_categorical(all_data["target"])
-
-        test_size = int(len(data) * 0.1)
-        self._train_data, self._train_labels,\
-            self._test_data, self._test_labels = db.split_train_test(
-                data, labels, test_size)
-
-        self.shuffle()
+        self.split_data(train_proportion, shuffle)
 
         return self.data

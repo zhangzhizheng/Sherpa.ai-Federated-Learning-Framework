@@ -4,144 +4,114 @@ import pandas as pd
 from shfl.model.recommender import Recommender
 
 
-def _check_two_columns(data):
-    """
-    Checks that the array has two columns
-    """
-    number_of_columns = data.shape[1]
-    if number_of_columns != 2:
-        raise AssertionError("Data does not have the correct number of columns."
-                             "Current data has {} columns".format(number_of_columns))
-
-
-def _check_is_dataframe(df):
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("df_items should be a dataframe.")
-
-
-def _check_no_new_items(data, df_items):
-    items_in_data = set(np.unique(data[:, 1]))
-    items_in_catalog = set(df_items.index)
-    if not items_in_data.issubset(items_in_catalog):
-        raise AssertionError("Data has items that are not in the catalog.")
-
-
 class ContentBasedRecommender(Recommender):
-    """
-    Implementation of a content-based recommender using \
-        [Recommender](../model/#recommender-class).
+    """Content-based recommender.
+
+    Implements the class [Recommender](./#recommender).
 
     # Arguments:
-        df_items: pandas dataframe that contains the numeric features of the items.
+        df_items: Pandas dataframe containing the numeric features of the items.
 
-    The data that is used to train
-    the model and to make predictions is a numpy array in
-    which the first column specifies the client and the second the item. There can be no items in the data that
-    do not appear in the catalog df_item. Therefore, the index of df_items must contain every value in the second
+    The input data for training predictions is a numpy array in
+    which the first column specifies the client's ID and the second the item.
+    There can be no items in the data that do not appear in the catalog df_item.
+    Therefore, the index of `df_items` must contain every value in the second
     column of data.
 
-    The training at each node works as follows. Each item $i$ has a vector $v_i$ of features which can be used to
+    The training in each node works as follows.
+    Each item $i$ has a vector $v_i$ of features which can be used to
     compute a user profile, given by
     $$
-    p_u =     \\frac{1}{|\\mathcal K_u|} \\sum_{i\\in\\mathcal K_u} (r_{ui} - \\mu)\\, v_i
+    p_u = \\frac{1}{|\\mathcal K_u|} \\sum_{i\\in\\mathcal K_u} (r_{ui} - \\mu)\\, v_i
     $$
-    where $\\mathcal K_u$ is the set of items that the user has interacted with, $r_{ui}$ is the rating that the user
-    has given to the item and $\\mu$ is the mean value of the rating.
+    where $\\mathcal K_u$ is the set of items that the user has interacted with,
+    $r_{ui}$ is the rating that the user has given to the item and
+    $\\mu$ is the mean value of the rating.
 
-    Given the user profile, the estimated interaction with an item $i$ can be computed by taking the inner product
-    between the user and item profiles,
+    Given the user profile, the estimated interaction with an item $i$
+    can be computed by taking the inner product between the user and
+    item profiles as
     $$
-    \\hat r_{ui} = \\mu + p_u\\cdot v_i\\,.
+    \\hat r_{ui} = \\mu + p_u\\cdot v_i\\,
     $$
-    Clearly, the central node does not need to know anything about the user since all the computations are done
-    at his node.
+    Clearly, the server does not need to know anything about
+    the user since all the computations are done at his node.
     """
 
     def __init__(self, df_items):
         super().__init__()
-        _check_is_dataframe(df_items)
-        df_items.index.name = "itemid"
+        self._check_is_dataframe(df_items)
+        df_items.index.name = "item_id"
         self._df_items = df_items
-        self._mu = None
+        self._mean_rating = None
         self._profile = None
 
-    def _join_dataframe_with_items_features(self, data):
-        _check_two_columns(data)
-        _check_no_new_items(data, self._df_items)
-        df_data = pd.DataFrame(data, columns=['userid', "itemid"])
-        df = df_data.join(self._df_items, on="itemid").drop(["userid", "itemid"], axis=1)
-        return df
-
-    def train_recommender(self, data, labels):
-        """
-        Method that trains the model
+    def train_recommender(self, data, labels, **kwargs):
+        """Method that trains the model
 
         # Arguments:
-            data: Data to train the model .Only includes the data of this client and every item must be in the catalog.
-            labels: Label for each train element
+            data: Array-like object containing data to train the model.
+                The data belongs to only one client and
+                every item must be in the catalog.
+            labels: Array-like object containing the rating given by the client.
+            **kwargs: Optional named parameters.
         """
-        self._mu = np.mean(labels)
-        df = self._join_dataframe_with_items_features(data)
-        self._profile = df.multiply(labels - self._mu, axis=0).mean().values
+        self._check_two_columns(data)
+        self._check_no_new_items(data, self._df_items)
+        joined_data = self._join_dataframe_with_items_features(data)
+        self._mean_rating = np.mean(labels)
+        self._profile = \
+            joined_data.multiply(labels - self._mean_rating, axis=0).mean().values
 
     def predict_recommender(self, data):
-        """
-        Predict labels for data. Only includes the data of this client and every item must be in the catalog.
+        """Makes a prediction on input data.
 
         # Arguments:
-            data: Data for predictions. Only includes the data of this client
+            data: Array-like object of shape containing data on which
+                to make the prediction. The shape is (n_samples, 2),
+                where the 2 columns are the ("user_id", "item_id").
+                The data belongs to only one client and every item
+                must be in the catalog.
 
         # Returns:
-            predictions: Array with predictions for data
+            predictions: Array-like object containing model's prediction
+                using the input data.
         """
-        df = self._join_dataframe_with_items_features(data)
-        predictions = self._mu + df.values.dot(self._profile)
+        joined_data = self._join_dataframe_with_items_features(data)
+        predictions = self._mean_rating + joined_data.values.dot(self._profile)
         return predictions
 
-    def evaluate_recommender(self, data, labels):
-        """
-        This method must returns the root mean square error
-
-        # Arguments:
-            data: Data to be evaluated. Only includes the data of this client and every item must be in the catalog.
-            labels: True values of data of this client
-        """
-        predictions = self.predict(data)
-        if predictions.size == 0:
-            rmse = 0
-        else:
-            rmse = np.sqrt(np.mean((predictions - labels) ** 2))
-        return rmse
-
     def get_model_params(self):
-        """
-        Gets the params that define the model
-
-        # Returns:
-            params: Mean rating
-        """
-        return self._mu, self._profile
+        """See base class."""
+        return self._mean_rating, self._profile
 
     def set_model_params(self, params):
-        """
-        Update the params that define the model
+        """See base class."""
+        self._mean_rating, self._profile = params
 
-        # Arguments:
-            params: Parameter defining the model
-        """
-        self._mu, self._profile = params
+    def _join_dataframe_with_items_features(self, data):
+        data = pd.DataFrame(data, columns=['userid', "item_id"])
+        joined_data = data.join(self._df_items, on="item_id").\
+            drop(["userid", "item_id"], axis=1)
+        return joined_data
 
-    def performance_recommender(self, data, labels):
-        """
-        This method returns the root mean square error of the recommender.
+    @staticmethod
+    def _check_two_columns(data):
+        number_of_columns = data.shape[1]
+        if number_of_columns != 2:
+            raise AssertionError(
+                "The data does not have the correct number of columns. "
+                "Current data has {} columns".format(number_of_columns))
 
-        # Arguments:
-            data: Data to be evaluated. Only includes the data of this client and every item must be in the catalog.
-            labels: True values of data of this client
-        """
-        predictions = self.predict(data)
-        if predictions.size == 0:
-            rmse = 0
-        else:
-            rmse = np.sqrt(np.mean((predictions - labels) ** 2))
-        return rmse
+    @staticmethod
+    def _check_is_dataframe(df_items):
+        if not isinstance(df_items, pd.DataFrame):
+            raise TypeError("df_items should be a dataframe.")
+
+    @staticmethod
+    def _check_no_new_items(data, df_items):
+        items_in_data = set(np.unique(data[:, 1]))
+        items_in_catalog = set(df_items.index)
+        if not items_in_data.issubset(items_in_catalog):
+            raise AssertionError("The data has items that are not "
+                                 "in the catalog.")

@@ -9,6 +9,7 @@ docs/sources/*
 docs/site/*
 venv/*
 notebooks/data/*
-test_git_ignored/*
 .vscode/*
 htmlcov/*
+.pylintrc
+pylint*

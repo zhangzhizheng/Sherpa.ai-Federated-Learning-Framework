@@ -2,68 +2,91 @@ import abc
 
 
 class TrainableModel(abc.ABC):
-    """
-    Interface of the models that can be trained. If you want to use a model that is not implemented
-    in the framework you have to implement a class with this interface.
+    """Wraps a machine learning model.
+
+    Allows an arbitrary model to interact with the
+    federated learning framework. It is useful when
+    you want to use a custom model that is not already
+    provided by the framework.
+
+    # Example:
+        See the [notebook on wrapping a custom model
+        in the Framework](https://github.com/sherpaai/
+        Sherpa.ai-Federated-Learning-Framework/
+        blob/master/notebooks/federated_models/
+        federated_models_custom_model.ipynb).
     """
 
     @abc.abstractmethod
-    def train(self, data, labels):
-        """
-        Method that trains the model
+    def train(self, data, labels, **kwargs):
+        """Trains the model.
+
+        Abstract method.
 
         # Arguments:
-            data: Data to train the model
-            labels: Label for each train element
+            data: Data to train the model.
+            labels: Target labels.
+            **kwargs: Optional named parameters.
         """
 
     @abc.abstractmethod
     def predict(self, data):
-        """
-        Predict labels for data
+        """Makes a prediction on input data.
+
+        Abstract method.
 
         # Arguments:
-            data: Data for predictions
+            data: The input data on which to make the prediction.
 
         # Returns:
-            predictions: Matrix with predictions for data
+            prediction: Model's prediction using the input data.
         """
 
     @abc.abstractmethod
     def evaluate(self, data, labels):
-        """
-        This method must return the performance in terms of different metrics of the prediction for those labels
+        """Evaluates the performance of the model.
+
+        Abstract method.
 
         # Arguments:
-            data: Data to be evaluated
-            labels: True values of data
+            data: The data on which to make the evaluation.
+            labels: The true labels.
+
+        # Returns:
+            metrics: Metrics for the evaluation.
         """
 
     @abc.abstractmethod
     def get_model_params(self):
-        """
-        Gets the params that define the model
+        """Gets model's parameters.
+
+        Abstract method.
 
         # Returns:
-            params: Parameters defining the model
+            params: Parameters defining the model.
         """
 
     @abc.abstractmethod
     def set_model_params(self, params):
-        """
-        Update the params that define the model
+        """Sets model's parameters.
+
+        Abstract method.
 
         # Arguments:
-            params: Parameters defining the model
+            params: Parameters defining the model.
         """
 
     @abc.abstractmethod
     def performance(self, data, labels):
-        """
-        This method must return the performance of the prediction in terms of the most representative metric
-        for those labels.
+        """Evaluates the performance of the model using
+            the most representative metrics.
+
+        Abstract method.
 
         # Arguments:
-            data: Data to be evaluated
-            labels: True values of data
+            data: The data on which to make the evaluation.
+            labels: The true labels.
+
+        # Returns:
+            metrics: Most representative metrics for the evaluation.
         """

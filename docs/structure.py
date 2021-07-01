@@ -1,5 +1,4 @@
 from shfl import differential_privacy
-from shfl import differential_privacy
 from shfl import private
 from shfl import model
 from shfl import data_base
@@ -26,9 +25,11 @@ PAGES = [
             private.node.DataNode.set_private_test_data,
             private.node.DataNode.configure_data_access,
             private.node.DataNode.configure_model_params_access,
+            private.node.DataNode.configure_model_access,
             private.node.DataNode.apply_data_transformation,
             private.node.DataNode.query,
             private.node.DataNode.query_model_params,
+            private.node.DataNode.query_model,
             private.node.DataNode.set_model_params,
             private.node.DataNode.train_model,
             private.node.DataNode.predict,
@@ -41,45 +42,36 @@ PAGES = [
         'page': 'private/data.md',
         'classes': [
             private.data.LabeledData,
-            (private.data.DataAccessDefinition, ['apply']),
-            private.data.DPDataAccessDefinition,
-            private.data.UnprotectedAccess
-        ]
-    },
-    {
-        'page': 'private/query.md',
-        'classes': [
-            (private.query.Query, ["get"]),
-            private.query.IdentityFunction,
-            private.query.Mean
+            private.data.DPDataAccessDefinition
         ]
     },
     {
         'page': 'private/federated_operation.md',
         'classes': [
-            (private.federated_operation.FederatedData, ["add_data_node", "num_nodes",
-                                                         "configure_data_access", "query"]),
+            (private.federated_operation.NodesFederation, ["append_data_node",
+                                                           "num_nodes"]),
             (private.federated_operation.FederatedDataNode, ['configure_data_access',
                                                              'set_private_data',
                                                              'set_private_test_data',
                                                              'train_model',
                                                              'apply_data_transformation',
                                                              'split_train_test']),
-            (private.federated_operation.FederatedTransformation, ["apply"]),
-            private.federated_operation.Normalize
+            (private.federated_operation.ServerDataNode, ["deploy_collaborative_model",
+                                                          "evaluate_collaborative_model",
+                                                          "aggregate_weights"]),
+            (private.federated_operation.VerticalServerDataNode, ["predict_collaborative_model",
+                                                                  "evaluate_collaborative_model",
+                                                                  "aggregate_weights"])
         ],
         'functions': [
             private.federated_operation.federate_array,
-            private.federated_operation.apply_federated_transformation,
-            private.federated_operation.split_train_test
+            private.federated_operation.federate_list,
         ]
     },
     {
         'page': 'private/federated_attack.md',
         'classes': [
-            (private.federated_attack.FederatedDataAttack, ['apply_attack']),
-            private.federated_attack.FederatedPoisoningDataAttack,
-            private.federated_attack.ShuffleNode
+            (private.federated_attack.FederatedPoisoningDataAttack, ['__call__'])
         ]
     },
     {
@@ -96,26 +88,35 @@ PAGES = [
     {
         'page': 'databases.md',
         'classes': [
-            (data_base.data_base.DataBase, ['load_data',
-                                            "shuffle"]),
-            data_base.data_base.LabeledDatabase,
+            (data_base.data_base.DataBase, ['load_data']),
+            (data_base.data_base.LabeledDatabase, ['load_data']),
+            (data_base.data_base.WrapLabeledDatabase, ['load_data']),
+            data_base.california_housing.CaliforniaHousing,
+            data_base.cifar.Cifar10,
+            data_base.cifar.Cifar100,
             data_base.emnist.Emnist,
             data_base.fashion_mnist.FashionMnist,
-            data_base.california_housing.CaliforniaHousing,
-            data_base.iris.Iris
+            data_base.federated_emnist.FederatedEmnist,
+            data_base.iris.Iris,
+            data_base.lfw.Lfw,
+            data_base.purchase100.Purchase100
         ],
         'functions': [
-            data_base.data_base.split_train_test
+            data_base.data_base.shuffle_rows,
+            data_base.data_base.split_train_test,
+            data_base.data_base.vertical_split,
         ]
     },
     {
         'page': 'data_distribution.md',
         'classes': [
-            (data_distribution.data_distribution.DataDistribution, ["get_federated_data", "make_data_federated"]),
-            data_distribution.data_distribution_explicit.ExplicitDataDistribution,
+            (data_distribution.data_distribution.DataDistribution, ["get_nodes_federation",
+                                                                    "make_data_federated"]),
+            (data_distribution.data_distribution_iid.IidDataDistribution, ["make_data_federated"]),
             data_distribution.data_distribution_sampling.SamplingDataDistribution,
-            data_distribution.data_distribution_iid.IidDataDistribution,
-            (data_distribution.data_distribution_non_iid.NonIidDataDistribution, ['choose_labels'])
+            (data_distribution.data_distribution_non_iid.NonIidDataDistribution, ["make_data_federated",
+                                                                                  "_choose_labels"]),
+
         ]
     },
     {
@@ -132,7 +133,8 @@ PAGES = [
             model.deep_learning_model_pt.DeepLearningModelPyTorch,
             model.linear_regression_model.LinearRegressionModel,
             model.linear_classifier_model.LinearClassifierModel,
-
+            model.vertical_deep_learning_model.VerticalNeuralNetClientModel,
+            model.vertical_deep_learning_model.VerticalNeuralNetServerModel
         ]
     },
     {
@@ -152,32 +154,31 @@ PAGES = [
     {
         'page': 'federated_aggregator.md',
         'classes': [
-            (federated_aggregator.federated_aggregator.FederatedAggregator, ["aggregate_weights"]),
+            (federated_aggregator.federated_aggregator.FederatedAggregator, ["__call__"]),
             federated_aggregator.fedavg_aggregator.FedAvgAggregator,
-            federated_aggregator.weighted_fedavg_aggregator.WeightedFedAvgAggregator,
+            federated_aggregator.fedsum_aggregator.FedSumAggregator,
+            federated_aggregator.weighted_fedavg_aggregator.WeightedFedAggregator,
             (federated_aggregator.iowa_federated_aggregator.IowaFederatedAggregator, ['set_ponderation', 'q_function',
                                                                                       'get_ponderation_weights']),
-            federated_aggregator.cluster_fedavg_aggregator.ClusterFedAvgAggregator
+            federated_aggregator.norm_clip_aggregators.NormClipAggregator,
+            federated_aggregator.norm_clip_aggregators.CDPAggregator,
+            federated_aggregator.norm_clip_aggregators.WeakDPAggregator,
+            federated_aggregator.cluster_fedavg_aggregator.cluster_fed_avg_aggregator
         ]
     },
     {
         'page': 'federated_government.md',
         'classes': [
-            (federated_government.federated_government.FederatedGovernment, ['evaluate_global_model',
-                                                                             'deploy_central_model',
-                                                                             'evaluate_clients',
-                                                                             'train_all_clients',
-                                                                             'aggregate_weights',
-                                                                             'run_rounds']),
+            (federated_government.federated_government.FederatedGovernment, ['run_rounds',
+                                                                             'evaluate_clients']),
+            (federated_government.vertical_federated_government.VerticalFederatedGovernment, ['run_rounds',
+                                                                                              'evaluate_collaborative_model']),
             (federated_government.federated_images_classifier.FederatedImagesClassifier, ['run_rounds',
                                                                                           'model_builder']),
-            federated_government.federated_images_classifier.Reshape,
             federated_government.federated_images_classifier.ImagesDataBases,
-            (federated_government.federated_linear_regression.FederatedLinearRegression, ['run_rounds',
-                                                                                          'model_builder']),
+            (federated_government.federated_linear_regression.FederatedLinearRegression, ['run_rounds']),
             federated_government.federated_linear_regression.LinearRegressionDataBases,
-            (federated_government.federated_clustering.FederatedClustering, ['run_rounds',
-                                                                             'model_builder']),
+            (federated_government.federated_clustering.FederatedClustering, ['run_rounds']),
             federated_government.federated_clustering.ClusteringDataBases,
             (federated_government.iowa_federated_government.IowaFederatedGovernment, ['performance_clients'])
         ]
@@ -185,20 +186,17 @@ PAGES = [
     {
         'page': 'differential_privacy/mechanisms.md',
         'classes': [
-            differential_privacy.dp_mechanism.RandomizedResponseCoins,
-            differential_privacy.dp_mechanism.RandomizedResponseBinary,
-            differential_privacy.dp_mechanism.LaplaceMechanism,
-            differential_privacy.dp_mechanism.GaussianMechanism,
-            differential_privacy.dp_mechanism.ExponentialMechanism
+            differential_privacy.mechanism.RandomizedResponseCoins,
+            differential_privacy.mechanism.RandomizedResponseBinary,
+            differential_privacy.mechanism.LaplaceMechanism,
+            differential_privacy.mechanism.GaussianMechanism,
+            differential_privacy.mechanism.ExponentialMechanism
         ],
     },
     {
         'page': 'differential_privacy/sensitivity_sampler.md',
         'classes': [
-            differential_privacy.sensitivity_sampler.SensitivitySampler
-        ],
-        'methods': [
-            differential_privacy.sensitivity_sampler.SensitivitySampler.sample_sensitivity
+            (differential_privacy.sensitivity_sampler.SensitivitySampler, ["sample_sensitivity"]),
         ],
     },
     {
@@ -220,20 +218,20 @@ PAGES = [
     {
         'page': 'differential_privacy/composition.md',
         'classes': [
-            differential_privacy.composition_dp.ExceededPrivacyBudgetError,
-            differential_privacy.composition_dp.AdaptiveDifferentialPrivacy
+            differential_privacy.composition.AdaptiveDifferentialPrivacy,
+            differential_privacy.composition.ExceededPrivacyBudgetError,
         ],
     },
     {
         'page': 'differential_privacy/sampling.md',
         'classes': [
-            (differential_privacy.dp_sampling.Sampler, ['epsilon_delta_reduction', 'sample']),
-            differential_privacy.dp_sampling.SampleWithoutReplacement
+            (differential_privacy.privacy_amplification_subsampling.Sampler, ['epsilon_delta_reduction', 'sample']),
+            differential_privacy.privacy_amplification_subsampling.SampleWithoutReplacement
         ],
-        'functions': [
-            differential_privacy.dp_sampling.prod,
-            differential_privacy.dp_sampling.check_sample_size
-        ],
+        # 'functions': [
+        #     differential_privacy.dp_sampling.prod,
+        #     differential_privacy.dp_sampling.check_sample_size
+        # ],
     }
 ]
 ROOT = 'http://127.0.0.1/'

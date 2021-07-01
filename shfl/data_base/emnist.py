@@ -1,31 +1,29 @@
 import numpy as np
 import emnist
 
-from shfl.data_base import data_base as db
+from shfl.data_base.data_base import LabeledDatabase
 
 
-class Emnist(db.DataBase):
-    """
-    Implementation for load EMNIST data
+class Emnist(LabeledDatabase):
+    """Loads the EMNIST dataset.
 
-    # References
+    Implements base class [LabeledDatabase](./#labeleddatabase-class).
+
+    # References:
         [EMNIST dataset](https://www.nist.gov/itl/products-and-services/emnist-dataset)
     """
-    def __init__(self):
-        super(Emnist, self).__init__()
 
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
     def load_data(self):
-        """
-        Load data from emnist package
+        """Loads the train and test data.
 
-        # Returns:
-            all_data : train data, train labels, test data and test labels
+        The data is originally already split into train and test.
         """
+
         self._train_data, self._train_labels = emnist.extract_training_samples('digits')
         self._train_labels = np.eye(10)[self._train_labels]
         self._test_data, self._test_labels = emnist.extract_test_samples('digits')
         self._test_labels = np.eye(10)[self._test_labels]
-
-        self.shuffle()
 
         return self.data

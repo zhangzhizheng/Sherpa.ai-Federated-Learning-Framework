@@ -1,151 +1,219 @@
-import numpy as np
+from unittest.mock import Mock, patch
 import pytest
-
-from sklearn.datasets import load_iris
-from sklearn import metrics
-from sklearn.svm import LinearSVC
-from sklearn.linear_model import LogisticRegression
+import numpy as np
 
 from shfl.model.linear_classifier_model import LinearClassifierModel
 
 
-def test_linear_classifier_model_initialization_binary_classes():
+@pytest.fixture(name="wrapper_arguments")
+def fixture_wrapper_arguments():
+    """Returns the component necessary for wrapping a k-means clustering model."""
     n_features = 9
-    classes = ['a', 'b']
-    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
-    n_classes = 1 # Binary classification
-    assert np.shape(lgr._model.intercept_) == \
-           np.shape(lgr.get_model_params()[0]) == (n_classes,)
-    assert np.shape(lgr._model.coef_) == \
-           np.shape(lgr.get_model_params()[1]) == (n_classes, n_features)
-    assert np.array_equal(classes, lgr._model.classes_)
+    classes = ["a", "b", "c"]
+
+    return n_features, classes
 
 
-def test_linear_classifier_model_initialization_multiple_classes():
-    n_features = 9
-    classes = ['a', 'b', 'c']
-    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
+@pytest.fixture(name="input_data")
+def fixture_input_data(wrapper_arguments):
+    """Returns a random labeled dataset."""
+    n_features, classes = wrapper_arguments
+    num_data = 50
+    data = np.random.rand(num_data, n_features)
+    labels = np.random.choice(classes, size=num_data)
+
+    return data, labels
+
+
+@pytest.mark.parametrize("classes, n_classes", [(["a", "b"], 1),
+                                                (["a", "b", "c"], 3)])
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_initialization_binary_classes(mock_classifier, classes, n_classes,
+                                       wrapper_arguments):
+    """Checks that the linear classifier correctly initializes.
+
+    For a binary classification, the number of classes
+    "n_classes" is equal to one. Instead, for a multi-class case,
+    the number of classes "n_classes" is equal
+    to the actual number of classes."""
+    model = Mock()
+    mock_classifier.return_value = model
+
+    wrapped_model = LinearClassifierModel(n_features=wrapper_arguments[0],
+                                          classes=classes)
+
+    assert hasattr(wrapped_model, "_model")
+    assert hasattr(wrapped_model, "_n_features")
+    assert model.intercept_.shape[0] == n_classes
+    assert model.coef_.shape == (n_classes, wrapper_arguments[0])
+    assert np.array_equal(classes, model.classes_)
+
+
+@pytest.mark.parametrize("n_features, classes", [(9.5, ['a', 'b', 'c']),
+                                                 (-1, ['a', 'b', 'c']),
+                                                 (9, ['b']),
+                                                 (9, ['a', 'b', 'a'])])
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_model_wrong_initialization(mock_classifier, n_features, classes):
+    """Checks that the linear classification model throws an error if
+    not initialized correctly.
+
+    Namely, the number of features must be: integer, non-negative.
+    The classes must be: more than one, not repeating."""
+    mock_classifier.return_value = Mock()
+
+    with pytest.raises(AssertionError):
+        LinearClassifierModel(n_features, classes)
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_train(mock_classifier, wrapper_arguments, input_data):
+    """Checks that the linear classifier model trains correctly."""
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+
+    wrapped_model.train(*input_data)
+
+    model.fit.assert_called_once_with(*input_data)
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_train_wrong_data(mock_classifier, wrapper_arguments, input_data, helpers):
+    """Checks that the linear classifier model throws an error if wrong
+    data are used as input."""
+    mock_classifier.return_value = Mock()
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+
+    helpers.check_wrong_data(wrapped_model, *input_data)
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_train_wrong_data_single_feature(mock_classifier, wrapper_arguments, input_data):
+    """Checks that the linear classifier model throws an error if wrong
+    data are used as input.
+
+    If data contains only one column, then the number of features must be 1."""
+    mock_classifier.return_value = Mock()
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+    data, labels = input_data
+    wrong_data = np.random.rand(len(data))
+
+    with pytest.raises(AssertionError):
+        wrapped_model.train(wrong_data, labels)
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_train_wrong_labels(mock_classifier, wrapper_arguments, input_data):
+    """Checks that the linear classifier model throws an error if wrong
+    labels are used as input."""
+    mock_classifier.return_value = Mock()
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+    data, labels = input_data
+    wrong_labels = labels
+    wrong_labels[0] = "not_initialized_class"
+
+    with pytest.raises(AssertionError):
+        wrapped_model.train(data, wrong_labels)
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_predict(mock_classifier, wrapper_arguments, input_data):
+    """Checks that the linear classifier model predicts correctly."""
+    data, labels = input_data
+    model = Mock()
+    true_prediction = np.random.choice(labels, size=len(data))
+    model.predict.return_value = true_prediction
+    mock_classifier.return_value = model
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+
+    output_prediction = wrapped_model.predict(data)
+
+    model.predict.assert_called_once_with(data)
+    np.testing.assert_array_equal(output_prediction, true_prediction)
+
+
+@patch('shfl.model.linear_classifier_model.metrics')
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_evaluate(mock_classifier, mock_metrics, wrapper_arguments, input_data):
+    """Checks that the linear classifier model evaluates correctly."""
+    data, labels = input_data
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+    wrapped_model.predict = Mock()
+    true_prediction = np.random.choice(labels, size=len(data))
+    wrapped_model.predict.return_value = true_prediction
+    mock_metrics.balanced_accuracy_score.return_value = 0.5
+    mock_metrics.cohen_kappa_score.return_value = 0.7
+
+    balanced_accuracy_score, cohen_kappa_score = wrapped_model.evaluate(data, labels)
+
+    wrapped_model.predict.assert_called_once_with(data)
+    mock_metrics.balanced_accuracy_score.assert_called_once_with(labels, true_prediction)
+    mock_metrics.cohen_kappa_score.assert_called_once_with(labels, true_prediction)
+    assert balanced_accuracy_score == 0.5
+    assert cohen_kappa_score == 0.7
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_evaluate_wrong_labels(mock_classifier, wrapper_arguments, input_data):
+    """Checks that the linear classifier model throws an error if wrong
+    labels are used as input."""
+    mock_classifier.return_value = Mock()
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+    data, labels = input_data
+    wrong_labels = labels
+    wrong_labels[0] = "not_initialized_class"
+
+    with pytest.raises(AssertionError):
+        wrapped_model.evaluate(data, wrong_labels)
+
+
+@patch('shfl.model.linear_classifier_model.metrics')
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_performance(mock_classifier, mock_metrics, wrapper_arguments, input_data):
+    """Checks that the linear classifier model calls performance correctly."""
+    data, labels = input_data
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+    wrapped_model.predict = Mock()
+    true_prediction = np.random.choice(labels, size=len(data))
+    wrapped_model.predict.return_value = true_prediction
+    mock_metrics.balanced_accuracy_score.return_value = 0.5
+
+    balanced_accuracy_score = wrapped_model.performance(data, labels)
+
+    wrapped_model.predict.assert_called_once_with(data)
+    assert balanced_accuracy_score == 0.5
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_get_model_params(mock_classifier, wrapper_arguments):
+    """Checks that the linear classifier gets the model's parameters correctly."""
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearClassifierModel(*wrapper_arguments)
+
+    output_params = wrapped_model.get_model_params()
+
+    np.testing.assert_array_equal(model.intercept_, output_params[0])
+    np.testing.assert_array_equal(model.coef_, output_params[1])
+
+
+@patch('shfl.model.linear_classifier_model.LogisticRegression')
+def test_set_model_params(mock_classifier, wrapper_arguments):
+    """Checks that the linear classifier sets the model's parameters correctly."""
+    n_features, classes = wrapper_arguments
+    model = Mock()
+    mock_classifier.return_value = model
+    wrapped_model = LinearClassifierModel(n_features, classes)
     n_classes = len(classes)
-    assert np.shape(lgr._model.intercept_) == \
-           np.shape(lgr.get_model_params()[0]) == (n_classes,)
-    assert np.shape(lgr._model.coef_) == \
-           np.shape(lgr.get_model_params()[1]) == (n_classes, n_features)
-    assert np.array_equal(classes, lgr._model.classes_)
+    input_params = (np.random.rand(n_classes),
+                    np.random.rand(n_classes, n_features))
 
-    
-def test_linear_classifier_model_wrong_initialization():
-    n_features = [9.5, -1, 9, 9] 
-    classes = [['a', 'b', 'c'],
-               ['a', 'b', 'c'],
-               ['b'],
-               ['a', 'b', 'a']]
-    for init_ in zip(n_features, classes):
-        with pytest.raises(AssertionError):
-            lgr = LinearClassifierModel(n_features=init_[0], classes=init_[1])
-            
-            
-def test_linear_classifier_model_train_wrong_input_data():
-    num_data = 30
-    
-    # Single feature wrong data input:
-    n_features = 2
-    classes = ['a', 'b']
-    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
-    data = np.random.rand(num_data, )
-    label = np.random.choice(a=classes, size=num_data, replace=True)
-    with pytest.raises(AssertionError):
-        lgr.train(data, label)
-     
-    # Multi-feature wrong data input:
-    n_features = 2
-    classes = ['a', 'b']
-    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
-    data = np.random.rand(num_data, n_features + 1)
-    label = np.random.choice(a=classes, size=num_data, replace=True)
-    with pytest.raises(AssertionError):
-        lgr.train(data, label)
-        
-    # Wrong classes input label on train and predict:
-    n_features = 2
-    classes = ['a', 'b']
-    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
-    label = np.random.choice(a=classes, size=num_data, replace=True)
-    label[0] = 'c'
-    with pytest.raises(AssertionError):
-        lgr._check_labels_train(label)
-    with pytest.raises(AssertionError):
-        lgr._check_labels_predict(label)
-      
-    
-def test_linear_classifier_model_set_get_params():
-    n_features = 9
-    classes = ['a', 'b', 'c']
-    lgr = LinearClassifierModel(n_features=n_features, classes=classes)
-    intercept = np.random.rand(len(classes))
-    coefficients = np.random.rand(len(classes), n_features)
-    lgr.set_model_params([intercept, coefficients])
-    
-    assert np.array_equal(lgr.get_model_params()[0], intercept)
-    assert np.array_equal(lgr.get_model_params()[1], coefficients)
-           
+    wrapped_model.set_model_params(input_params)
 
-def test_logistic_regression_model_train_evaluate():
-    data, labels = load_iris(return_X_y=True)
-    randomize = np.arange(len(labels))
-    np.random.shuffle(randomize)
-    data = data[randomize, ]
-    labels = labels[randomize]
-    dim = 100
-    train_data = data[0:dim, ]
-    train_labels = labels[0:dim]
-    test_data = data[dim:, ]
-    test_labels = labels[dim:]
-
-    model = LogisticRegression(max_iter=150)
-    lgr = LinearClassifierModel(n_features=np.shape(train_data)[1], classes=np.unique(train_labels), model=model)
-    lgr.train(data=train_data, labels=train_labels)
-    evaluation = np.array(lgr.evaluate(data=test_data, labels=test_labels))
-    performance = lgr.performance(data=test_data, labels=test_labels)
-    prediction = lgr.predict(data=test_data)
-    model_params = lgr.get_model_params()
-    
-    lgr_ref = LogisticRegression(max_iter=150).fit(train_data, train_labels)
-    prediction_ref = lgr_ref.predict(test_data)
-    
-    assert np.array_equal(model_params[0], lgr_ref.intercept_)
-    assert np.array_equal(model_params[1], lgr_ref.coef_)
-    assert np.array_equal(prediction, prediction_ref)
-    assert np.array_equal(evaluation, np.array((metrics.balanced_accuracy_score(test_labels, prediction_ref),\
-                                               metrics.cohen_kappa_score(test_labels, prediction_ref))))
-    assert performance == metrics.balanced_accuracy_score(test_labels, prediction_ref)
-    
-    
-def test_linearSVC_model_train_evaluate():
-    data, labels = load_iris(return_X_y=True)
-    randomize = np.arange(len(labels))
-    np.random.shuffle(randomize)
-    data = data[randomize, ]
-    labels = labels[randomize]
-    dim = 100
-    train_data = data[0:dim, ]
-    train_labels = labels[0:dim]
-    test_data = data[dim:, ]
-    test_labels = labels[dim:]
-
-    model = LinearSVC(random_state=123)
-    svc = LinearClassifierModel(n_features=np.shape(train_data)[1], classes=np.unique(train_labels), model=model)
-    svc.train(data=train_data, labels=train_labels)
-    evaluation = np.array(svc.evaluate(data=test_data, labels=test_labels))
-    performance = svc.performance(data=test_data, labels=test_labels)
-    prediction = svc.predict(data=test_data)
-    model_params = svc.get_model_params()
-    
-    svc_ref = LinearSVC(random_state=123).fit(train_data, train_labels)
-    prediction_ref = svc_ref.predict(test_data)
-    
-    assert np.array_equal(model_params[0], svc_ref.intercept_)
-    assert np.array_equal(model_params[1], svc_ref.coef_)
-    assert np.array_equal(prediction, prediction_ref)
-    assert np.array_equal(evaluation, np.array((metrics.balanced_accuracy_score(test_labels, prediction_ref),
-                                                metrics.cohen_kappa_score(test_labels, prediction_ref))))
-    assert performance == metrics.balanced_accuracy_score(test_labels, prediction_ref)
+    np.testing.assert_array_equal(model.intercept_, input_params[0])
+    np.testing.assert_array_equal(model.coef_, input_params[1])

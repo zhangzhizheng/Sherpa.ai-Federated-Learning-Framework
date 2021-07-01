@@ -1,85 +1,37 @@
-from shfl.federated_government.federated_clustering import FederatedClustering, ClusteringDataBases
-from shfl.federated_aggregator.cluster_fedavg_aggregator import ClusterFedAvgAggregator
-from shfl.model.kmeans_model import KMeansModel
-from unittest.mock import Mock, patch
+from unittest.mock import patch
+import pytest
 
-import numpy as np
-
-
-def test_FederatedClustering():
-    database = 'IRIS'
-    cfg = FederatedClustering(database, iid=True, num_nodes=3, percent=20)
-
-    module = ClusteringDataBases.__members__[database].value
-    data_base = module()
-    train_data, train_labels, test_data, test_labels = data_base.load_data()
-
-    assert cfg._test_data is not None
-    assert cfg._test_labels is not None
-    assert cfg._num_clusters == len(np.unique(train_labels))
-    assert cfg._num_features == train_data.shape[1]
-    assert isinstance(cfg._aggregator, ClusterFedAvgAggregator)
-    assert isinstance(cfg._model, KMeansModel)
-    assert cfg._federated_data is not None
-
-    cfg = FederatedClustering(database, iid=False, num_nodes=3, percent=20)
-
-    assert cfg._test_data is not None
-    assert cfg._test_labels is not None
-    assert cfg._num_clusters == len(np.unique(train_labels))
-    assert cfg._num_features == train_data.shape[1]
-    assert isinstance(cfg._aggregator, ClusterFedAvgAggregator)
-    assert isinstance(cfg._model, KMeansModel)
-    assert cfg._federated_data is not None
+from shfl.federated_government.federated_clustering import FederatedClustering
+from shfl.data_distribution.data_distribution_non_iid import NonIidDataDistribution
 
 
-def test_FederatedClustering_wrong_database():
-    cfg = FederatedClustering('MNIST', iid=True, num_nodes=3, percent=20)
+@patch("shfl.federated_government.FederatedGovernment.__init__")
+def test_initialization(fed_gov_init, helpers):
+    """Checks that the federated round is called correctly."""
+    federated_government = FederatedClustering('IRIS', num_nodes=3, percent=20)
 
-    assert cfg._test_data is None
-
-
-def test_run_rounds():
-    cfg = FederatedClustering('IRIS', iid=True, num_nodes=3, percent=20)
-
-    cfg.deploy_central_model = Mock()
-    cfg.train_all_clients = Mock()
-    cfg.evaluate_clients = Mock()
-    cfg.aggregate_weights = Mock()
-    cfg.evaluate_global_model = Mock()
-
-    cfg.run_rounds(1)
-
-    cfg.deploy_central_model.assert_called_once()
-    cfg.train_all_clients.assert_called_once()
-    cfg.evaluate_clients.assert_called_once_with(cfg._test_data, cfg._test_labels)
-    cfg.aggregate_weights.assert_called_once()
-    cfg.evaluate_global_model.assert_called_once_with(cfg._test_data, cfg._test_labels)
+    helpers.check_initialization_high_level(federated_government, fed_gov_init)
 
 
-def test_run_rounds_wrong_database():
-    cfg = FederatedClustering('EMNIST', iid=True, num_nodes=3, percent=20)
+@patch("shfl.federated_government.FederatedGovernment.__init__")
+def test_initialization_non_iid(fed_gov_init, helpers):
+    """Checks that the federated round is called correctly in the non-iid case."""
+    federated_government = \
+        FederatedClustering('IRIS', data_distribution=NonIidDataDistribution,
+                            num_nodes=3, percent=20)
 
-    cfg.deploy_central_model = Mock()
-    cfg.train_all_clients = Mock()
-    cfg.evaluate_clients = Mock()
-    cfg.aggregate_weights = Mock()
-    cfg.evaluate_global_model = Mock()
-
-    cfg.run_rounds(1)
-
-    cfg.deploy_central_model.assert_not_called()
-    cfg.train_all_clients.assert_not_called()
-    cfg.evaluate_clients.assert_not_called()
-    cfg.aggregate_weights.assert_not_called()
-    cfg.evaluate_global_model.assert_not_called()
+    helpers.check_initialization_high_level(federated_government, fed_gov_init)
 
 
-@patch('shfl.federated_government.federated_clustering.KMeansModel')
-def test_model_builder(mock_kmeans):
-    cfg = FederatedClustering('IRIS', iid=True, num_nodes=3, percent=20)
+def test_initialization_wrong_database():
+    """Checks that an error is raised when a wrong database is requested."""
+    with pytest.raises(ValueError):
+        FederatedClustering('MNIST', num_nodes=3, percent=20)
 
-    model = cfg.model_builder()
 
-    assert isinstance(model, Mock)
-    mock_kmeans.assert_called_with(n_clusters=cfg._num_clusters, n_features=cfg._num_features)
+@patch("shfl.federated_government.FederatedGovernment.run_rounds")
+def test_run_rounds(fed_gov_run_rounds):
+    """Checks that the federated round is called correctly."""
+    federated_government = FederatedClustering('IRIS', num_nodes=3, percent=20)
+    federated_government.run_rounds(1)
+    fed_gov_run_rounds.assert_called_once()

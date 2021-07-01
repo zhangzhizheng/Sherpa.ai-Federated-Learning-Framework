@@ -1,28 +1,36 @@
 import sklearn.datasets
-from shfl.data_base import data_base as db
+
+from shfl.data_base.data_base import LabeledDatabase
 
 
-class Iris(db.DataBase):
+class Iris(LabeledDatabase):
+    """Loads the Iris dataset.
+
+    Implements base class [LabeledDatabase](./#labeleddatabase-class).
+
+    # References:
+    [Iris dataset](https://scikit-learn.org/stable/modules/generated/
+        sklearn.datasets.load_iris.html)
     """
-    This database loads the \
-    [Irisdataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html)
-    from sklearn, mainly for clustering tasks.
-    """
-    def load_data(self):
+
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
+    def load_data(self, train_proportion=0.8, shuffle=True):
+        """Loads the train and test data.
+
+        # Arguments:
+        train_proportion: Optional; Float between 0 and 1 proportional to the
+            amount of data to dedicate to train. If 1 is provided, all data is
+            assigned to train (default is 0.8).
+        shuffle: Optional; Boolean for shuffling rows before the
+            train/test split (default is True).
         """
-        Load data from iris package
 
-        # Returns
-            all_data : train data, train labels, test data and test labels
-        """
-        all_data = sklearn.datasets.load_iris()
-        data = all_data["data"]
-        labels = all_data["target"]
+        if self._data is None or self._labels is None:
+            all_data = sklearn.datasets.load_iris()
+            self._data = all_data["data"]
+            self._labels = all_data["target"]
 
-        test_size = int(len(data) * 0.1)
-        self._train_data, self._train_labels,\
-            self._test_data, self._test_labels = db.split_train_test(data, labels, test_size)
-
-        self.shuffle()
+        self.split_data(train_proportion, shuffle)
 
         return self.data

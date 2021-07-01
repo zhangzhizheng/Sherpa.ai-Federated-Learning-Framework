@@ -1,59 +1,81 @@
 import abc
 
-from shfl.private.data import LabeledData
-from shfl.private.federated_operation import FederatedData
+from shfl.private.federated_operation import federate_list
 
 
 class DataDistribution(abc.ABC):
-    """
-    Abstract class for data distribution
+    """Distributes a centralized database to a set of federated nodes.
+
+    The input is an object of class
+    [Database](../databases/#database-class), whose
+    train data and labels are distributed to a set of nodes.
+    Instead, the test data and labels are left unaltered since
+    they are meant to be used as a centralized (global) test set.
+    The way the data is distributed must be specified in the
+    abstract method `make_data_federated` of this class.
 
     # Arguments:
-        database: Database to distribute. (see: [Databases](../databases))
+        database: Object of class [Database](../databases/#database-class),
+            the centralized database to be distributed among nodes.
     """
 
     def __init__(self, database):
         self._database = database
 
-    def get_federated_data(self, percent=100, *args, **kwargs):
-        """
-        Method that splits the whole data between the established number of nodes.
+    def get_nodes_federation(self, **kwargs):
+        """Gets the set of federated nodes.
+
+        Assigns to each node the corresponding data partition as
+        defined by the abstract method
+        [make_data_federated](./#make_data_federated).
 
         # Arguments:
-            num_nodes: Number of nodes to create
-            percent: Percent of the data (between 0 and 100) to be distributed (default is 100)
+            **kwargs: Optional named arguments.
+                These are passed to the call of the abstract method
+                [make_data_federated](./#make_data_federated).
 
         # Returns:
-              * **federated_data, test_data, test_label**
+            nodes_federation: Object of class
+                [NodesFederation](../private/federated_operation/#federateddata-class),
+                the set of federated nodes containing the distributed train data.
+            test_data: The centralized (global) test data.
+            test_label: The centralized (global) target labels.
         """
 
         train_data, train_label = self._database.train
         test_data, test_label = self._database.test
 
-        federated_train_data, federated_train_label = self.make_data_federated(train_data,
-                                                                               train_label,
-                                                                               percent,
-                                                                               *args, **kwargs)
+        federated_train_data, federated_train_label = \
+            self.make_data_federated(train_data, train_label, **kwargs)
 
-        federated_data = FederatedData()
-        num_nodes = len(federated_train_label)
-        for node in range(num_nodes):
-            node_data = LabeledData(federated_train_data[node], federated_train_label[node])
-            federated_data.add_data_node(node_data)
+        federated_data = federate_list(federated_train_data,
+                                       federated_train_label)
 
         return federated_data, test_data, test_label
 
     @abc.abstractmethod
-    def make_data_federated(self, data, labels, percent, *args, **kwargs):
-        """
-        Method that must implement every data distribution extending this class
+    def make_data_federated(self, data, labels, **kwargs):
+        """Creates the data partition for each client.
+
+        Abstract method.
+
+        Defines how the centralized data is distributed among the client nodes.
 
         # Arguments:
-            data: Array of data
-            labels: Labels
-            percent: Percent of the data (between 0 and 100) to be distributed (default is 100)
+            data: The train data to be distributed among
+                a set of federated nodes.
+            labels: The target labels.
+            **kwargs: Optional named arguments. These can be passed
+                when invoking the class method
+                [get_nodes_federation](./#get_nodes_federation).
 
         # Returns:
-            federated_data: A list containing the data for each client
-            federated_label: A list containing the labels for each client
+            nodes_federation: A list-like object containing the data
+                for each client.
+            federated_label: A list-like object containing the target labels
+                for each client.
+
+        # Example:
+            See implementation of the
+            [IID data distribution class](./#iiddatadistribution-class).
         """

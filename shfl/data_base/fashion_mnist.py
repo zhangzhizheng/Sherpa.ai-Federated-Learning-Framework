@@ -1,31 +1,33 @@
+# Tensorflow warning
+# pylint: disable=no-name-in-module
 from tensorflow.keras.datasets import fashion_mnist
-from shfl.data_base.data_base import DataBase
-
 import tensorflow as tf
 
+from shfl.data_base.data_base import LabeledDatabase
 
-class FashionMnist(DataBase):
+
+class FashionMnist(LabeledDatabase):
+    """Loads the FASHION-MNIST dataset.
+
+    Implements base class [LabeledDatabase](./#labeleddatabase-class).
+
+    # References:
+        [FASHION-MNIST dataset](https://keras.io/datasets/
+            #fashion-mnist-database-of-fashion-articles)
     """
-    Implementation for load FASHION-MNIST data
 
-    # References
-        [FASHION-MNIST dataset](https://keras.io/datasets/#fashion-mnist-database-of-fashion-articles)
-    """
-    def __init__(self):
-        super(FashionMnist, self).__init__()
-
+    # False positive since using **kwargs
+    # pylint: disable=arguments-differ
     def load_data(self):
-        """
-        Load data from fashion emnist package
+        """Loads the train and test data.
 
-        # Returns:
-            all_data : train data, train label, test data and test labels
+        The data is originally already split into train and test.
         """
-        ((self._train_data, self._train_labels), (self._test_data, self._test_labels)) = fashion_mnist.load_data()
+
+        ((self._train_data, self._train_labels),
+         (self._test_data, self._test_labels)) = fashion_mnist.load_data()
 
         self._train_labels = tf.keras.utils.to_categorical(self._train_labels)
         self._test_labels = tf.keras.utils.to_categorical(self._test_labels)
 
-        self.shuffle()
-        
-        return self._train_data, self._train_labels, self._test_data, self._test_labels
+        return self.data
