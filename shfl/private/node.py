@@ -180,8 +180,8 @@ class DataNode:
 
         # Arguments:
             private_property: String identifying the private data.
-            federated_transformation: Transformation to apply
-                (see: [Federated Operation](../federated_operation)).
+            federated_transformation: Function defining the transformation to apply
+                to the node's private data.
         """
         federated_transformation(self._private_data[private_property], **kwargs)
 

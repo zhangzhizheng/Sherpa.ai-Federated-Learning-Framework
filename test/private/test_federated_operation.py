@@ -10,7 +10,7 @@ from shfl.private.federated_operation import VerticalServerDataNode
 from shfl.private.federated_operation import federate_array
 from shfl.private.federated_operation import federate_list
 from shfl.private.data import LabeledData
-from shfl.private.utils import normalize_query, unprotected_query
+from shfl.private.utils import unprotected_query
 
 
 @pytest.fixture(name="federated_array")
@@ -79,6 +79,16 @@ def fixture_vertical_server_node():
     server_node.configure_data_access(unprotected_query)
 
     return server_node, nodes_federation, model, aggregator, clients_embeddings
+
+
+def normalize_query(data, mean, std):
+    """Applies a normalization over the input data.
+    # Arguments:
+        data: Input data.
+        mean: Mean used for the normalization.
+        std: Standard deviation used for the normalization.
+    """
+    data.data = (data.data - mean) / std
 
 
 def test_nodes_federation_initialization():

@@ -13,14 +13,12 @@ class DataBase(abc.ABC):
 
     # Attributes:
         train_data: Array-like object containing the train data.
-        train_labels: Array-like object containing the train target labels.
         test_data: Array-like object containing the test data.
-        test_labels: Array-like object containing the test target labels.
 
     # Properties:
-        train: 2-Tuple as (train data, train labels).
-        test: 2-Tuple as (test data, test labels).
-        data: 4-Tuple as (train data, train labels, test data, test labels).
+        train: The train data.
+        test: The test data.
+        data: 2-Tuple as (train data, test data).
     """
 
     def __init__(self):
@@ -30,24 +28,25 @@ class DataBase(abc.ABC):
 
     @property
     def train(self):
-        """Returns train data and associated target labels."""
+        """Returns the train data."""
         return self._train_data
 
     @property
     def test(self):
-        """Returns test data and associated target labels."""
+        """Returns the test data."""
         return self._test_data
 
     @property
     def data(self):
-        """Returns all data as train data, train labels,
-        test data, test labels.
+        """Returns all data.
         """
         return self._train_data, self._test_data
 
     @abc.abstractmethod
     def load_data(self, **kwargs):
         """Loads the train and test data.
+
+        Abstract method.
 
         # Returns:
             data: 2-Tuple as (train data, test data).
@@ -64,13 +63,20 @@ class DataBase(abc.ABC):
 
 
 class LabeledDatabase(DataBase):
-    """Creates a generic labeled database from input data and labels.
+    """Represents a generic labeled data base.
 
     Implements the class [DataBase](./#database-class).
 
-    # Arguments:
-        data: Optional; Array-like object containing the features.
-        labels: Optional; Array-like object containing the target labels.
+    # Attributes:
+        train_data: Array-like object containing the train data.
+        train_labels: Array-like object containing the train target labels.
+        test_data: Array-like object containing the test data.
+        test_labels: Array-like object containing the test target labels.
+
+    # Properties:
+        train: 2-Tuple as (train data, train labels).
+        test: 2-Tuple as (test data, test labels).
+        data: 4-Tuple as (train data, train labels, test data, test labels).
     """
     def __init__(self):
         super().__init__()
@@ -100,6 +106,8 @@ class LabeledDatabase(DataBase):
     def load_data(self, **kwargs):
         """Loads the train and test data.
 
+        Abstract method.
+
         # Returns:
             data: 4-Tuple as (train data, train labels, test data, test labels).
         """
@@ -108,11 +116,11 @@ class LabeledDatabase(DataBase):
         """Splits the data.
 
         # Arguments:
-        train_proportion: Optional; Float between 0 and 1 proportional to the
-            amount of data to dedicate to train. If 1 is provided, all data is
-            assigned to train (default is 0.8).
-        shuffle: Optional; Boolean for shuffling rows before the
-            train/test split (default is True).
+            train_proportion: Optional; Float between 0 and 1 proportional to the
+                amount of data to dedicate to train. If 1 is provided, all data is
+                assigned to train (default is 0.8).
+            shuffle: Optional; Boolean for shuffling rows before the
+                train/test split (default is True).
         """
 
         if shuffle:
@@ -126,6 +134,8 @@ class LabeledDatabase(DataBase):
 
 class WrapLabeledDatabase(LabeledDatabase):
     """Wraps labeled data in a database.
+
+    Implements the class [LabeledDatabase](./#labeleddatabase-class).
 
     # Arguments:
         data: Array-like object containing the data.
@@ -143,11 +153,11 @@ class WrapLabeledDatabase(LabeledDatabase):
         """Loads the train and test data.
 
         # Arguments:
-        train_proportion: Optional; Float between 0 and 1 proportional to the
-            amount of data to dedicate to train. If 1 is provided, all data is
-            assigned to train (default is 0.8).
-        shuffle: Optional; Boolean for shuffling rows before the
-            train/test split (default is True).
+            train_proportion: Optional; Float between 0 and 1 proportional to the
+                amount of data to dedicate to train. If 1 is provided, all data is
+                assigned to train (default is 0.8).
+            shuffle: Optional; Boolean for shuffling rows before the
+                train/test split (default is True).
 
         # Returns:
             data: 4-Tuple as (train data, train labels, test data, test labels).
@@ -159,12 +169,16 @@ class WrapLabeledDatabase(LabeledDatabase):
 
 
 def shuffle_rows(*array_like_objects):
-    """Shuffles rows on inputs simultaneously.
+    """Shuffles the rows on an arbitrary number of inputs array-like objects simultaneously.
 
     It supports either Pandas DataFrame/Series or Numpy arrays.
+    The inputs must all have the same length (i.e. number of rows).
 
     # Arguments:
         *array_like_objects: Array-like objects containing data.
+
+    # Returns:
+        shuffled_data: A tuple with the shuffled objects.
     """
 
     for item in array_like_objects:
@@ -181,7 +195,7 @@ def shuffle_rows(*array_like_objects):
 
 
 def split_train_test(*array_like_objects, train_proportion=0.8):
-    """Splits data and labels into train and test sets.
+    """Splits an arbitrary number of inputs array-like objects into train and test sets.
 
     # Arguments:
         array_like_objects: Array-like objects containing the data to split.
@@ -190,10 +204,17 @@ def split_train_test(*array_like_objects, train_proportion=0.8):
             assigned to train (default is 0.8).
 
     # Returns:
-        train_data: Array-like object.
-        train_labels: Array-like object.
-        test_data: Array-like object.
-        test_labels: Array-like object.
+        train_data: A tuple with the train objects.
+        test_data: A tuple with the test objects.
+
+    # Example:
+
+    If used on two array-like objects `data` and `labels`, the output order is
+    as follows:
+
+    ```python
+    train_data, train_labels, test_data, test_labels = split_train_test(data, labels)
+    ```
     """
     check_all_same_length(array_like_objects)
 

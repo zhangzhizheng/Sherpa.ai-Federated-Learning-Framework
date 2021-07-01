@@ -49,9 +49,9 @@ class FederatedGovernment:
         # Arguments:
             n_rounds: The number of federated learning rounds to perform.
             test_data: The global test data for evaluation in between rounds.
-            test_label: Global test target labels for evaluation
+            test_label: The global test target labels for evaluation
                 in between rounds.
-            eval_freq: Frequency for evaluation on global test data.
+            eval_freq: The frequency for evaluation on global test data.
         """
 
         for i in range(0, n_rounds):

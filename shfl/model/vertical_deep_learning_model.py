@@ -5,7 +5,7 @@ import numpy as np
 from shfl.model.deep_learning_model_pt import DeepLearningModelPyTorch
 
 
-class VerticalNeuralNetClient(DeepLearningModelPyTorch):
+class VerticalNeuralNetClientModel(DeepLearningModelPyTorch):
     """Represents a **client's model** in a Vertical Federated Learning setting.
 
     Implements the class [DeepLearningModelPyTorch](./#deeplearningmodelpytorch).
@@ -90,7 +90,7 @@ class VerticalNeuralNetClient(DeepLearningModelPyTorch):
             self._embeddings_indices
 
 
-class VerticalNeuralNetServer(DeepLearningModelPyTorch):
+class VerticalNeuralNetServerModel(DeepLearningModelPyTorch):
     """Represents a **server's model** in a Vertical Federated Learning setting.
 
     Implements the class [DeepLearningModelPyTorch](./#deeplearningmodelpytorch).

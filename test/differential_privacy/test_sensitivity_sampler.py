@@ -1,11 +1,15 @@
 import numpy as np
 import pytest
 
-from shfl.private.utils import mean_query
 from shfl.differential_privacy.probability_distribution import NormalDistribution
 from shfl.differential_privacy import SensitivitySampler
 from shfl.differential_privacy import L1SensitivityNorm
 from shfl.differential_privacy import L2SensitivityNorm
+
+
+def mean_query(data):
+    """Computes the mean over data."""
+    return np.mean(data)
 
 
 def test_sample_sensitivity_gamma():

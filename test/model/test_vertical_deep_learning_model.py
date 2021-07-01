@@ -2,11 +2,11 @@ from unittest.mock import Mock, patch, call
 import pytest
 import numpy as np
 
-from shfl.model.vertical_deep_learning_model import VerticalNeuralNetClient
-from shfl.model.vertical_deep_learning_model import VerticalNeuralNetServer
+from shfl.model.vertical_deep_learning_model import VerticalNeuralNetClientModel
+from shfl.model.vertical_deep_learning_model import VerticalNeuralNetServerModel
 
 
-class VerticalNeuralNetClientTest(VerticalNeuralNetClient):
+class VerticalNeuralNetClientTest(VerticalNeuralNetClientModel):
     """Creates a test class for the vertical client model.
 
     It allows to access some private attributes during testing."""
@@ -118,8 +118,8 @@ def fixture_vertical_client_model(mock_torch, mock_get_params, global_vars):
 
 
 @pytest.mark.parametrize("wrapped_model_type",
-                         [VerticalNeuralNetClient,
-                          VerticalNeuralNetServer])
+                         [VerticalNeuralNetClientModel,
+                          VerticalNeuralNetServerModel])
 @patch('shfl.model.deep_learning_model_pt.DeepLearningModelPyTorch.get_model_params')
 def test_initialization(mock_get_params, wrapped_model_type, global_vars):
     """Checks that the vertical deep learning model initializes correctly.
@@ -138,11 +138,11 @@ def test_initialization(mock_get_params, wrapped_model_type, global_vars):
         global_vars["metrics"], global_vars["device"])
 
     assert hasattr(wrapped_model, "_embeddings_indices")
-    if isinstance(wrapped_model, VerticalNeuralNetClient):
+    if isinstance(wrapped_model, VerticalNeuralNetClientModel):
         assert hasattr(wrapped_model, "_embeddings")
         assert hasattr(wrapped_model, "_batch_counter")
         assert hasattr(wrapped_model, "_epoch_counter")
-    if isinstance(wrapped_model, VerticalNeuralNetServer):
+    if isinstance(wrapped_model, VerticalNeuralNetServerModel):
         assert hasattr(wrapped_model, "_grad_embeddings")
 
 
@@ -248,11 +248,11 @@ def fixture_vertical_server_model_train(mock_torch, mock_get_params, global_vars
         [np.random.rand(global_vars["n_classes"], global_vars["n_embeddings"]),
          np.random.rand(global_vars["n_classes"])]
 
-    wrapped_model = VerticalNeuralNetServer(model, loss, optimizer,
-                                            global_vars["batch_size"],
-                                            global_vars["epoch"],
-                                            global_vars["metrics"],
-                                            global_vars["device"])
+    wrapped_model = VerticalNeuralNetServerModel(model, loss, optimizer,
+                                                 global_vars["batch_size"],
+                                                 global_vars["epoch"],
+                                                 global_vars["metrics"],
+                                                 global_vars["device"])
 
     val_grad_embeddings = np.random.rand(global_vars["batch_size"],
                                          global_vars["n_embeddings"])

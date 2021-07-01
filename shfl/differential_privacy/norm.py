@@ -13,7 +13,7 @@ class SensitivityNorm(abc.ABC):
 
     # Arguments:
         axis: Optional; Direction on which to compute the norm.
-            Options are axis=None that considers all elements
+            Options are axis=None (default) that considers all elements
             and thus returns a scalar value for each array (default).
             Instead, axis=0 operates along vertical axis and thus
             returns a vector of size equal to the number of columns of each array

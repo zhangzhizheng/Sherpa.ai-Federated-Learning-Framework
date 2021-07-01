@@ -210,7 +210,7 @@ class ServerDataNode(FederatedDataNode):
     (i.e. the set of federated nodes).
     In the horizontal federated learning setting, typical queries
     are to deploy (update) the collaborative model over
-    the client nodes, and to _aggregate the clients' models
+    the client nodes, and to aggregate the clients' models
     into the collaborative one, held by the server.
 
     # Arguments:
@@ -253,7 +253,7 @@ class ServerDataNode(FederatedDataNode):
     def aggregate_weights(self):
         """Aggregate model's parameters from client nodes.
 
-        After aggregation, updates the collaborative model.
+        After aggregation, it updates the collaborative model.
         """
 
         params = self._nodes_federation.query_model_params()
@@ -281,7 +281,7 @@ class VerticalServerDataNode(FederatedDataNode):
     # Arguments:
         nodes_federation: The clients (i.e. the set of federated nodes,
             see class [NodesFederation](./#nodesfederation-class)).
-        model: Object representing the collaborative model.
+        model: Object representing the server's part of the model.
         aggregator: Object representing the aggregator to use (see class
             [FederatedAggregator](../../federated_aggregator/#federatedaggregator-class)).
         data: Optional; Object of class [LabeledData](../data/#labeleddata-class)

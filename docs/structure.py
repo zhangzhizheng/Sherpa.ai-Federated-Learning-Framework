@@ -89,7 +89,8 @@ PAGES = [
         'page': 'databases.md',
         'classes': [
             (data_base.data_base.DataBase, ['load_data']),
-            data_base.data_base.LabeledDatabase,
+            (data_base.data_base.LabeledDatabase, ['load_data']),
+            (data_base.data_base.WrapLabeledDatabase, ['load_data']),
             data_base.california_housing.CaliforniaHousing,
             data_base.cifar.Cifar10,
             data_base.cifar.Cifar100,
@@ -132,8 +133,8 @@ PAGES = [
             model.deep_learning_model_pt.DeepLearningModelPyTorch,
             model.linear_regression_model.LinearRegressionModel,
             model.linear_classifier_model.LinearClassifierModel,
-            model.vertical_deep_learning_model.VerticalNeuralNetClient,
-            model.vertical_deep_learning_model.VerticalNeuralNetServer
+            model.vertical_deep_learning_model.VerticalNeuralNetClientModel,
+            model.vertical_deep_learning_model.VerticalNeuralNetServerModel
         ]
     },
     {

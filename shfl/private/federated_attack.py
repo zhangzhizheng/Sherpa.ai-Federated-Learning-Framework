@@ -1,8 +1,6 @@
 import random
 import numpy as np
 
-from shfl.private.utils import shuffle_node_query
-
 
 class FederatedPoisoningDataAttack:
     """Simulates a poisoning data attack.
@@ -30,7 +28,7 @@ class FederatedPoisoningDataAttack:
         """Shuffles the target labels in an adversary node.
 
         If tagged as adversarial, a node's target label is shuffled
-        by a data transformation (see [ShuffleNode](./#shufflenode-class)).
+        by a data transformation.
 
         # Arguments:
             nodes_federation: Object of class
@@ -45,4 +43,5 @@ class FederatedPoisoningDataAttack:
 
         for node, boolean in zip(nodes_federation, boolean_adversaries):
             if boolean:
-                node.apply_data_transformation(shuffle_node_query)
+                node.apply_data_transformation(
+                    lambda data: np.random.shuffle(data.label))

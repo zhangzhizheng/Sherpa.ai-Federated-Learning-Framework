@@ -8,7 +8,6 @@ from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 from shfl.model.deep_learning_model import DeepLearningModel
 from shfl.data_base.emnist import Emnist
 from shfl.data_base.fashion_mnist import FashionMnist
-from shfl.private.utils import normalize_query
 
 
 class FederatedImagesClassifier(FederatedGovernment):
@@ -56,8 +55,7 @@ class FederatedImagesClassifier(FederatedGovernment):
             federated_data.apply_data_transformation(reshape_query)
             mean = np.mean(train_data.data)
             std = np.std(train_data.data)
-            federated_data.apply_data_transformation(normalize_query,
-                                                     mean=mean, std=std)
+            federated_data.apply_data_transformation(normalize_query, mean=mean, std=std)
 
             aggregator = FedAvgAggregator()
 
@@ -116,6 +114,11 @@ def reshape_query(data):
         (data.data.shape[0],
          data.data.shape[1],
          data.data.shape[2], 1))
+
+
+def normalize_query(data, mean, std):
+    """Applies a normalization over the input data."""
+    data.data = (data.data - mean) / std
 
 
 class ImagesDataBases(Enum):

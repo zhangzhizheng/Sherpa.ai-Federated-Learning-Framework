@@ -28,13 +28,15 @@ class VerticalFederatedGovernment:
 
     def run_rounds(self, n_rounds, test_data, test_label, eval_freq=1000):
         """
-        Run federated learning rounds beginning in the actual state.
+        Runs the federated learning rounds.
+
+        It starts in the actual state, testing on global test data and, if present, on local test data too.
 
         # Arguments:
-            n_rounds: Number of federated learning rounds
-            test_data: Global test data for evaluation between rounds
-            test_label: Global test labels for evaluation between rounds
-            eval_freq: Frequency for evaluation and print on global test data
+            n_rounds: The number of federated learning rounds to perform.
+            test_data: The global test data for evaluation in between rounds.
+            test_label: The global test target labels for evaluation in between rounds.
+            eval_freq: The frequency for evaluation on global test data.
         """
         for i in range(0, n_rounds):
 
@@ -48,7 +50,9 @@ class VerticalFederatedGovernment:
                 self.evaluate_collaborative_model(i, test_data, test_label)
 
     def evaluate_collaborative_model(self, iteration, test_data, test_label):
-        """Evaluates the collaborative model at the current iteration."""
+        """
+        Evaluates the collaborative model at the current iteration.
+        """
 
         print("Round " + str(iteration))
         self._server.evaluate_collaborative_model()
