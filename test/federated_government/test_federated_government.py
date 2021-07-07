@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from shfl.federated_government.federated_government import FederatedGovernment
+from shfl.private.federated_operation import NodesFederation
 from shfl.data_base.data_base import WrapLabeledDatabase
 from shfl.data_distribution.data_distribution_iid import IidDataDistribution
 
@@ -66,9 +67,9 @@ def test_evaluate_clients(global_vars, data_distribution):
     """Checks that all the clients are evaluated correctly.
 
     Both evaluations on global and local test data are considered."""
-    _, test_data, test_labels = data_distribution
+    nodes_federation, test_data, test_labels = data_distribution
     num_nodes = global_vars["n_nodes"]
-    nodes_federation = [Mock() for _ in range(num_nodes)]
+    nodes_federation = NodesFederation(federated_data_nodes=[Mock() for _ in range(num_nodes)])
     for data_node in nodes_federation:
         data_node.evaluate.return_value = np.random.rand(2)
     model = Mock()

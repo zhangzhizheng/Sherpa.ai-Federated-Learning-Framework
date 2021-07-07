@@ -78,10 +78,10 @@ class FederatedGovernment:
             labels: The global target labels.
         """
 
-        for data_node in self._nodes_federation:
-            evaluation, local_evaluation = \
-                data_node.evaluate(data, labels)
+        results = self._nodes_federation.evaluate(data, labels)
 
-            print("Performance client " + str(data_node) +
-                  ": Global test: " + str(evaluation)
+        for result in results:
+            evaluation, local_evaluation = result
+
+            print(" Global test: " + str(evaluation)
                   + ", Local test: " + str(local_evaluation))
